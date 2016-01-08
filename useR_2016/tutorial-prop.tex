@@ -1,0 +1,190 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+    \usepackage{xltxtra,xunicode}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex]{hyperref}
+\else
+  \usepackage[unicode=true]{hyperref}
+\fi
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            pdfauthor={},
+            pdftitle={useR! 2016 Tutorial Proposal},
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            linkcolor=magenta,
+            pdfborder={0 0 0}}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{longtable,booktabs}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+  \title{useR! 2016 Tutorial Proposal}
+  \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+  \author{}
+  \preauthor{}\postauthor{}
+  \date{}
+  \predate{}\postdate{}
+
+
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+\begin{document}
+\maketitle
+
+\emph{Please fill out the sections. In your final document be sure to
+remove instructive comments such as this one.}
+
+\subsection{Tutorial Title}\label{tutorial-title}
+
+Programming with models: An introduction to NIMBLE, a BUGS-compatible system for fitting and programming with hierarchical statistical models using MCMC and more
+%Beyond the black box: Flexible programming of hierarchical modeling
+%algorithms for
+%BUGS-compatible models using NIMBLE
+
+\subsection{Instructor Details}\label{instructor-details}
+
+\begin{longtable}[c]{@{}ll@{}}
+\toprule
+Name: Chris Paciorek &\tabularnewline
+&\tabularnewline
+Institution: University of California, Berkeley&\tabularnewline
+&\tabularnewline
+Address: Department of Statistics, 367 Evans Hall, Berkeley CA 94720 &\tabularnewline
+&\tabularnewline
+Email: paciorek@stat.berkeley.edu &\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subsection{Short Instructor
+Biography}\label{short-instructor-biography}
+
+Christopher Paciorek is an associate research statistician, lecturer, and the statistical computing consultant in the Department of Statistics at UC Berkeley. He has extensive experience developing and presenting workshops on statistical computing topics, including intensive two-day bootcamps on R (github.com/berkeley-scf/r-bootcamp-2015) and  shorter workshops on parallel programming (github.com/berkeley-scf/parallel-scf-2015), using Spark and MapReduce (github.com/berkeley-scf/spark-workshop-2014), using GPUs (github.com/berkeley-scf/gpu-workshop-2014), and using C/C++ from R. He has taught the graduate-level statistical computing class at UC Berkeley for five years (github.com/berkeley-stat243/stat243-fall-2015). He is a co-developer of the NIMBLE package (R-nimble.org and http://arxiv.org/abs/1505.05093) and the developer of the bigGP (http://www.jstatsoft.org/v63/i10/) and spectralGP packages (http://www.jstatsoft.org/v19/a2). With regard to Bayesian statistics, he has 15 years of applied Bayesian statistics experience and a wide variety of published analyses in environmental and public health applications (http://www.stat.berkeley.edu/~paciorek/cv/cv.html). 
+
+\emph{The bio should enable the scientific committee to gauge the
+instructor's qualifications for the tutorial. Links to works previous
+tutorials and/or relevant publications may be included.}
+
+\subsection{Brief Description of
+Tutorial}\label{brief-description-of-tutorial}
+\emph{Describe the tutorial briefly.}
+This tutorial will introduce attendees to the NIMBLE system for programming with hierarchical models in R. The tutorial will first show how to specify a hierarchical statistical model using BUGS syntax and fit that model using MCMC. Attendees will learn how to customize the MCMC for better performance, and how to specify one's own statistical distributions and functions for use within the BUGS syntax. Next the tutorial will demonstrate how to use other non-MCMC algorithms to fit and evaluate models. Finally, the tutorial will show how to write one's algorithms for use with hierarchical models. In particular, this will include how to specify one's own statistical distributions and functions for use within the BUGS syntax.
+
+
+
+\subsection{Goals}\label{goals}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+ Be able to specify hierarchical statistical models using BUGS
+\item
+ Be able to fit and assess models using NIMBLE's default MCMC system
+\item
+  Be able to customize the MCMC for a model
+\item
+  Be able to specify user-provided distributions and functions to extend BUGS
+\item
+Be able to use other algorithms such as MCEM and particle filtering
+\item
+Be able to code one's own algorithms using NIMBLE's flexible system for programming algorithms
+\end{enumerate}
+
+\subsection{Detailed Outline}\label{detailed-outline}
+
+\emph{Detailed outline text.}
+
+\begin{enumerate}
+\item A complete worked example to illustrate the system
+\item Specifying models with BUGS and manipulating models
+\begin{enumerate}
+\item Writing a model in BUGS
+\item Creating a NIMBLE model
+\item Working with the model
+\end{enumerate}
+\item Fitting models with MCMC
+\begin{enumerate}
+\item Building a default MCMC
+\item Using the MCMC output
+\item Customizing your MCMC: blocking parameters
+\end{enumerate}
+\item Using other algorithms provided by NIMBLE
+\item Writing your own algorithms using nimbleFunctions
+\begin{enumerate}
+\item A basic nimbleFunction for fast execution of R code
+\item Using your own distributions and functions to extend BUGS
+\item Writing an algorithm as a nimbleFunction
+\end{enumerate}
+\end{enumerate}
+
+\subsection{Justification}\label{justification}
+
+Fitting hierarchical models is at the heart of many statistical and machine learning workflows in a wide variety of fields, including statistics, machine learning/robotics/AI, biology (ecology, phylogenetics), social science (economics, education research, psychology, quantitative political science), public health (epidemiology, health services research, global health), and more. BUGS-based software (WinBUGS, JAGS) have been very popular but have limitations, specifically in only providing a user a black box MCMC. NIMBLE is much more flexible and opens up a variety of options for those fitting models and those hoping to provide algorithms that others can then use on their own models. 
+
+\emph{Justification why tutorial is current and important.}
+
+\subsection{Background Knowledge}\label{background-knowledge}
+
+Familiarity with R, hierarchical statistical models/Bayesian statistics, and basics of Markov chain Monte Carlo (MCMC)
+
+\subsection{Expected Number of
+Attendees}\label{expected-number-of-attendees}
+
+15-30
+
+\end{document}
