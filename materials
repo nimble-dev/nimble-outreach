@@ -1,0 +1,84 @@
+Core components for a tutorial/short course
+===============================================
+BUGS basics
+
+lightning intro with pump
+
+build and operate a Nimble model from R (including compilation)
+
+data/constants/nodes/inits/RHS variables
+
+build and operate an MCMC from R (including compilation)
+
+swapping out MCMC components
+(have them see compareMCMCs)
+
+MCEM example
+
+PF example
+
+writing a user-defined sampler - perhaps show Perry's logSD sampler
+
+writing a full user-defined algo - perhaps show importance sampler?
+
+user-defined distributions
+
+user-defined nf's in BUGS code - example of how to speed processing and of how to do something customizable
+
+strategies for improved MCMC:
+modifyign samplers
+vectorized - deterministic node statements and possibly vectorized univar nodes - fewer nodes though in some cases of MCMC does unnecessary calcs
+user-defined fxns
+user-defined dists
+
+censoring/truncation
+
+example of nimbleFunction w/o setupCode
+
+Examples from talks
+==============================================
+
+litters MCMC: default MCMC, blocking, cross-level
+
+Possible examples:
+
+Paleon prediction of biomass from pollen - user-defined Dirich-multinomial
+
+Paleon tree growth model - generally complicated model, can illustrate dinterval/dconstraint, multiple parameterizations 
+
+Daniel capture-recapture example with filtered likelihood: dipper, orchid, goose
+
+Nick's stochastic volatity model with Liu & West filter or PMCMC
+
+MCMC comparisons ice example (use of blocking) (smoothing model); add autoBlock from DT paper
+
+election88 example w/ customized samplers: oppositional proposals for fixed effects, customized cross-level; also vectorized calculation
+
+DT autoBlock GLMM example (MN health plan) - probably redundant with election88
+
+importance sampling example for nf
+
+spatial C-R  - Jimenez (ask if ok) - ideas for squeezing out speed (vectorize, 0/1 indicator Gibbs sample)
+
+Rewriting a model for efficiency (vectorization, etc.) using Perry's tricks
+vectorized scalar distributions sampled in a block
+[need to figure out a good list of these]
+
+Overview materials
+======================================
+
+CJP Minnesota talk April 2015
+
+Perry Neyman UCB talk Oct 2015
+
+various other Perry talks (similar material)
+
+Exercises
+=======================================================
+
+1) take a BUGS model example and build it in Nimble and set up an MCMC; change the defaults
+
+2) modify a BUGS model to use a user-defined fxn and user-defined distribution
+
+3) write a nimbleFunction for a basic algo
+

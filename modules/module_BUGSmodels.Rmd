@@ -1,0 +1,63 @@
+% Using BUGS Models
+% NIMBLE training materials module
+% Nimble Development Team
+
+```{r chunksetup, include=FALSE, cache=TRUE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(nimble)
+```
+
+# The BUGS language
+
+The BUGS language 
+
+```{r computing,echo=TRUE,results='markup'}
+
+```
+
+# A basic example
+
+Here we'll give a simple example of building a model and running some algorithms on the model, as well as creating our own user-specified algorithm. The goal is to give you a sense for what one can do in the system. Later sections will provide more detail.
+
+We'll use the *pump* model example from BUGS. The data set
+  describes failure times of some pumps.  
+
+# Specifying the BUGS code for a model
+
+Here we specify the pump code directly in R.
+
+```{r model-code}
+pumpCode <- nimbleCode({ 
+  for (i in 1:N){
+      theta[i] ~ dgamma(alpha,beta)
+      lambda[i] <- theta[i]*t[i]
+      x[i] ~ dpois(lambda[i])
+  }
+  alpha ~ dexp(1.0)
+  beta ~ dgamma(0.1,1.0)
+})
+```
+
+We could load the model
+from the standard BUGS example file formats, but instead we'll show
+how to enter it directly in R.
+
+# Building a model in Nimble
+
+# 'Operating' the model
+
+# Setting data values and initial values
+
+# Compiling the model for faster operation
+
+# Exercises
+
+1) Write BUGS code for a normal random effects model with 6 groups and 10 observations in each group. You'll need multiple variance components.
+
+2) Set the hyperparameters (the variance components) for the model and simulate the random means and observations. Now fix the data nodes as 'data'.
+
+3) Calculate the full density of the model. Next calculate just the log-likelihood.
+
+4) Compile the model and compare the time of calculating the full density in the compiled C++ model to the original R version of the model. (It may not be much different here for such a small model).

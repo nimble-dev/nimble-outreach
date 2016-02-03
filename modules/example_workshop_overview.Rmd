@@ -1,0 +1,113 @@
+% ISBA NIMBLE workshop, Introduction
+% June 2016, ISBA World Meeting
+% Chris Paciorek
+
+# A few administrative things
+
+## Where to find stuff
+
+The Github site ([https://github.com/nimble-dev/nimble-outreach](https://github.com/nimble-dev/nimble-outreach))  is the master repository for materials for the modules; you can also get the individual files from Github. 
+
+To get the materials look ahead to slide #x. Alternatively, simply go to https://github.com/nimble-dev/nimble-outreach and click on the 'Download ZIP' button in the lower right of the window.
+
+
+## Asking questions and making comments
+
+Please ask questions and make comments as we go through the material. You can also share ideas, code snippets, and error messages, as well as ask questions through an online shared document at [Mozilla etherpad].
+
+
+# How we'll operate
+
+The workshop will be organized in modules, each of which will be a combination of lecture/demo presentation concluded by a breakout session in which you'll work on a variety of problems of different levels of difficulty. The idea is for each person to find problems that challenge them but are not too hard. Solutions to the breakout problems will be presented before the start of the next module. 
+
+
+# Suggestions on how to get the most out of the bootcamp
+
+I encourage you to:
+
+- try out the code as we walk through it
+-  keep your eyes open! -- We'll illustrate a lot of syntax and concepts by example
+- try to guess what the syntax means in cases we haven't yet seen that syntax
+- play with it and try variations and try to break it and see what happens
+- tell me if something interesting happens as you experiment, or post a comment in online 
+- ask questions of me directly or through the Etherpad
+
+
+A few additional thoughts on my pedagogical philosophy here:
+
+- I want to expose you to a lot of tools and ideas that you can come back to when you need them and when you have time for more depth.
+- My aim is not to show you how to use specific statistical methods or analysis techniques. My goal is to get you up to speed generally in Nimble.
+- It can be hard to absorb everything in such a concentrated situation. Hopefully the material presented will be useful to you over the longer-term as you do more work with Nimble.
+
+# RStudio and R Markdown
+
+We'll present most of the material from within RStudio, using R Markdown documents with embedded R code. R Markdown is an extension to the Markdown markup language that makes it easy to write HTML in a simple plain text format.  This allows us to both run the R/Nimble code directly as well as compile on-the-fly to an HTML file that can be used for presentation. All files will be available on [Github](https://github.com/nimble-dev/nimble-outreach).  
+
+Note: The files named *moduleX_blah_slides.html* have individual slides, while the files named *moduleX_blah.html* have the same content but all on one page.
+
+Warning: in some cases the processing of the R code in the R Markdown is screwy and the slides have error messages that do not occur if you just run the code directly in R or RStudio. 
+
+# Using Github to get the documents
+
+To download the files from Github, you can do the following. 
+
+## Within RStudio
+
+Within RStudio go to File->New Project->Version Control->Git and enter:
+
+- "Repository URL": https://github.com/nimble-dev/nimble-outreach
+- "Project Directory Name": nimble-outreach (or something else of your choosing)
+- "Directory": ~/Desktop (or somewhere of your choosing)
+
+Then to update from the repository to get any changes we've made, you can select (from within RStudio):
+Tools->Version Control->Pull Branches
+
+or from the Environment/History/Git window, click on the Git tab and then on the blue down arrow.
+
+
+Be warned that you probably do not want to make your own notes or changes to the files we are providing. Because if you do, and you then do a "Git Pull" to update the materials, you'll have to deal with the conflict between your local version and our version. You probably will want to make a personal copy of such files in another directory or by making copies of files with new names.
+
+## From a terminal window
+
+Run the following commands:
+
+- `cd /directory/where/you/want/repository/located`
+- `git clone https://github.com/nimble-dev/nimble-outreach`
+
+Then to update from the repository to get any changes we've made:
+
+- `cd /directory/where/you/put/the/repository/nimble-outreach`
+- `git pull`
+
+
+# What is Nimble?
+
+- 1
+- 2 
+
+
+# Why Nimble?
+
+- list key features
+
+# Why Not Nimble?
+
+* For MCMCs that rely heavily on Gibbs sampling, JAGS may be faster because of more efficient internal implementation of the calculations
+* For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in Nimble (but in many examples we've tried we've been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers.
+* Nimble does not (yet) allow for stochastic indexing; JAGS is your best bet for that.
+* Nimble can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good).
+
+# What are my other options? Get me out of here!
+
+* MCMC:
+1. JAGS
+2. Stan
+3. PyMC
+* various sequential Monte Carlo packages
+* various tools for other algorithms
+
+
+# The Legal Stuff
+
+- This material was created by the Nimble development team
+- You are free to use, modify and redistribute any of this material with attribution
