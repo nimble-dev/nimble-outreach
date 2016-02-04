@@ -14,5 +14,5 @@ if (file.exists(source)){
     system(paste("pandoc -s --webtex -t slidy ", paste(module, ".md", sep = ""), " -o ", paste(module, "_slides.html", sep = ""), " --self-contained"))
     knit2html(source, envir = new.env())
 } else {
-    cat("Error: ", source, "does not exist.\n")
+    cat("Error: ", source, " does not exist.\n")
 }
