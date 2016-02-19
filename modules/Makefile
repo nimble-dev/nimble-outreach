@@ -7,8 +7,9 @@ clean:
 	rm -rf *.md *.html *.pdf cache/ figure/
 
 
-%.md: %.Rmd
+%.html: %.Rmd
 	./make_slides $(basename $(@))
+	rm -f $(basename $(@)).md
 
-example: example_workshop_overview.md 
-bugs: module_BUGSmodels.md
+example: example_workshop_overview.html 
+bugs: module_BUGSmodels.html
