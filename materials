@@ -1,16 +1,17 @@
 Core components for a tutorial/short course
 ===============================================
-installing Nimble
+# installing Nimble
 
-BUGS basics
+(*) BUGS basics
 
-lightning intro with pump
+(*) lightning intro with pump
 
-build and operate a Nimble model from R (including compilation)
+(*) build and operate a Nimble model from R (including compilation)
 
 data/constants/nodes/inits/RHS variables
 
 build and operate an MCMC from R (including compilation)
+(extended MCMC example with litters as separate module?)
 
 swapping out MCMC components
 (have them see compareMCMCs)
@@ -69,7 +70,7 @@ vectorized scalar distributions sampled in a block
 Overview materials
 ======================================
 
-CJP Minnesota talk April 2015
+CJP UCSC Feb 2016, U Minnesota April 2015
 
 Perry Neyman UCB talk Oct 2015
 

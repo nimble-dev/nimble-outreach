@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-<title>The BUGS language</title>
+<title>Using BUGS Models</title>
 
 <script type="text/javascript">
 window.onload = function() {
@@ -57,6 +57,9 @@ var hljs=new function(){function m(p){return p.replace(/&/gm,"&amp;").replace(/<
 hljs.initHighlightingOnLoad();
 </script>
 
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
 
 
 <style type="text/css">
@@ -201,9 +204,24 @@ hr {
 </head>
 
 <body>
+<h1>Using BUGS Models</h1>
+
+<h2>NIMBLE training materials module</h2>
+
+<p>Nimble Development Team</p>
+
 <h1>The BUGS language</h1>
 
-<p>The BUGS language </p>
+<p>The BUGS language is described in detail in the <a href="http://www.openbugs.net/Manuals/ModelSpecification.htmlBUGS">relevant section of the BUGS manual</a>. Information on how Nimble&#39;s &#39;dialect&#39; of BUGS differs from the original and information on the distributions and functions provided in Nimble can be found in Section 5 of the <a href="http://r-nimble.org/manuals/NimbleUserManual.pdf">Nimble Users Manual</a>.</p>
+
+<p>Basically, one specifies the variables in the hierarchical model as lines of code.</p>
+
+<ul>
+<li> stochastic nodes (data and parameters) are indicated with <code>~</code> and </li>
+<li>deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by <code>&lt;-</code>.</li>
+</ul>
+
+<p>There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the <a href="https://sourceforge.net/projects/mcmc-jags/files/Examples/">JAGS website</a>.  Information about the models can be found in <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf">Volume 1</a>, [Volueme 2][<a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf">http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf</a>], and [Volume 3][<a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf">http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf</a>] of the WinBUGS example manuals.</p>
 
 <h1>A basic example</h1>
 
@@ -216,7 +234,8 @@ hr {
 
 <p>Here we specify the pump code directly in R.</p>
 
-<pre><code class="r">pumpCode &lt;- nimbleCode({ 
+<pre><code class="r">library(nimble)
+pumpCode &lt;- nimbleCode({ 
   for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta)
       lambda[i] &lt;- theta[i]*t[i]
@@ -227,30 +246,277 @@ hr {
 })
 </code></pre>
 
-<pre><code>## Error in eval(expr, envir, enclos): could not find function &quot;nimbleCode&quot;
-</code></pre>
+<p>This model has Poisson distributed data, \(x_i \sim \mbox{Poi}(\lambda)\), with mean \(\lambda_i = \theta_i \cdot t_i\), and random effects, \(\theta_i\), and hyperparameters, \(\alpha\) and \(\beta\) of the random effects distribution.</p>
 
-<p>We could load the model
-from the standard BUGS example file formats, but instead we&#39;ll show
-how to enter it directly in R.</p>
+<p>You can also load it directly from the standard BUGS example file formats (see <code>help(readBUGSmodel)</code>).</p>
 
 <h1>Building a model in Nimble</h1>
 
-<h1>&#39;Operating&#39; the model</h1>
+<p>In BUGS or JAGS, one would provide the model code, input data and constant values, and (optionally) initial parameter values and the software would directly create and run an MCMC, returning the results to you.</p>
+
+<p>In Nimble, you have more fine-grained control over these steps. The first step is to build an R representation of the model.</p>
+
+<pre><code class="r">N &lt;- 10
+t &lt;- c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)
+x &lt;- c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22)
+pumpConsts &lt;- list(t = t, N = 10)
+pumpData &lt;- list(x = x)
+pumpInits &lt;- list(alpha = 1, beta = 1,
+         theta = rep(0.1, pumpConsts$N))
+pump &lt;- nimbleModel(pumpCode, 
+          data = pumpData, constants = pumpConsts, inits = pumpInits)
+</code></pre>
+
+<pre><code>## defining model...
+## building model...
+## setting data and initial values...
+## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)
+## model building finished
+</code></pre>
+
+<p>If all you want to do is run an MCMC, this might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.</p>
+
+<h1>Inspecting the model</h1>
+
+<p>What are the variables in the model? What are the dependencies of a given node (this is information used in many algorithms)?</p>
+
+<pre><code class="r">pump$getNodeNames()
+</code></pre>
+
+<pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
+##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
+##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
+## [10] &quot;theta[7]&quot;            &quot;theta[8]&quot;            &quot;theta[9]&quot;           
+## [13] &quot;theta[10]&quot;           &quot;lambda[1]&quot;           &quot;lambda[2]&quot;          
+## [16] &quot;lambda[3]&quot;           &quot;lambda[4]&quot;           &quot;lambda[5]&quot;          
+## [19] &quot;lambda[6]&quot;           &quot;lambda[7]&quot;           &quot;lambda[8]&quot;          
+## [22] &quot;lambda[9]&quot;           &quot;lambda[10]&quot;          &quot;x[1]&quot;               
+## [25] &quot;x[2]&quot;                &quot;x[3]&quot;                &quot;x[4]&quot;               
+## [28] &quot;x[5]&quot;                &quot;x[6]&quot;                &quot;x[7]&quot;               
+## [31] &quot;x[8]&quot;                &quot;x[9]&quot;                &quot;x[10]&quot;
+</code></pre>
+
+<pre><code class="r">pump$getDependencies(c(&#39;alpha&#39;, &#39;beta&#39;))
+</code></pre>
+
+<pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
+##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
+##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
+## [10] &quot;theta[7]&quot;            &quot;theta[8]&quot;            &quot;theta[9]&quot;           
+## [13] &quot;theta[10]&quot;
+</code></pre>
+
+<p>What&#39;s the current value in a node or the value of the log probability density for that node?</p>
+
+<pre><code class="r">pump$x  
+</code></pre>
+
+<pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22
+</code></pre>
+
+<pre><code class="r">pump$logProb_x  # log-likelihood components
+</code></pre>
+
+<pre><code>##  [1]  -2.998011  -1.118924  -1.882686  -2.319466  -4.254550 -20.739651
+##  [7]  -2.358795  -2.358795  -9.630645 -48.447798
+</code></pre>
+
+<pre><code class="r">pump$getLogProb(&#39;x&#39;) # log-likelihood
+</code></pre>
+
+<pre><code>## [1] -96.10932
+</code></pre>
+
+<pre><code class="r">pump$lambda
+</code></pre>
+
+<pre><code>##  [1]  9.430  1.570  6.290 12.600  0.524  3.140  0.105  0.105  0.210  1.050
+</code></pre>
+
+<pre><code class="r">pump$theta
+</code></pre>
+
+<pre><code>##  [1] 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+</code></pre>
+
+<pre><code class="r">pump$getLogProb(&#39;theta&#39;)  # log-prior for random effects
+</code></pre>
+
+<pre><code>## [1] -1
+</code></pre>
+
+<h1>Operating the model</h1>
+
+<p>We have control over the model. Let&#39;s change values in the model and recalculate the density values.</p>
+
+<pre><code class="r">pump$alpha &lt;- 0.5
+pump$calculate(&#39;theta&#39;)   # or calculate(pump, &#39;theta&#39;)
+</code></pre>
+
+<pre><code>## [1] 4.789276
+</code></pre>
+
+<pre><code class="r">pump$getLogProb(&#39;theta&#39;)  # equivalent to pump$logProb_theta or getLogProb(pump, &#39;theta&#39;)
+</code></pre>
+
+<pre><code>## [1] 4.789276
+</code></pre>
+
+<p>If we want to simulate (from the prior), we can do that too.</p>
+
+<pre><code class="r">set.seed(0)  # so the calculations are reproducible
+pump$simulate(&#39;theta&#39;)  # simulate from prior
+pump$theta
+</code></pre>
+
+<pre><code>##  [1] 1.408095995 1.526233039 1.424615419 0.005351101 0.043694608
+##  [6] 0.206802700 0.347210733 3.954649145 0.022096723 0.208973150
+</code></pre>
+
+<pre><code class="r">getLogProb(pump, &#39;theta&#39;)  # equivalent to pump$logProb_theta
+</code></pre>
+
+<pre><code>## [1] 4.789276
+</code></pre>
+
+<pre><code class="r">pump$calculate(&#39;theta&#39;)
+</code></pre>
+
+<pre><code>## [1] -7.931953
+</code></pre>
+
+<pre><code class="r">getLogProb(pump, &#39;theta&#39;)  # equivalent to pump$logProb_theta
+</code></pre>
+
+<pre><code>## [1] -7.931953
+</code></pre>
+
+<pre><code class="r">pump$lambda
+</code></pre>
+
+<pre><code>##  [1]  9.430  1.570  6.290 12.600  0.524  3.140  0.105  0.105  0.210  1.050
+</code></pre>
+
+<pre><code class="r">pump$calculate(pump$getDependencies(&#39;theta&#39;))  # recalculate dependents
+</code></pre>
+
+<pre><code>## [1] -314.864
+</code></pre>
+
+<pre><code class="r">pump$lambda
+</code></pre>
+
+<pre><code>##  [1] 132.78345233  23.96185872  89.60830986   0.67423872   0.22895975
+##  [6]   6.49360478   0.36457127   4.15238160   0.04640312   2.19421807
+</code></pre>
+
+<p><em>Question</em>: The Nimble developers chose to not automatically recalculate density values when a node&#39;s value changes nor deterministic dependent nodes when a parent node changes. What are the design considerations in making that choice?</p>
 
 <h1>Setting data values and initial values</h1>
 
+<p>In Nimble, you can change data and parameter values at any time, and you don&#39;t need to set values when you use <em>nimbleModel()</em> to create the model. Any missing values will just be set to <code>NA</code>. Nodes with data have a special status as <em>data nodes</em>, which means that values in those nodes will not be overwritten, unless explicitly requested (e.g., when calling <em>simulate()</em>
+on a model).</p>
+
+<pre><code class="r">pump$x
+</code></pre>
+
+<pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22
+</code></pre>
+
+<pre><code class="r">pump$theta
+</code></pre>
+
+<pre><code>##  [1] 1.408095995 1.526233039 1.424615419 0.005351101 0.043694608
+##  [6] 0.206802700 0.347210733 3.954649145 0.022096723 0.208973150
+</code></pre>
+
+<pre><code class="r">simulate(pump, c(&#39;x&#39;, &#39;theta&#39;))
+pump$x
+</code></pre>
+
+<pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22
+</code></pre>
+
+<pre><code class="r">pump$theta
+</code></pre>
+
+<pre><code>##  [1] 0.16237088 0.04860720 0.01633252 0.23709511 0.87338407 0.31923814
+##  [7] 0.67264997 0.08399866 0.01386787 0.15487000
+</code></pre>
+
+<p>As an example of setting data values, suppose we had a different set of data values and wanted to use those.</p>
+
+<pre><code class="r">pumpDataNew &lt;- list(x = c(12, 7, 18, 1, 3, 5, 11, 2, 22, 9))
+pump$setData(pumpDataNew)
+pump$x
+</code></pre>
+
+<pre><code>##  [1] 12  7 18  1  3  5 11  2 22  9
+</code></pre>
+
+<p>One could have instead, simply assigned into <code>x</code>, but it&#39;s good practice to use <code>setData()</code>, which in addition to setting the values, also configures the model so that the data values, being considered fixed in a given model, are not overwritten when using algorithms with the model. </p>
+
+<p>To change initial values for parameters you can use <em>setInits()</em> or simply assign values into the appropriate nodes, as we&#39;ve already seen.</p>
+
+<pre><code class="r">pump$setInits(list(alpha = 2, beta = 0.5))
+</code></pre>
+
+<p><em>Question</em>: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?</p>
+
+<h1>Setting data values and initial values</h1>
+
+<p><em>Question</em>: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?</p>
+
+<ul>
+<li>bootstrapping, jackknife, etc.</li>
+<li>simulation studies</li>
+<li>assessment of sensitivity to outliers</li>
+<li>cross-validation and predictive calculations</li>
+</ul>
+
 <h1>Compiling the model for faster operation</h1>
+
+<p>To use a model in practice, we&#39;d want a compiled version of the model for fast calculations. In the context of Nimble, <em>compilation</em> means generating C++ code, compiling that code, and loading it back into R as an R object that can be used exactly (with few exceptions) like the uncompiled model.</p>
+
+<pre><code class="r">Cpump &lt;- compileNimble(pump)
+pump$theta
+</code></pre>
+
+<pre><code>##  [1] 0.16237088 0.04860720 0.01633252 0.23709511 0.87338407 0.31923814
+##  [7] 0.67264997 0.08399866 0.01386787 0.15487000
+</code></pre>
+
+<pre><code class="r">Cpump$theta
+</code></pre>
+
+<pre><code>##  [1] 0.16237088 0.04860720 0.01633252 0.23709511 0.87338407 0.31923814
+##  [7] 0.67264997 0.08399866 0.01386787 0.15487000
+</code></pre>
+
+<pre><code class="r">Cpump$simulate(&#39;theta&#39;)
+Cpump$theta
+</code></pre>
+
+<pre><code>##  [1] 0.8100163 0.2875266 2.9612389 1.0200764 3.1497644 2.5803049 1.3052676
+##  [8] 0.9967085 2.2592389 0.7750461
+</code></pre>
+
+<pre><code class="r">pump$theta
+</code></pre>
+
+<pre><code>##  [1] 0.16237088 0.04860720 0.01633252 0.23709511 0.87338407 0.31923814
+##  [7] 0.67264997 0.08399866 0.01386787 0.15487000
+</code></pre>
 
 <h1>Exercises</h1>
 
 <p>1) Write BUGS code for a normal random effects model with 6 groups and 10 observations in each group. You&#39;ll need multiple variance components.</p>
 
-<p>2) Set the hyperparameters (the variance components) for the model and simulate the random means and observations. Now fix the data nodes as &#39;data&#39;.</p>
+<p>2) Set the hyperparameters (the variance components) for the model and simulate the random means and observations. Now fix the data nodes as &#39;data&#39;. See what happens if you try to use <em>simulate()</em> on the data nodes. </p>
 
 <p>3) Calculate the full density of the model. Next calculate just the log-likelihood.</p>
 
-<p>4) Compile the model and compare the time of calculating the full density in the compiled C++ model to the original R version of the model. (It may not be much different here for such a small model).</p>
+<p>4) Compile the model and compare the time of calculating the full density in the compiled C++ model to the original R version of the model. (It may not be much different here for such a small model). You could use <em>system.time()</em> or for this comparison of a very fast calculation, <em>microbenchmark()</em> in the  <em>microbenchmark</em> package is likely to be more helpful.</p>
 
 </body>
 

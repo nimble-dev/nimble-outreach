@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-<title>A few administrative things</title>
+<title>ISBA NIMBLE workshop, Introduction</title>
 
 <script type="text/javascript">
 window.onload = function() {
@@ -163,13 +163,19 @@ hr {
 </head>
 
 <body>
+<h1>ISBA NIMBLE workshop, Introduction</h1>
+
+<h2>June 2016, ISBA World Meeting</h2>
+
+<p>Chris Paciorek, Department of Statistics, UC Berkeley</p>
+
 <h1>A few administrative things</h1>
 
 <h2>Where to find stuff</h2>
 
-<p>The Github site (<a href="https://github.com/nimble-dev/nimble-outreach">https://github.com/nimble-dev/nimble-outreach</a>)  is the master repository for materials for the modules; you can also get the individual files from Github. </p>
+<p>The Github site (<a href="https://github.com/nimble-dev/nimble-outreach">https://github.com/nimble-dev/nimble-outreach</a>) is the master repository for materials for the modules; you can also get the individual files from Github. </p>
 
-<p>To get the materials look ahead to slide #x. Alternatively, simply go to <a href="https://github.com/nimble-dev/nimble-outreach">https://github.com/nimble-dev/nimble-outreach</a> and click on the &#39;Download ZIP&#39; button in the lower right of the window.</p>
+<p>To get the materials look ahead to slide 6 for instructions. Alternatively, simply go to <a href="https://github.com/nimble-dev/nimble-outreach">https://github.com/nimble-dev/nimble-outreach</a> and click on the &#39;Download ZIP&#39; button in the lower right of the window.</p>
 
 <h2>Asking questions and making comments</h2>
 
@@ -179,7 +185,7 @@ hr {
 
 <p>The workshop will be organized in modules, each of which will be a combination of lecture/demo presentation concluded by a breakout session in which you&#39;ll work on a variety of problems of different levels of difficulty. The idea is for each person to find problems that challenge them but are not too hard. Solutions to the breakout problems will be presented before the start of the next module. </p>
 
-<h1>Suggestions on how to get the most out of the bootcamp</h1>
+<h1>Suggestions on how to get the most out of the workshop</h1>
 
 <p>I encourage you to:</p>
 
@@ -188,8 +194,8 @@ hr {
 <li> keep your eyes open! &ndash; We&#39;ll illustrate a lot of syntax and concepts by example</li>
 <li>try to guess what the syntax means in cases we haven&#39;t yet seen that syntax</li>
 <li>play with it and try variations and try to break it and see what happens</li>
-<li>tell me if something interesting happens as you experiment, or post a comment in online </li>
-<li>ask questions of me directly or through the Etherpad</li>
+<li>speak up if something interesting happens as you experiment, or post a comment in online </li>
+<li>ask questions directly or through the Etherpad</li>
 </ul>
 
 <p>A few additional thoughts on my pedagogical philosophy here:</p>
@@ -248,66 +254,64 @@ Tools-&gt;Version Control-&gt;Pull Branches</p>
 <h1>What is Nimble?</h1>
 
 <ul>
-<li>1</li>
-<li>2 </li>
+<li>A system for using algorithms on hierarchical statistical models</li>
+<li>A system for programming algorithms to be used on hierarchical models</li>
+<li>A partial compiler for math in R</li>
+<li>A flexible extension of the BUGS and JAGS systems</li>
 </ul>
 
 <h1>Why Nimble?</h1>
 
+<p>Here are some of the features you can do in Nimble that we are most excited about and that distinguish Nimble from other software:</p>
+
 <ul>
-<li>R is widely used (statisticians, scientists, social scientists) and has the widest statistical functionality of any software</li>
-<li>Users add functionality via packages all the time</li>
-<li>R is free and available on all major platforms</li>
-<li>As a scripting language, R is very powerful, flexible, and easy to use</li>
-<li>As a scripting language, R allows for reproducibility and automating tasks</li>
-<li>As a language, R can do essentially anything</li>
-<li>Wide usage helps to improve quality and reduce bugs</li>
-<li>R can interact with other software, databases, the operating system, the web, etc.</li>
-<li>R is built on C and can call user-written and external C code and packages (in particular, see the <em>Rcpp</em> R package)</li>
+<li>customize your MCMCs, including choosing what parameters to block</li>
+<li>define your own distributions and functions for use in BUGS code</li>
+<li>use a variety of algorithms on your model, including MCMC, sequential Monte Carlo (particle filtering), and MCEM</li>
+<li>write an algorithm in our system for easy dissemination to others</li>
+<li>compile mathematical operations in R without needing to know or write C or C++</li>
 </ul>
 
 <h1>Why Not Nimble?</h1>
 
 <ul>
-<li><p>Other software is better than R at various tasks</p>
-
-<p>E.g., <a href="http://imgs.xkcd.com/comics/python.png">Python</a> is very good for text manipulation, interacting with the operating system, and as a glue for tying together various applications/software in a workflow</p></li>
-<li><p>R can be much slower than compiled languages (but is often quite fast with good coding practices!)</p></li>
-<li><p>R&#39;s packages are only as good as the person who wrote them; no explicit quality control</p></li>
-<li><p>R is a sprawling and unstandardized ecosystem</p></li>
+<li>For MCMCs that rely heavily on Gibbs sampling, JAGS may be faster because of more efficient internal implementation of the calculations</li>
+<li>For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in Nimble (but in many examples we&#39;ve tried we&#39;ve been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers.</li>
+<li>Nimble does not (yet) allow for stochastic indexing; JAGS is your best bet for that.</li>
+<li>Nimble can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good). We anticipate big improvements in future versions of Nimble (in the late 2016 into 2017 timeframe).</li>
 </ul>
 
-<h1>What are my other options? Get me out of here!</h1>
+<h1>What are my other options?</h1>
 
 <ul>
-<li>MCMC:</li>
+<li>For MCMC:
+
+<ol>
 <li>JAGS</li>
 <li>Stan</li>
 <li>PyMC</li>
-<li>various sequential Monte Carlo packages</li>
-<li>various tools for other algorithms</li>
+</ol></li>
+<li>various sequential Monte Carlo packages
+
+<ol>
+<li>foo</li>
+<li>bar</li>
+</ol></li>
+<li>various tools for other algorithms in R, Python, Matlab, etc.</li>
 </ul>
 
-<ol>
-<li>First ordered list item</li>
-<li>Another item
+<h1>Getting help with NIMBLE</h1>
 
 <ul>
-<li>Unordered sub-list. </li>
-</ul></li>
-<li>Actual numbers don&#39;t matter, just that it&#39;s a number
-
-<ol>
-<li>Ordered sub-list</li>
-</ol></li>
-<li>And another item.</li>
-</ol>
+<li>Post to the <a href="https://groups.google.com/forum/#!forum/nimble-users">Nimble user group</a></li>
+<li>Email <a href="the%20Nimble%20development%20team">nimble.stats@gmail.com</a></li>
+<li>Follow announcements via the <a href="https://groups.google.com/forum/#!forum/nimble-announce">Nimble announcements list</a></li>
+</ul>
 
 <h1>The Legal Stuff</h1>
 
 <ul>
-<li>This material was created by the Nimble development team</li>
-<li>You are free to use, modify and redistribute any of this material with attribution</li>
+<li>This material was created by the Nimble development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution</li>
 </ul>
 
 </body>

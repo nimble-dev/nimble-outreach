@@ -1,14 +1,17 @@
-% ISBA NIMBLE workshop, Introduction
-% June 2016, ISBA World Meeting
-% Chris Paciorek
+ISBA NIMBLE workshop, Introduction
+=====================================
+June 2016, ISBA World Meeting
+-------------------------------------
+
+Chris Paciorek, Department of Statistics, UC Berkeley
 
 # A few administrative things
 
 ## Where to find stuff
 
-The Github site ([https://github.com/nimble-dev/nimble-outreach](https://github.com/nimble-dev/nimble-outreach))  is the master repository for materials for the modules; you can also get the individual files from Github. 
+The Github site ([https://github.com/nimble-dev/nimble-outreach](https://github.com/nimble-dev/nimble-outreach)) is the master repository for materials for the modules; you can also get the individual files from Github. 
 
-To get the materials look ahead to slide #x. Alternatively, simply go to https://github.com/nimble-dev/nimble-outreach and click on the 'Download ZIP' button in the lower right of the window.
+To get the materials look ahead to slide 6 for instructions. Alternatively, simply go to https://github.com/nimble-dev/nimble-outreach and click on the 'Download ZIP' button in the lower right of the window.
 
 
 ## Asking questions and making comments
@@ -21,7 +24,7 @@ Please ask questions and make comments as we go through the material. You can al
 The workshop will be organized in modules, each of which will be a combination of lecture/demo presentation concluded by a breakout session in which you'll work on a variety of problems of different levels of difficulty. The idea is for each person to find problems that challenge them but are not too hard. Solutions to the breakout problems will be presented before the start of the next module. 
 
 
-# Suggestions on how to get the most out of the bootcamp
+# Suggestions on how to get the most out of the workshop
 
 I encourage you to:
 
@@ -29,8 +32,8 @@ I encourage you to:
 -  keep your eyes open! -- We'll illustrate a lot of syntax and concepts by example
 - try to guess what the syntax means in cases we haven't yet seen that syntax
 - play with it and try variations and try to break it and see what happens
-- tell me if something interesting happens as you experiment, or post a comment in online 
-- ask questions of me directly or through the Etherpad
+- speak up if something interesting happens as you experiment, or post a comment in online 
+- ask questions directly or through the Etherpad
 
 
 A few additional thoughts on my pedagogical philosophy here:
@@ -79,40 +82,55 @@ Then to update from the repository to get any changes we've made:
 - `cd /directory/where/you/put/the/repository/nimble-outreach`
 - `git pull`
 
+# Installing Nimble
+
+Nimble is on CRAN and can be installed in the usual way for an R package, or can be downloaded directly from [http://r-nimble.org/download](http://r-nimble.org/download). More details can also be found in Section 4 of the [Nimble manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
 
 # What is Nimble?
 
-- 1
-- 2 
+- A system for using algorithms on hierarchical statistical models
+- A system for programming algorithms to be used on hierarchical models
+- A partial compiler for math in R
+- A flexible extension of the BUGS and JAGS systems
 
 
 # Why Nimble?
 
-- list key features
+Here are some of the features you can do in Nimble that we are most excited about and that distinguish Nimble from other software:
+
+- customize your MCMCs, including choosing what parameters to block
+- define your own distributions and functions for use in BUGS code
+- use a variety of algorithms on your model, including MCMC, sequential Monte Carlo (particle filtering), and MCEM
+- write an algorithm in our system for easy dissemination to others
+- compile mathematical operations in R without needing to know or write C or C++
 
 # Why Not Nimble?
 
 * For MCMCs that rely heavily on Gibbs sampling, JAGS may be faster because of more efficient internal implementation of the calculations
 * For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in Nimble (but in many examples we've tried we've been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers.
 * Nimble does not (yet) allow for stochastic indexing; JAGS is your best bet for that.
-* Nimble can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good).
+* Nimble can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good). We anticipate big improvements in future versions of Nimble (in the late 2016 into 2017 timeframe).
 
-# What are my other options? Get me out of here!
+# What are my other options? 
 
-* MCMC:
-1. JAGS
-2. Stan
-3. PyMC
+* For MCMC:
+  1. [JAGS](http://mcmc-jags.sourceforge.net)
+  2. [Stan](http://mc-stan.org)
+  3. [PyMC](https://pymcmc.readthedocs.org/en/latest/)
 * various sequential Monte Carlo packages
-* various tools for other algorithms
+  1. [POMP](http://kingaa.github.io/pomp)
+  2. [LibBI](http://libbi.org)
+  3. [BIIPS](https://alea.bordeaux.inria.fr/biips/doku.php?id=home)
+  4. [SMC](https://cran.r-project.org/web/packages/SMC/index.html)
+* various tools for a variety of algorithms in R, Python, Matlab, etc.
 
 # Getting help with NIMBLE
 
-* user group
-* nimble.stats@gmail.com
-* announcements via nimble-announce group
+* Post to the [Nimble user group](https://groups.google.com/forum/#!forum/nimble-users)
+* Email [nimble.stats@gmail.com](the Nimble development team)
+* Follow announcements via the [Nimble announcements list](https://groups.google.com/forum/#!forum/nimble-announce)
+
 
 # The Legal Stuff
 
-- This material was created by the Nimble development team
-- You are free to use, modify and redistribute any of this material with attribution
+- This material was created by the Nimble development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution
