@@ -1,0 +1,6 @@
+info from Nick as of March 2016
+
+    POMP (R package): http://kingaa.github.io/pomp/  Has a bootstrap filter, Liu and West filter, particle MCMC, iterated filters, and some other algorithms
+    SMC (R package): https://cran.r-project.org/web/packages/SMC/index.html  Has an auxiliary particle filter and a bootstrap filter
+    LibBI: http://libbi.org/  Has particle MCMC, SMC^2, a Kalman filter, and some other algorithms, designed specifically for parallel computing.  Has an R interface through the Rbi package.  Seems like it hasn't been updated in the last 1/2 years? 
+    BIIPS: https://alea.bordeaux.inria.fr/biips/doku.php?id=home  Has particle MCMC and a bootstrap filter.  Has an R interface through the Rbiips package.  Also seems like it hasn't been updated in the last year or so.  
