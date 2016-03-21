@@ -221,7 +221,7 @@ hr {
 <li>deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by <code>&lt;-</code>.</li>
 </ul>
 
-<p>There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the <a href="https://sourceforge.net/projects/mcmc-jags/files/Examples/">JAGS website</a>.  Information about the models can be found in <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf">Volume 1</a>, [Volueme 2][<a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf">http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf</a>], and [Volume 3][<a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf">http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf</a>] of the WinBUGS example manuals.</p>
+<p>There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the <a href="https://sourceforge.net/projects/mcmc-jags/files/Examples/">JAGS website</a>.  Information about the models can be found in <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf">Volume 1</a>, <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf">Volume 2</a>, and (Volume 3)[<a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf">http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf</a>] of the WinBUGS example manuals.</p>
 
 <h1>A basic example</h1>
 
@@ -246,7 +246,7 @@ pumpCode &lt;- nimbleCode({
 })
 </code></pre>
 
-<p>This model has Poisson distributed data, \(x_i \sim \mbox{Poi}(\lambda)\), with mean \(\lambda_i = \theta_i \cdot t_i\), and random effects, \(\theta_i\), and hyperparameters, \(\alpha\) and \(\beta\) of the random effects distribution.</p>
+<p>In this model, there are \(N=10\) pumps. The number of failures, \(x_i\), for pump \(i\) is assumed to follow a Poisson distribution, with mean \(\lambda_i = \theta_i \cdot t_i\) where \(t_i\) is the length of operation of the pump in thousands of hours and \(\theta_i\) is the failure rate. The model then borrows strength across pumps with an exchangeable prior, \(\theta_i \sim \mbox{Gamma}(\alpha, \beta)\). \(\alpha\) and \(\beta\) are the hyperparameters of this random effects distribution. </p>
 
 <p>You can also load it directly from the standard BUGS example file formats (see <code>help(readBUGSmodel)</code>).</p>
 
@@ -410,7 +410,7 @@ pump$theta
 ##  [6]   6.49360478   0.36457127   4.15238160   0.04640312   2.19421807
 </code></pre>
 
-<p><em>Question</em>: The Nimble developers chose to not automatically recalculate density values when a node&#39;s value changes nor deterministic dependent nodes when a parent node changes. What are the design considerations in making that choice?</p>
+<p><strong>Question</strong>: The Nimble developers chose to not automatically recalculate density values when a node&#39;s value changes nor deterministic dependent nodes when a parent node changes. What are the design considerations in making that choice?</p>
 
 <h1>Setting data values and initial values</h1>
 
@@ -461,11 +461,11 @@ pump$x
 <pre><code class="r">pump$setInits(list(alpha = 2, beta = 0.5))
 </code></pre>
 
-<p><em>Question</em>: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?</p>
+<p><strong>Question</strong>: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?</p>
 
 <h1>Setting data values and initial values</h1>
 
-<p><em>Question</em>: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?</p>
+<p><strong>Question</strong>: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?</p>
 
 <ul>
 <li>bootstrapping, jackknife, etc.</li>

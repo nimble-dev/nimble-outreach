@@ -22,7 +22,7 @@ Basically, one specifies the variables in the hierarchical model as lines of cod
  -  stochastic nodes (data and parameters) are indicated with `~` and 
  - deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by `<-`.
 
-There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volueme 2][http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf], and [Volume 3][http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf] of the WinBUGS example manuals.
+There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and (Volume 3)[http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf] of the WinBUGS example manuals.
 
 # A basic example
 
@@ -36,19 +36,9 @@ We'll use the *pump* model example from BUGS. The data set
 Here we specify the pump code directly in R.
 
 ```{r model-code}
-library(nimble)
-pumpCode <- nimbleCode({ 
-  for (i in 1:N){
-      theta[i] ~ dgamma(alpha,beta)
-      lambda[i] <- theta[i]*t[i]
-      x[i] ~ dpois(lambda[i])
-  }
-  alpha ~ dexp(1.0)
-  beta ~ dgamma(0.1,1.0)
-})
 ```
 
-This model has Poisson distributed data, $x_i \sim \mbox{Poi}(\lambda)$, with mean $\lambda_i = \theta_i \cdot t_i$, and random effects, $\theta_i$, and hyperparameters, $\alpha$ and $\beta$ of the random effects distribution.
+In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with an exchangeable prior, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
 
 You can also load it directly from the standard BUGS example file formats (see `help(readBUGSmodel)`).
 
@@ -59,15 +49,6 @@ In BUGS or JAGS, one would provide the model code, input data and constant value
 In Nimble, you have more fine-grained control over these steps. The first step is to build an R representation of the model.
 
 ```{r build-model}
-N <- 10
-t <- c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)
-x <- c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22)
-pumpConsts <- list(t = t, N = 10)
-pumpData <- list(x = x)
-pumpInits <- list(alpha = 1, beta = 1,
-         theta = rep(0.1, pumpConsts$N))
-pump <- nimbleModel(pumpCode, 
-          data = pumpData, constants = pumpConsts, inits = pumpInits)
 ```
 
 If all you want to do is run an MCMC, this might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
