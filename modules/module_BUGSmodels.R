@@ -22,3 +22,12 @@ pumpInits <- list(alpha = 1, beta = 1,
          theta = rep(0.1, pumpConsts$N))
 pump <- nimbleModel(pumpCode, 
           data = pumpData, constants = pumpConsts, inits = pumpInits)
+
+## @knitr compile-model
+
+Cpump <- compileNimble(pump)
+pump$theta
+Cpump$theta
+Cpump$simulate('theta')
+Cpump$theta
+pump$theta

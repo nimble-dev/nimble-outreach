@@ -144,13 +144,7 @@ pump$setInits(list(alpha = 2, beta = 0.5))
 
 To use a model in practice, we'd want a compiled version of the model for fast calculations. In the context of Nimble, *compilation* means generating C++ code, compiling that code, and loading it back into R as an R object that can be used exactly (with few exceptions) like the uncompiled model.
 
-```{r}
-Cpump <- compileNimble(pump)
-pump$theta
-Cpump$theta
-Cpump$simulate('theta')
-Cpump$theta
-pump$theta
+```{r compile-model}
 ```
 
 
