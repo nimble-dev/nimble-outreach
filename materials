@@ -10,7 +10,8 @@ Core components for a tutorial/short course
 
 data/constants/nodes/inits/RHS variables
 
-build and operate an MCMC from R (including compilation)
+(*) build and operate an MCMC from R (including compilation)
+
 (extended MCMC example with litters as separate module?)
 
 swapping out MCMC components
@@ -24,9 +25,13 @@ writing a user-defined sampler - perhaps show Perry's logSD sampler
 
 writing a full user-defined algo - perhaps show importance sampler?
 
-user-defined distributions
+(*) user-defined distributions
+
+user-defined distribution - extended example - dCaptureRecapture?
 
 user-defined nf's in BUGS code - example of how to speed processing and of how to do something customizable
+
+user-defined nfs example - b-spline basis
 
 strategies for improved MCMC:
 modifyign samplers
