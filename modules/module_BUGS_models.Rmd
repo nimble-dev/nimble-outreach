@@ -10,7 +10,7 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
-read_chunk('module_BUGSmodels.R')
+read_chunk('module_BUGS_models.R')
 ```
 
 

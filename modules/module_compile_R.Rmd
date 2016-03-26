@@ -10,7 +10,7 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
-#read_chunk('module_compileR.R')
+#read_chunk('module_compile_R.R')
 ```
 
 # Using nimbleFunctions to compile R code 

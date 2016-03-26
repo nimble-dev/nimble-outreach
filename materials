@@ -1,6 +1,6 @@
 Core components for a tutorial/short course
 ===============================================
-# installing Nimble
+Note that (*) indicates that drafts of these modules exist
 
 (*) lightning intro w/ pump:
  -BUGS basics
@@ -10,10 +10,6 @@ Core components for a tutorial/short course
 
 (*) build and operate an MCMC from R (including compilation)
 
-(extended MCMC example with litters as separate module?)
-swapping out MCMC components
-(have them see compareMCMCs)
-
 censoring/truncation
 possible examples: normal mixture with means ordered; survival data; use of Gelman truncated t prior for sd in random effects models
 two-group random effects with mean for one group less than for other and Gelman t-prior
@@ -22,28 +18,24 @@ two-group random effects with mean for one group less than for other and Gelman 
 
 (*) basic nimbleFunction example
 
-nested nimbleFunctions in simulation study example?
-
 other algorithms: MCEM example, PF example
 
 (*) writing a user-defined sampler - could also  show Perry's RW_log or joint sampler
 
-writing a full user-defined algo - perhaps show importance sampler?
+writing a full user-defined algo/nimbleFunction - perhaps show importance sampler?; nested nimbleFunctions
 
-capture-recapture: user-def lik and user-defined distribution
+capture-recapture: user-def lik and user-defined distribution (see Daniel papers)
+
+user-defined fxn in BUGS code: Perry spatial capture-recapture example?
+
+occupancy example: user-defined dist and user-defined sampler (see nimbleTutorial-occupancyExample.R)
 
 (*) user-defined distributions
 
 using modelValues
 
-user-defined distribution - extended example - dCaptureRecapture?
-
-user-defined nf's in BUGS code - example of how to speed processing and of how to do something customizable
-
-user-defined nfs example - b-spline basis
-
-strategies for improved MCMC: show Perry's elections example
-modifyign samplers
+strategies for improved MCMC as case studies (elections88, Chris' paleoecology example [inverse model prediction case], litters)
+modifying samplers
 vectorized - deterministic node statements and possibly vectorized univar nodes - fewer nodes though in some cases of MCMC does unnecessary calcs
 user-defined fxns 
 user-defined dists to integrate over nodes

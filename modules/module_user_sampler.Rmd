@@ -312,3 +312,5 @@ So we see that the sampler escaped from near zero more quickly, though given tha
 
 2) Write a user-defined sampler that operates only on the categorical distributin. You could have it be an independence sampler with fixed probabilities of proposing each of the values or a sampler that puts a fixed amount of mass on the current value and distributes the remainder such that the probabilities decays as the difference from the current value increases. 
 [check with PdV and DT on how we handle this case now]
+
+3) Consider exercise 2 and modify the probabilities such that they are proportional to the current density of the model for each possible value of the categorical variable. This is a conjugate sampler on a categorical variables. 
