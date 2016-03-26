@@ -1,0 +1,153 @@
+Basics of MCMC in Nimble
+==========================
+NIMBLE training materials module
+---------------------------------
+Nimble Development Team
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+read_chunk('module_BUGSmodels.R')
+read_chunk('module_MCMC_basics.R')
+```
+
+```{r, model-code, echo=FALSE}
+```
+```{r, build-model, echo=FALSE}
+```
+```{r, compile-model, echo=FALSE}
+```
+```{r, model-reset, echo=FALSE}
+pump$setInits(pumpInits)
+Cpump$setInits(pumpInits)
+```
+
+# Building and running a basic MCMC
+
+Setting up and running an MCMC in Nimble takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.
+
+First we *configure* the MCMC, which means setting up the samplers to be used for each node or group of nodes. Nimble provides a default configuration, but we'll see shortly how you can modify that. You also specify what nodes you'd like to get the MCMC samples provided as output.
+
+```{r, conf}
+pumpConf <- configureMCMC(pump, print = TRUE)
+pumpConf$addMonitors(c('alpha', 'beta', 'theta'))
+```
+
+Next we'll build the MCMC algorithm for the model under the default configuration. We'll create a compiled (i.e., C++) version of the MCMC that is equivalent in functionality but will run much faster.
+
+```{r build-mcmc}
+pumpMCMC <- buildMCMC(pumpConf)
+CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
+```
+
+Now let's run the MCMC. We don't recommend running the R version of the MCMC for very many iterations - it's really slow - in part because iterating in R is slow and in part because iterating with a model in Nimble requires even more overhead. 
+
+```{r run-mcmc}
+niter <- 1000
+set.seed(0)
+print(system.time(pumpMCMC$run(5)))  # R version
+set.seed(0)
+print(system.time(
+CpumpMCMC$run(niter)
+))
+```
+
+# Working with MCMC output
+
+```{r output-mcmc}
+```
+
+# Using CODA
+
+Nimble does not provide any MCMC diagnostics. (At least not yet; there's no reason one couldn't write code for various diagnostics using the Nimble system.)  But one can easily use CODA or other R packages with the MCMC output from a Nimble MCMC.
+
+```{r coda}
+library(coda)
+burnin <- 100
+mcmc <- as.mcmc(samples[(burnin+1):nrow(samples), ])
+crosscorr(mcmc)
+effectiveSize(mcmc)
+```
+
+One could apply the commonly used Gelman-Rubin potential scale reduction factor diagnostic, but one would need to run multiple chains. At present, you'd have to do this manually by setting initial values and running the MCMC multiple times, but in the future this will be automated and available via parallel processing in Nimble.
+
+
+# Customizing samplers
+
+One of Nimble's most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with Nimble's default MCMC and then make modifications. 
+
+```{r customize-mcmc}
+pumpConf2 <- pumpConf
+pumpConf2$getSamplers()
+pumpConf2$removeSamplers('alpha')
+pumpConf2$addSampler(target = c('alpha'), type = 'slice')
+
+pumpMCMC2 <- buildMCMC(pumpConf2)
+CpumpMCMC2 <- compileNimble(pumpMCMC2, project = pump, resetFunctions = TRUE)
+
+Cpump2$setInits(pumpInits)
+set.seed(0)
+CpumpMCMC2$run(niter)
+```
+
+We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between $\alpha$ and $\beta$, a simple change just to the univariate sampler for $\alpha$ has had a real effect on MCMC performance.
+
+```{r output2}
+samples2 <- as.matrix(CpumpMCMC2$mvSamples)
+mcmc2 <- as.mcmc(samples2[(burnin+1):nrow(samples2), ])
+crosscorr(mcmc2)
+effectiveSize(mcmc2)
+
+par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
+plot(samples[ , 'alpha'], type = 'l', xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+plot(samples[ , 'beta'], type = 'l', xlab = 'iteration',
+     ylab = expression(beta), main = expression(beta))
+plot(samples[ , 'alpha'], samples[ , 'beta'], xlab = expression(alpha),
+     ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
+plot(samples[ , 'theta[1]'], type = 'l', xlab = 'iteration',
+     ylab = expression(theta[1]), main = expression(theta_1))
+```
+
+# Blocking parameters
+
+Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, Nimble makes it easy for users to choose what parameters to sample in blocks.
+
+We'll try that here for $\alpha$ and $\beta$.
+
+
+```{r customize-mcmc}
+pumpConf3 <- pumpConf
+pumpConf3$getSamplers()
+pumpConf3$removeSamplers(c('alpha', 'beta'))
+pumpConf3$addSampler(target = c('alpha','beta'), type = 'RW_block', 
+control = list(adaptInterval = 100))
+
+pumpMCMC3 <- buildMCMC(pumpConf3)
+CpumpMCMC3 <- compileNimble(pumpMCMC3, project = pump, resetFunctions = TRUE)
+
+Cpump3$setInits(pumpInits)
+set.seed(0)
+CpumpMCMC3$run(niter)
+
+samples3 <- as.matrix(CpumpMCMC3$mvSamples)
+mcmc3 <- as.mcmc(samples3[(burnin+1):nrow(samples3), ])
+crosscorr(mcmc3)
+effectiveSize(mcmc3)
+```
+
+In this case the block sampler appears to be less effective, but it might just be that the adaptation hasn't had enough time to take full effect in only 1000 iterations.  Very often block sampling gives big improvements.
+
+# Exercises
+
+1) Compare the MCMC performance of using univariate slice samplers on $\alpha$ and $\beta$ to the default samplers and to the blocked Metropolis sampler for ${\alpha, \beta}$ for longer MCMC runs. 
+
+2) Change the sampler for $\theta$ to be a single block Metropolis sampler. How does that affect MCMC performance? How much time does it take to run a set of 10 individual samplers on the elements of $\theta$ compared to a single block sampler on the vector $\theta$. 
+
+3) Suppose you wanted to consider the predictive distribution for a new pump. 
+  - a) Create a new version of the model that allows for this.  
+  - b) Set the data for the new model such that the new pump's number of failures is missing and not treated as a data node.
+  - c) Set up an MCMC for the new model. What kind of sampling should happen for the new pump failures? 

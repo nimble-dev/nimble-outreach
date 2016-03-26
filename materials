@@ -24,11 +24,9 @@ two-group random effects with mean for one group less than for other and Gelman 
 
 nested nimbleFunctions in simulation study example?
 
-MCEM example
+other algorithms: MCEM example, PF example
 
-PF example
-
-writing a user-defined sampler - perhaps show Perry's logSD sampler
+(*) writing a user-defined sampler - could also  show Perry's RW_log or joint sampler
 
 writing a full user-defined algo - perhaps show importance sampler?
 
@@ -44,7 +42,7 @@ user-defined nf's in BUGS code - example of how to speed processing and of how t
 
 user-defined nfs example - b-spline basis
 
-strategies for improved MCMC:
+strategies for improved MCMC: show Perry's elections example
 modifyign samplers
 vectorized - deterministic node statements and possibly vectorized univar nodes - fewer nodes though in some cases of MCMC does unnecessary calcs
 user-defined fxns 
