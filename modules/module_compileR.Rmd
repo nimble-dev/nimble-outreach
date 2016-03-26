@@ -1,0 +1,278 @@
+Compiling Parts of R
+==========================
+NIMBLE training materials module
+---------------------------------
+Nimble Development Team
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+#read_chunk('module_compileR.R')
+```
+
+# Using nimbleFunctions to compile R code 
+
+While nimbleFunctions are primarily designed to write algorithms to be applied to hierarchical models, you can also use nimbleFunctions as a way to compile your R code to fast C++ code without needing to write any C++ code. Note that this is unlike Rcpp, which provides tools for you to more easily write C++ code that can be called from R.
+
+# Uses of this functionality
+
+How might you use this functionality?  Basically, this is useful for math-focused code that can't be easily vectorized. 
+
+Caveats
+ - the Nimble compiler can't compile arbitrary R code, only code that is part of the Nimble DSL
+ - you need to give a bit of information about variable types and dimensions
+
+# A basic demonstration
+
+Suppose we wanted to mimic R's vectorization capabilities. Here are a couple examples. The first one is silly because we can already have R exponentiate a vector and that exponentiation happens in compiled code. The second one might seem silly, but it's not, because R will make two separate calls to compiled code and therefore run two loops, while our nimbleFunction only runs one loop.
+
+nimbleFunctions used in this way need a run function, type and dimension information for arguments and a *returnType()* line.
+
+```{r, rcFun1}
+nimExp <- nimbleFunction(
+       run = function(x = double(1)) {
+           returnType(double(1))
+           n <- length(x)
+           declare(out, double(1))
+           setSize(out, n)
+           for( i in 1:n) 
+                out[i] <- exp(x[i])
+           return(out)
+})
+```
+
+We need the *declare()* and *setSize()* in this case (but not the next one) because it's hard for the Nimble compiler to figure out the dimension/size of *out*.
+
+Actually nimbleFunctions can handle vectorized code using the Eigen linear algebra package, so let's consider a different implementation.
+
+```{r, rcFun1}
+nimExp2 <- nimbleFunction(
+       run = function(x = double(1)) {
+           returnType(double(1))
+           out <- exp(x)
+           return(out)
+})
+```
+
+Now let's compare speed versus R.
+
+```{r, compareRcSpeed}
+cnimExp <- compileNimble(nimExp)
+cnimExp2 <- compileNimble(nimExp2)
+
+x <- rnorm(1e6)
+library(rbenchmark)
+benchmark(out0 <- exp(x),
+               out1 <- cnimExp(x),
+               out2 <- cnimExp2(x),
+               columns = c('test','replications','elapsed'),
+               replications = 10)
+```
+               
+So that's not all that impressive as all we've done is match the speed of the native R compiled code. 
+
+# A (slightly) more involved case
+
+[Note to discuss: why don't we benefit from eliminating loops here relative to R (or is R doing something clever - I don't see how it could)]
+
+```{r, rcFun2}
+nimFun1 <- nimbleFunction(
+       run = function(x = double(1)) {
+           returnType(double(1))
+           n <- length(x)
+           declare(out, double(1))
+           setSize(out, n)
+           for( i in 1:n) 
+                out[i] <- exp(cos(x[i]*x[i]*3))
+           return(out)
+})
+nimFun2 <- nimbleFunction(
+       run = function(x = double(1)) {
+           returnType(double(1))
+           out <- exp(cos(x*x*3))
+           return(out)
+})
+cnimFun1 <- compileNimble(nimFun1)
+cnimFun2 <- compileNimble(nimFun2)
+
+require(Rcpp)
+require(inline)
+
+cppFunction('
+NumericVector Rcppfun(int n, NumericVector x) {
+NumericVector out(n);
+out = exp(cos(x*x*3));
+return(out);
+}')
+
+
+x <- rnorm(1e7)
+library(rbenchmark)
+benchmark(out0 <- exp(cos(x^2*3)),
+               out1 <- cnimFun1(x),
+               out2 <- cnimFun2(x),
+               out3 <- Rcppfun(n, x),
+               columns = c('test','replications','elapsed'),
+               replications = 5)
+```
+
+# A more involved example
+
+Consider probit regression, which is similar to logistic regression. The probability of a binary outcome is given as
+$p = P(Y = 1) = \Phi(X\beta)$ where $\Phi()$ is the normal CDF.
+
+The probit model can be rewritten in a latent variable representation that in a Bayesian context can facilitate MCMC computations to fit the model:
+$$
+Y =  I(W > 0) \\
+$$
+$$
+W  \sim  N(X\beta , 1) \\
+$$
+
+Suppose we know $\beta$. In order to determine $p$ we could use Monte Carlo simulation to estimate this integral:
+$P(Y = 1) = \int_{-\infty}^0 f(w) dw$.
+
+Now for probit regression, we could just use standard methods to compute normal pdf integrals. But for the multinomial extension we discuss next, we need Monte Carlo simulation.
+
+# Multinomial probit regression
+
+Let $Y$ be a categorical variable, $Y \in \{{1,2,\ldots,K}\}$. Then a multinomial extension of the latent variable probit model is
+$$
+Y = {arg\ max}_k {W_k}
+$$
+$$
+W_k \sim N(X\beta_k, 1)
+$$
+
+Now to compute $p = ({P(Y=1), P(Y=2), \ldots, P(Y=K)})$ we can again do Monte Carlo simulation. The basic steps are:
+ - iterate m = 1, ... , M
+   - for k = 1,...,K, sample $W_k$ from its corresponding normal distribution
+   - determine the arg max of the $W_k$'s
+ - over the $M$ simulations, count the number of times each category had the largest corresponding $W_k$
+
+The proportion of times the category corresponded to the largest $W_k$ is an estimate of the multinomial proportions of interest.
+
+For our example, we want to do this computation for large $M$ (to reduce Monte Carlo error). 
+
+Note that in a real application, we would likely want to do this for multiple observations with an $n$ by $K$ matrix of $alpha$ values, resulting in an $n$ by $K$ matrix of proportions. But here we'll just consider a single $alpha$.
+
+# R implementation
+set.seed(0)
+M <- 1000000
+system.time({
+rands <- matrix(rnorm(M*K), nrow = K, ncol = M)
+alphas <- c(-3, -0.5, -0.25, .1, .15, .29, .4, .45)
+K <- length(alphas)
+props <- rep(0, K)
+tmp <- alphas + rands # exploit vectorization
+id <- apply(tmp, 2, which.max)
+tbl <- table(id)
+props[as.integer(names(tbl))] <- tbl / M
+})
+
+ mprobit <- nimbleFunction(
+ run = function(alphas = double(1), M = double(0)) {
+ returnType(double(1))
+ K <- length(alphas)
+          declare(props, double(1))
+           setSize(props, K)
+           declare(w, double(1))
+           setSize(w, K)
+           for(k in 1:K) 
+                 props[k] <- 0.0
+          for(m in 1:M) {
+                 for(k in 1:K) 
+                        w[k] <- alphas[k] + rnorm(1) 
+                 maxind <- K
+                 max <- w[K]
+                 for(k in 1:(K-1)) {
+                       if(w[k] > max){
+                               maxind <- k
+                               max <- w[k]          
+                       }
+                 }
+                 props[maxind] <- props[maxind] + 1
+           }
+            for(k in 1:K) 
+                 props[k] <- props[k]/M
+           return(props)
+ return(props)
+ }
+ )
+
+cmprobit = compileNimble(mprobit)
+set.seed(0)
+system.time(
+props2 <- cmprobit(alphas, M)
+)
+
+
+
+# Replacing a for loop in R [REMOVE THIS IF USE AS EXERCISE]
+
+```{r, markov}
+set.seed(0)
+n <- 1e6
+path <- rep(0, n)
+rho1 <- .8
+rho2 <- .1
+path[1:2] <- rnorm(2)
+print(system.time(
+for(i in 3:n)
+      path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
+))
+tsplot(path[1:5000])
+
+
+mc <- nimbleFunction(
+   run = function(n = double(0), rho1 = double(0), rho2 = double(0)) {
+       returnType(double(1))
+       declare(path, double(1, n))
+       path[1] <- rnorm(1)
+       path[2] <- rnorm(1)
+       for(i in 3:n) 
+             path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
+       return(path)
+})
+cmc <- compileNimble(mc)
+set.seed(0)
+system.time(path <- cmc(n, rho1, rho2))
+```
+
+Not bad: going to C++ gives us a speedup of approximately 40-fold. 
+
+# Exercises
+
+1) Let's consider using a nimbleFunction to replace a for loop that can't be avoided in R. Write a second order random walk using a nimbleFunction. Here's the code for the R version. 
+
+```{r, markov}
+set.seed(0)
+n <- 1e6
+path <- rep(0, n)
+rho1 <- .8
+rho2 <- .1
+path[1:2] <- rnorm(2)
+print(system.time(
+for(i in 3:n)
+      path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
+))
+tsplot(path[1:5000])
+```
+
+mc <- nimbleFunction(
+   run = function( ... ) ) {
+       returnType( ... )
+       ...
+       return(...)
+})
+cmc <- compileNimble(mc)
+set.seed(0)
+system.time(path <- cmc(n, rho1, rho2))
+```
+
+2) Generalize your code to work for an arbitrary order of dependence.
+
+3) Use `nimStop` as part of an error check that ensures that the length of the path to be sampled is longer than the order of the dependence. 

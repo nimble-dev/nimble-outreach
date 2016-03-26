@@ -2,20 +2,27 @@ Core components for a tutorial/short course
 ===============================================
 # installing Nimble
 
-(*) BUGS basics
+(*) lightning intro w/ pump:
+ -BUGS basics
+ - build and operate a Nimble model from R (including compilation)
 
-(*) lightning intro with pump
-
-(*) build and operate a Nimble model from R (including compilation)
-
-data/constants/nodes/inits/RHS variables
+(*) data/constants/nodes/inits/RHS variables, alternate params
 
 (*) build and operate an MCMC from R (including compilation)
 
 (extended MCMC example with litters as separate module?)
-
 swapping out MCMC components
 (have them see compareMCMCs)
+
+censoring/truncation
+possible examples: normal mixture with means ordered; survival data; use of Gelman truncated t prior for sd in random effects models
+two-group random effects with mean for one group less than for other and Gelman t-prior
+
+(*) example of nimbleFunction w/o setupCode
+
+(*) basic nimbleFunction example
+
+nested nimbleFunctions in simulation study example?
 
 MCEM example
 
@@ -25,7 +32,11 @@ writing a user-defined sampler - perhaps show Perry's logSD sampler
 
 writing a full user-defined algo - perhaps show importance sampler?
 
+capture-recapture: user-def lik and user-defined distribution
+
 (*) user-defined distributions
+
+using modelValues
 
 user-defined distribution - extended example - dCaptureRecapture?
 
@@ -36,12 +47,9 @@ user-defined nfs example - b-spline basis
 strategies for improved MCMC:
 modifyign samplers
 vectorized - deterministic node statements and possibly vectorized univar nodes - fewer nodes though in some cases of MCMC does unnecessary calcs
-user-defined fxns
-user-defined dists
+user-defined fxns 
+user-defined dists to integrate over nodes
 
-censoring/truncation
-
-example of nimbleFunction w/o setupCode
 
 Examples from talks
 ==============================================
@@ -81,12 +89,5 @@ Perry Neyman UCB talk Oct 2015
 
 various other Perry talks (similar material)
 
-Exercises
-=======================================================
 
-1) take a BUGS model example and build it in Nimble and set up an MCMC; change the defaults
-
-2) modify a BUGS model to use a user-defined fxn and user-defined distribution
-
-3) write a nimbleFunction for a basic algo
 
