@@ -10,23 +10,22 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
-read_chunk('module_BUGS_models.R')
 ```
 
 
 # The BUGS language
 
-The BUGS language is described in detail in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.htmlBUGS). Information on how Nimble's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in Nimble can be found in Section 5 of the [Nimble Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+The BUGS language is described in detail in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.html). Information on how Nimble's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in Nimble can be found in Section 5 of the [Nimble Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
 
 Basically, one specifies the variables in the hierarchical model as lines of code.
- -  stochastic nodes (data and parameters) are indicated with `~` and 
- - deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by `<-`.
+  - stochastic nodes (data and parameters) are indicated with `~`
+  - deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by `<-`.
 
-There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and (Volume 3)[http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf] of the WinBUGS example manuals.
+There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
 
 # A basic example
 
-Here we'll give a simple example of building a model and running some algorithms on the model, as well as creating our own user-specified algorithm. The goal is to give you a sense for what one can do in the system. Later sections will provide more detail.
+Here we'll give a simple example of building a model. Other modules will show how one can fit the model and give more detail on various features of Nimble.
 
 We'll use the *pump* model example from BUGS. The data set
   describes failure times of some pumps.  
@@ -36,6 +35,16 @@ We'll use the *pump* model example from BUGS. The data set
 Here we specify the pump code directly in R.
 
 ```{r model-code}
+library(nimble)
+pumpCode <- nimbleCode({ 
+  for (i in 1:N){
+      theta[i] ~ dgamma(alpha,beta)
+      lambda[i] <- theta[i]*t[i]
+      x[i] ~ dpois(lambda[i])
+  }
+  alpha ~ dexp(1.0)
+  beta ~ dgamma(0.1,1.0)
+})
 ```
 
 In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with an exchangeable prior, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
@@ -49,22 +58,33 @@ In BUGS or JAGS, one would provide the model code, input data and constant value
 In Nimble, you have more fine-grained control over these steps. The first step is to build an R representation of the model.
 
 ```{r build-model}
+N <- 10
+t <- c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)
+x <- c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22)
+pumpConsts <- list(t = t, N = 10)
+pumpData <- list(x = x)
+pumpInits <- list(alpha = 1, beta = 1,
+         theta = rep(0.1, pumpConsts$N))
+pump <- nimbleModel(pumpCode, 
+          data = pumpData, constants = pumpConsts, inits = pumpInits)
 ```
 
-If all you want to do is run an MCMC, this might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
+If all you want to do is run an MCMC, Nimble's fine-grained control might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
 
 # Inspecting the model
 
 What are the variables in the model? What are the dependencies of a given node (this is information used in many algorithms)?
 
-```{r}
+```{r, model-nodes}
 pump$getNodeNames()
-pump$getDependencies(c('alpha', 'beta'))
+hypers <- pump$getNodeNames(topOnly = TRUE)
+hypers
+pump$getDependencies(hypers)
 ```
 
 What's the current value in a node or the value of the log probability density for that node?
 
-```{r}
+```{r, model-values}
 pump$x  
 pump$logProb_x  # log-likelihood components
 pump$getLogProb('x') # log-likelihood
@@ -75,24 +95,24 @@ pump$getLogProb('theta')  # log-prior for random effects
 
 # Operating the model
 
-We have control over the model. Let's change values in the model and recalculate the density values.
+We have control over the model. Let's change values in the model and recalculate the density values. As we'll discuss in a later module, Nimble sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask Nimble to do so based on the dependencies of the altered node.
 
-```{r}
+```{r, model-operate}
 pump$alpha <- 0.5
-pump$calculate('theta')   # or calculate(pump, 'theta')
+pump$calculate(pump$getDependencies('alpha'))   # or calculate(pump, ...)
 pump$getLogProb('theta')  # equivalent to pump$logProb_theta or getLogProb(pump, 'theta')
 ```
  
 If we want to simulate (from the prior), we can do that too.
 
-```{r}
+```{r, model-simulate}
 set.seed(0)  # so the calculations are reproducible
 pump$simulate('theta')  # simulate from prior
 pump$theta
-getLogProb(pump, 'theta')  # equivalent to pump$logProb_theta
-pump$calculate('theta')
-getLogProb(pump, 'theta')  # equivalent to pump$logProb_theta
-pump$lambda
+pump$getLogProb('theta')  # log prob not yet updated!
+pump$calculate('theta')   # update it
+getLogProb(pump, 'theta')  # now we're good
+pump$lambda  # again, not updated
 pump$calculate(pump$getDependencies('theta'))  # recalculate dependents
 pump$lambda
 ```
@@ -101,20 +121,20 @@ pump$lambda
 
 # Setting data values and initial values
 
-In Nimble, you can change data and parameter values at any time, and you don't need to set values when you use *nimbleModel()* to create the model. Any missing values will just be set to `NA`. Nodes with data have a special status as *data nodes*, which means that values in those nodes will not be overwritten, unless explicitly requested (e.g., when calling *simulate()*
+In Nimble, you can change data and parameter values at any time. Further, you don't need to set values when you use *nimbleModel()* to create the model. Any missing values will just be set to `NA`. Nodes with data have a special status as *data nodes*, which means that values in those nodes will not be overwritten, unless explicitly requested (e.g., when calling *simulate()*
 on a model).
 
-```{r}
+```{r, model-set}
 pump$x
 pump$theta
-simulate(pump, c('x', 'theta'))
+pump$simulate(c('x', 'theta'))
 pump$x
 pump$theta
 ```
 
 As an example of setting data values, suppose we had a different set of data values and wanted to use those.
 
-```{r}
+```{r, model-newdata}
 pumpDataNew <- list(x = c(12, 7, 18, 1, 3, 5, 11, 2, 22, 9))
 pump$setData(pumpDataNew)
 pump$x
@@ -124,7 +144,7 @@ One could have instead, simply assigned into `x`, but it's good practice to use 
 
 To change initial values for parameters you can use *setInits()* or simply assign values into the appropriate nodes, as we've already seen.
 
-```{r}
+```{r, model-inits}
 pump$setInits(list(alpha = 2, beta = 0.5))
 ```
 
@@ -145,6 +165,12 @@ pump$setInits(list(alpha = 2, beta = 0.5))
 To use a model in practice, we'd want a compiled version of the model for fast calculations. In the context of Nimble, *compilation* means generating C++ code, compiling that code, and loading it back into R as an R object that can be used exactly (with few exceptions) like the uncompiled model.
 
 ```{r compile-model}
+Cpump <- compileNimble(pump)
+pump$theta
+Cpump$theta
+Cpump$simulate('theta')
+Cpump$theta
+pump$theta
 ```
 
 

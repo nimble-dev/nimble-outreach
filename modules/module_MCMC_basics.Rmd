@@ -14,6 +14,8 @@ read_chunk('module_BUGS_models.R')
 read_chunk('module_MCMC_basics.R')
 ```
 
+# just include all code directly
+
 ```{r, model-code, echo=FALSE}
 ```
 ```{r, build-model, echo=FALSE}
@@ -140,6 +142,29 @@ effectiveSize(mcmc3)
 ```
 
 In this case the block sampler appears to be less effective, but it might just be that the adaptation hasn't had enough time to take full effect in only 1000 iterations.  Very often block sampling gives big improvements.
+
+# Running multiple chains
+
+At the moment, we haven't set up Nimble to automatically run multiple chains, such as would be needed for calculation of the Gelman-Rubin potential scale reduction factor (*gelman.diag* in the *coda* package). But it's straightforward to do this yourself.
+
+```{r, multi-chain}
+nChains <- 3
+pumpInits <- list(list(alpha = 1, beta = 1), list(alpha = 0.1, beta =30), list(alpha = 30, beta = 0.1))
+out <- list()
+set.seed(0)
+niter <- 3000
+burnIn <- 1000
+for(ch in seq_len(nChains)) {
+       model$setInits(pumpInits[[ch]])
+       model$simulate(model$getDependencies(c('alpha','beta')))
+       Cmcmc <- compileNimble(mcmc, project = pump, resetFunctions = TRUE)
+       Cmcmc$run(niter)
+       out[[ch]] <- as.mcmc(as.matrix(Cmcmc$mvSamples)[(1:burnIn):niter])
+}
+smp <- do.call(as.mcmc.list, out)
+```
+
+Considerations: you'll want to think about how to set up the over-dispersed starting points and the number of iterations to use for burn-in.
 
 # Exercises
 

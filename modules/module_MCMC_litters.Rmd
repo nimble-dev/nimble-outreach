@@ -137,6 +137,9 @@ model2 <- model$newModel()   # currently an issue with running MCEM on the same 
 box = list( list(c('a','b'), c(0, Inf)))
 mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 500, boxConstraints = box)
 out <- mcem(maxit = 30) 
+out # after 100
+#       a[1]       a[2]       b[1]       b[2] 
+# 41.0924074  1.5832673  4.6905697  0.5552738 
 ```
 
 The MCEM takes a while - basically slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
@@ -146,19 +149,20 @@ One option would be to reparameterize the model from the $a,b$ parameterization 
 # MCEM with reparameterization 
 
 ```
-code <- nimbleCode({
+codeReparam <- nimbleCode({
   for (i in 1:G) {
      for (j in 1:N) {
         r[i,j] ~ dbin(p[i,j], n[i,j]);
         p[i,j] ~ dbeta(mean = mn[i], sd = sig[i]) 
      }
      mn[i] ~ dunif(0, 1)
-     sd[i] ~ dunif(0, 1)
+     sig[i] ~ dunif(0, 1)
    }
 })
-inits <- list( mn = rep(.5, 2), sd = rep(.5, 2))
-model <- nimbleModel(code, constants = consts, data = data, inits = inits)
-box = list( list(c('mn','sig'), c(0, 1)))  # check on this - what is good for sig?
-mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 500, boxConstraints = box)
-out <- mcem(maxit = 30) 
+inits <- list( mn = rep(.5, 2), sig = rep(.5, 2))
+modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, inits = inits)
+box = list( list('mn', c(0, 1)), list('sig', c(0, 5)))  # check on this - what is good for sig?
+mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, boxConstraints = box)
+outReparam <- mcem(maxit = 30) 
+
 ```
