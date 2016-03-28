@@ -9,7 +9,7 @@ clean:
 
 %.html: %.Rmd
 	./make_slides $(basename $(@))
-	rm -f $(basename $(@)).md
+#	rm -f $(basename $(@)).md
 
 example: example_workshop_overview.html 
 bugs: module_BUGS_models.html
