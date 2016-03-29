@@ -10,7 +10,6 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
-#read_chunk('module_nimble_features.R')
 ```
 
 # Introduction
@@ -59,7 +58,7 @@ pump$x
 
 For compatibility with BUGS
 and JAGS, NIMBLE allows both to be provided in the the constants
-argument to nimbleModel(), in which case NIMBLE determines which are
+argument to *nimbleModel()*, in which case NIMBLE determines which are
 which, based on which variables appear on the left-hand side of BUGS
 declarations.
 
@@ -88,11 +87,16 @@ Regression predictors (i.e., covariates or independent variables) can be treated
 
 When a variable is specified only on the right-hand side of expression(s) in the model, it does not become a node in the model because it is not a parameter or data, but it is a variable in the model that can be assigned new values. 
 
-Let's see this with the pump model.
-```{r, rhs-only}
+Let's see this with the pump model. First note that ```pump$t``` does not exist because *t* was given as a constant.
+
+```{r, rhs-constant}
 pump$t
 pump$getNodeNames()
+```
 
+Now we'll set *t* as a variable. It still doesn't appear in the list of nodes, but we can access it. 
+
+```{r, rhs-variable}
 pumpInits <- list(alpha = 1, beta = 1,
          theta = rep(0.1, pumpConsts$N), t = t)
 pump2 <- nimbleModel(pumpCode, constants = list(N = N),
@@ -118,12 +122,15 @@ code <- nimbleCode({
      mu[1:K] ~ dmnorm(mu0[1:K], Cmu[1:K, 1:K])
      C[1:K, 1:K] ~ dwish(C0[1:K, 1:K], df = 1)
 })
+```
 
 # Model checking
 
-In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, Nimble does fairly aggressive model checking. Note that this can take a bit of time and also that we report cases where models are created but values for nodes of the model are NA. It's perfectly fine to create a model and not provide values for nodes until later (e.g., letting an MCMC sample from the prior to set initial values), but we do warn you if that's the case, as seen here for *y*, *mu0* and *mu* (and therefore for the objects storing their probability density values.
+  - In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, Nimble does fairly aggressive model checking. 
+  - This checking can take a bit of time.
+  - We report cases where models are created but values for nodes of the model are NA. It's perfectly fine to create a model and not provide values for nodes until later (e.g., letting an MCMC sample from the prior to set initial values), but we do warn you if that's the case, as seen here for *y*, *mu0* and *mu* (and therefore for the objects storing their probability density values also).
 
-```{r, indices}
+```{r, indices2}
 code <- nimbleCode({
      for(i in 1:n) {
            y[i, 1:K] ~ dmnorm(mu[1:K], C[1:K, 1:K])
@@ -135,7 +142,13 @@ K <- 4; n <- 10
 model <- nimbleModel(code, constants = list(n = n, K = K),
       inits = list(C0 = diag(rep(1,K)), Cmu = diag(rep(1, K)),
       C = diag(rep(1, K))))
+```
 
+# Model checking, part 2
+
+Now let's see what happens when there is a size mismatch in the BUGS code. Note the definition of ```mu[1:3]```, whereas $K=4$. 
+
+```{r, indices3}
 # now have a dimension mismatch - mu[1:3] has mean mu0[1:K]
 code <- nimbleCode({
      for(i in 1:n) {
@@ -147,8 +160,13 @@ code <- nimbleCode({
 model <- nimbleModel(code, constants = list(n = n, K = K),
       inits = list(C0 = diag(rep(1,K)), Cmu = diag(rep(1, K)),
       C = diag(rep(1, K))))
+```
 
-# now we forget to provide indexing
+# Model checking, part 3
+
+And finally let's see an example where we forget to provide indexing.
+
+```{r, indices4}
 code <- nimbleCode({
      for(i in 1:n) {
            y[i, 1:K] ~ dmnorm(mu, C)
@@ -164,11 +182,11 @@ model <- nimbleModel(code, constants = list(n = n, K = K),
 
 As you can see, sometimes our error messages are less helpful than they could be.
 
-You can turn off the checking with `check=FALSE` in *nimbleModel()*.
+You can turn off the checking with ```check=FALSE``` in *nimbleModel()*.
 
 # Alternative parameterizations
 
-BUGS uses fixed (*canonical*) parameterizations and requires that distribution arguments be given in order.
+BUGS uses fixed parameterizations and requires that distribution arguments be given in order.
 
 NIMBLE allows you to use alternative parameterizations and allows you to give arguments by name in any order. 
 
@@ -190,48 +208,50 @@ sigma ~ dunif(0, 10)
 })
 ```
 
-NIMBLE uses the same default parameterization as the BUGS canonical parameterization if you don't name your parameters. 
+NIMBLE uses the same default parameterization as the BUGS parameterization if you don't name your parameters. 
 
 Under the hood, NIMBLE takes whatever parameterization is given and modifies the model to use NIMBLE's canonical parameterization, which is the parameterization used for actual calculations with the distribution. In the case of the normal distribution, this is the standard deviation. You can see the default parameterization, alternative parameterizations, and canonical parameterizations in Table 5.2 of the User Manual.  
 
-# Lifted nodes and implications for updating model quantities
+# Lifted nodes: additional nodes inserted in the model
 
 One implication of alternative parameterizations is that if you use a parameterization other than the canonical NIMBLE parameterization, NIMBLE will modify the structure of the model and insert a node in the model. We call this a *lifted node*. 
 
 We can see this in the simple normal example.
 ```{r, precModel}
 precCode <- nimbleCode({
-y ~ dnorm(mu, tau)
+y ~ dnorm(0, tau)
 tau ~ dgamma(1, 1)
 })
-precModel <- nimbleModel(precCode, inits = list(tau = 100, mu = 0))
+precModel <- nimbleModel(precCode, inits = list(tau = 100))
 precModel$getNodeNames()
 ```
 
-Here the node called *lifted_d1_over_sqrtPtau_cP* is the standard deviation for *y*. That node is a deterministic function of *tau*:
+Here the node called *lifted_d1_over_sqrt_oPtau_cP* is the standard deviation for *y*. That node is a deterministic function of *tau*:
 
 ```{r, precModel-details}
-precModel$nodeFunctions$lifted_d1_over_sqrt_oPtau_cP$calculate
+precModel$nodeFunctions$lifted_d1_over_sqrt_oPtau_cP$simulate
 ```
 
-For this reason, it is important that programs written to adapt to
+# Lifted nodes: implications for updating model quantities
+
+Because of the possibility of lifted nodes, it is important that programs written to adapt to
 different model structures use NIMBLE’s systems for querying the model
 graph. For example, here's incorrect usage that results in a bug.
 ```{r, lifted-bug}
-precModel$tau <- 0.01
+precModel$tau <- 0.0001
 precModel$simulate('y')
 precModel$y
 precModel$lifted_d1_over_sqrt_oPtau_cP
 ```
 
-Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why *y* is close to zero even though *tau* is very small. 
+Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why *y* is close to its mean of zero even though *tau* is very small. 
 
 And here's correct usage:
 
 ```{r, lifted-correct}
-precModel$tau <- 0.01
+precModel$tau <- 0.0001
 precModel$calculate(precModel$getDependencies('tau'))
-# precModel$calculate() # works but recalculates entire model
+# precModel$calculate() # would also work but recalculates entire model
 precModel$simulate('y')
 precModel$y
 precModel$lifted_d1_over_sqrt_oPtau_cP
@@ -250,7 +270,7 @@ code <- nimbleCode({
      for(i in 1:n) {
            logmu[i] <- log(mu[i])
            y[i] ~ dnorm(logmu[i], sd = sigma)
-           }
+     }
 })
 ```
 
@@ -262,7 +282,7 @@ code <- nimbleCode({
      logmu[1:n] <- log(mu[1:n])
      for(i in 1:n) {
            y[i] ~ dnorm(logmu[i], sd = sigma)
-           }
+     }
 })
 ```
 
@@ -282,9 +302,9 @@ Now there are many fewer nodes, speeding up building and compilation. If one has
 
 In future releases of NIMBLE we anticipate large improvements in handling of models with many nodes, so the benefits of explicitly vectorizing your BUGS code should decrease.
 
-To summarize: using vectorized declarations, including multivariate distributions, is better in the current NIMBLE because it creates fewer nodes and reduces building and compilation times.  Whether you choose to vectorize depends largely on whether you use algorithms that operate on individual elements separately or operate collectively on the entire vector, such as scalar Metropolis samplers versus blocked samplers in MCMC. 
+To summarize: using vectorized declarations, including multivariate distributions, can be better in the current NIMBLE because it creates fewer nodes and reduces building and compilation times.  Whether you choose to vectorize depends largely on whether you use algorithms that operate on individual elements separately or operate collectively on the entire vector, such as scalar Metropolis samplers versus blocked samplers in MCMC. 
 
 
 # Exercises
 
-1) vectorization - see perry's example from the examples page
+... still thinking of what would be good here ...

@@ -93,9 +93,11 @@ pump$theta
 pump$getLogProb('theta')  # log-prior for random effects
 ```
 
-# Operating the model
+# Operating the model: *calculate()* and *simulate()*
 
-We have control over the model. Let's change values in the model and recalculate the density values. As we'll discuss in a later module, Nimble sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask Nimble to do so based on the dependencies of the altered node.
+We have control over the model. In particular, for every node, Nimble provides *calculate()* and *simulate()* functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms. 
+
+Let's change values in the model and recalculate the density values. As we'll discuss in a later module, Nimble sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask Nimble to do so based on the dependencies of the altered node.
 
 ```{r, model-operate}
 pump$alpha <- 0.5
