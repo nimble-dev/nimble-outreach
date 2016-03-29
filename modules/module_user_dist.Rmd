@@ -10,18 +10,24 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
-read_chunk('module_user_dist.R')
 ```
 
 # Introduction
 
-Nimble provides a variety of distributions, as seen in Section 5.2.3 of the [Nimble manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). However, there are lots of other probability distributions out there that you might want to use. So Nimble allows you to code up your own distribution and then use it in BUGS code.
+Nimble provides a variety of distributions, as seen in Section 5.2.3 of the [Nimble manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
+
+However, there are lots of other probability distributions out there that you might want to use. So Nimble allows you to code up your own distribution and then use it in BUGS code.
+
+Furthermore, in some cases one can use a user-defined distribution as a way to reduce computation by analytically integrating over a component of the model.
 
 # Basic example
 
 To illustrate, suppose that Nimble did not provide an exponential distribution. Here's what you would do to code up your own exponential distribution and make it available in BUGS code.
 
-First we write nimbleFunctions for the density and simulation functions. Note the naming is analogous to how probability distributions are handled in R. The 'd' function should have *log* as its last argument, a binary argument for whether the log density is returned or not. The 'r' function should have *n* as it's first argument but need only work for ```n=1```.
+First we write nimbleFunctions for the density and simulation functions. Note the naming is analogous to how probability distributions are handled in R. 
+
+  - The 'd' function should have *log* as its last argument, a binary argument for whether the log density is returned or not. 
+  - The 'r' function should have *n* as its first argument but need only work for ```n=1```.
 
 ```{r, dmyexp}
 dmyexp <- nimbleFunction(
@@ -37,16 +43,23 @@ rmyexp <- nimbleFunction(
     run = function(n = integer(0), rate = double(0, default = 1)) {
         returnType(double(0))
         if(n != 1) print("rmyexp only allows n = 1; using n = 1.")
-        dev <- runif(1, 0, 1)
+        dev <- runif(1)
         return(-log(1-dev) / rate)
     })
+```
+
+```{r, scopefix, echo=FALSE}
+# not clear why dmyexp() not being put into global
+# if this isn't done, registerDistributions fails to find dmyexp
+assign('dmyexp', dmyexp, .GlobalEnv)
+assign('rmyexp', rmyexp, .GlobalEnv)
 ```
 
 The User Manual also shows how you could write CDF ('p') and inverse CDF ('q') such that you could make use of truncation with your distribution, but for standard usage all you need is the density ('d') and simulation ('r') functions.
 
 # Registering your new distribution
 
-```{r registerDist}
+```{r, register-dist}
 registerDistributions(list(
         dmyexp = list(
                BUGSdist = "dmyexp(rate, scale)",
@@ -57,11 +70,16 @@ registerDistributions(list(
                )))
 ```
 
-This makes Nimble aware of the distribution as a BUGS distribution. Note that if you want to allow users to use different parameterizations for the distribution, you can do this via the *Rdist* element. The *altParams* information can be used in MCMC conjugacy but is not required.
+This makes Nimble aware of the distribution as a BUGS distribution. 
+
+Comments: 
+
+  - If you want to allow users to use different parameterizations for the distribution, you can do this via the *Rdist* element. Here we allow use of *scale*, with the conversion from *scale* to the canonical *rate* specified.
+  - The *altParams* information can be used in Nimble's MCMC conjugacy system and sequential Monte Carlo system but is not required.
 
 # Using the distribution
 
-```{r use-userDist}
+```{r, use-dist}
 code <- nimbleCode({
 y ~ dmyexp(scale = mu)
 mu ~ dunif(0, 10)
@@ -79,12 +97,15 @@ plot(seq_len(niter), as.matrix(mcmc$mvSamples)[,1], type = 'l')
 
 While educational, the exponential example is not particularly interesting given Nimble already provides that distribution.  Let's consider an example where using a user-defined distribution can improve MCMC performance (run time and sampling efficiency).
 
-When working with multinomial data, the Dirichlet distribution can be used to relate the observations to covariates and to induce over-dispersion.
+When working with multinomial data, the Dirichlet distribution can be used to relate the probability vector in the multinomial to covariates and to induce over-dispersion.
 
-One context in which this comes up is topic modeling. You might have text data from multiple documents, with each document representing a topic. The probabilities of words in each document in a topic can be represented as being a sample from a Dirichlet distribution for that topic.  
+One context in which this comes up is topic modeling. You might have textual data from multiple documents, with each document being about a topic. The probabilities of words in each document in a topic can be represented as being a sample from a Dirichlet distribution for that topic.  
 
-A basic model might look like this:
-```{r multi}
+# Basic topic model 
+
+A (very) basic model might look like this:
+
+```{r, multi}
 code <- nimbleCode({
 for(i in 1:n) {
   y[i, 1:K] ~ dmulti(p[i,1:K], N[i])
@@ -100,11 +121,18 @@ const <- list(M = 2, K = 4, n = 5, N = rep(1000, 5),
 alphaInits <- rbind(c(10, 30, 100, 3), c(12, 15, 15, 8))
 m <- nimbleModel(code, constants = const, 
   inits = list(alpha = alphaInits))
+```
+
+Note that with those $\alpha$ values, the third word is very common in topic 1, while in topic 2, the second and third words are equally common. 
+
+```{r, multi-simulate}
 set.seed(0)
 m$simulate(c('p', 'y'))
 m$p
 m$y
 ```
+
+
 
 # The Dirichlet-multinomial distribution
 
@@ -114,30 +142,43 @@ Integrating over the proportions gives the Dirichlet-multinomial distribution, w
 
 # Dirichlet-multinomial nimbleFunctions
 
-Here's how we'd write the density and simulation nimbleFunctions for this distribution. 
+Here's how we'd write the density ('d') and simulation ('r') nimbleFunctions for this distribution. 
 
 Note that in this example we have that the random variable and the parameter are one-dimensional arrays (vectors), so we need to indicate that.
 
 ```{r, dirchmulti}
 ddirchmulti <- nimbleFunction(
-run = function(x = double(1), alpha = double(1), size = double(0),
-log = integer(0, default = 0)) {
-returnType(double(0))
-logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) -
-sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) +
-size)
-if(log) return(logProb)
-else return(exp(logProb))
+            run = function(x = double(1), alpha = double(1), size = double(0),
+                log = integer(0, default = 0)) {
+
+                returnType(double(0))
+                logProb <- lgamma(size) - sum(lgamma(x)) + 
+                        lgamma(sum(alpha)) -
+                        sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - 
+                        lgamma(sum(alpha) + size)
+                if(log) return(logProb)
+                        else return(exp(logProb))
 })
 
 rdirchmulti <- nimbleFunction(
-run = function(n = integer(0), alpha = double(1), size = double(0)) {
-returnType(double(1))
-if(n != 1) print("rdirchmulti only allows n = 1; using n = 1.")
-p <- rdirch(1, alpha)
-return(rmulti(1, size = size, prob = p))
-})
+            run = function(n = integer(0), alpha = double(1), 
+                size = double(0)) {
 
+                returnType(double(1))
+                if(n != 1) print("rdirchmulti only allows n = 1; using n = 1.")
+                p <- rdirch(1, alpha)
+                return(rmulti(1, size = size, prob = p))
+})
+```
+
+```{r, scopefix2, echo=FALSE}
+# not clear why ddirchmulti() not being put into global
+# if this isn't done, registerDistributions fails to find ddirchmulti
+assign('ddirchmulti', ddirchmulti, .GlobalEnv)
+assign('rdirchmulti', rdirchmulti, .GlobalEnv)
+```
+
+```{r, register-dirchmulti}
 registerDistributions(list(
         ddirchmulti = list(
         BUGSdist = "ddirchmulti(alpha, size)",
@@ -147,9 +188,9 @@ registerDistributions(list(
 
 # Using the user-defined distribution
 
-We can now rewrite the topic model as follows:
+We can now rewrite the topic model as follows. We won't apply this to a real dataset but one could now use this rewritten model in an algorithm such as MCMC, as in the first exercise.
 
-```{r dirmulti}
+```{r, dirmulti-topic}
 code2 <- nimbleCode({
 for(i in 1:n)
   y[i,1:K] ~ ddirchmulti(alpha[topic[i], 1:K], N[i])
@@ -164,18 +205,17 @@ m2$simulate('y')
 m2$y
 ```
 
-We won't apply this to a real dataset, but here's how one would simulate under this model. 
 
 # Final thoughts
 
-In real document analysis, you would want to infer topics for unlabelled documents. This would require using discrete variables used as random (unknown) indices of $\alpha$ to indicate the topic of each such document, but at the moment, Nimble does not allow for random indices. 
+In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of $\alpha$ that indicate the unknown topic of each such document, but at the moment, Nimble does not allow for random indices. 
 
-Also, a standard model allows each document to be a mixture of topics. One could expand the code here to allow for that. 
+Also, a standard model for topic analysis, called *latent Dirichlet allocation*, allows each document to be a mixture of topics. One could expand the code here to allow for that. 
 
 # Exercises
 
-1) Simulate some data under the topic model given above and compare computational time and mixing for the multinomial likelihood plus Dirichlet prior model to those from the Dirichlet-multinomial representation.
+1) Simulate some data under the topic model given above and then fit the data via MCMC. Compare computational time and mixing for the multinomial likelihood plus Dirichlet prior model to those from the Dirichlet-multinomial representation.
 
 2) Write the Pareto distribution as a user-defined distribution.
 
-3) Write an "IID normal" distribution that can be used for a vector of $n$ normally distributed random variables, $y_i \sim N(mu, sigma)$. Compare the speed of an MCMC based on using a for loop and *dnorm* in BUGS code to that based on using the user-defined distribution. When using the standard specification, make sure the MCMC does not use conjugate (Gibbs) sampling so results are comparable (since our MCMC system won't know how to use your IID normal distribution for conjugate updates. 
+3) Write an "IID normal" distribution that can be used for a vector of $n$ normally distributed random variables, $y_i \sim N(\mu, \sigma)$. Compare the speed of an MCMC based on using a for loop and *dnorm* in BUGS code to that based on using the user-defined distribution. When using the standard specification, make sure the MCMC does not use conjugate (Gibbs) sampling so results are comparable (you can set `useConjugacy=FALSE` in *configureMCMC()*). This makes for an apples to apples comparison since our MCMC system won't know how to use your IID normal distribution for conjugate updates. 
