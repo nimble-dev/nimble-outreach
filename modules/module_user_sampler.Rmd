@@ -1,4 +1,4 @@
-Defining one's own MCMC samplers
+User-defined MCMC samplers
 ==========================
 NIMBLE training materials module
 ---------------------------------
@@ -10,7 +10,6 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
-#read_chunk('module_user_sampler.R')
 ```
 
 # Introduction
@@ -23,16 +22,15 @@ Let's start with a very basic example that slightly extends Nimble's built-in Me
 
 Suppose you have a parameter with a finite domain, in particular a fixed lower bound, such as a gamma distribution, a uniform distribution, or a lognormal distribution.
 
-A standard Metropolis sampler could propose a value that is below the lower bound. This would give a probability density for the proposed value that is $0$ so the proposal would be rejected. That's fine, but it wastes the computation involved in proposing the value and determining that it should be rejected and if the current value of the parameter under consideration is near the bound, this will happen nearly 50% of the time. 
+A standard Metropolis sampler could propose a value that is below the lower bound. This would give a probability density for the proposed value that is $0$ so the proposal would be rejected. That's fine, but it wastes the computation involved in proposing the value and determining that it should be rejected. If the current value of the parameter under consideration is near the bound, this will happen nearly 50% of the time. 
 
-Instead, we can use *reflection*. If the proposed $\theta\prime < b$ where $b$ is the bound, simply use $\theta\prime$ to $b + (b-\theta\prime
-While nimbleFunctions are primarily designed to write algorithms to be applied to hierarchical models, you can also use nimbleFunctions as a way to compile your R code to fast C++ code without needing to write any C++ code. Note that this is unlike Rcpp, which provides tools for you to more easily write C++ code that can be called from R.
+Instead, we can use *reflection*. If the proposed $\theta^\prime < b$ where $b$ is the bound, simply set $\theta^\prime$ to $b + (b-\theta^\prime)$
 
 # Nimble's Metropolis sampler
 
 Coding this sampler would be easy from scratch and is even easier if we simply make very small changes to the existing Nimble Metropolis sampler.
 
-Let's look at the code for the Metropolis sampler. You can find this in the file *R/MCMC_samplers.R* in the source code for the Nimble package (note that ```nimble:::sampler_RW``` shows a modified version of this -- the nimbleFunction after it has been built. 
+Let's look at the code for the Metropolis sampler. You can find this in the file *R/MCMC_samplers.R* in the source code for the Nimble package (note that ```nimble:::sampler_RW``` is not useful to look at, as it shows a modified version of this -- the nimbleFunction after it has been built).
 
 ```{r, Metr}
 sampler_RW <- nimbleFunction(
@@ -43,8 +41,10 @@ sampler_RW <- nimbleFunction(
         adaptInterval <- control$adaptInterval
         scale         <- control$scale
         ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('more than one target; cannot use RW sampler, try RW_block sampler')
+        targetAsScalar <- model$expandNodeNames(target, 
+                       returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     
+                        stop('more than one target; cannot use RW sampler, try RW_block sampler')
         calcNodes  <- model$getDependencies(target)
         ###  numeric value generation  ###
         scaleOriginal <- scale
@@ -64,9 +64,11 @@ sampler_RW <- nimbleFunction(
         logMHR <- calculateDiff(model, calcNodes)
         jump <- decide(logMHR)
         if(jump)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
         else
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
         if(adaptive)     adaptiveProcedure(jump)
     },
     
@@ -109,11 +111,11 @@ Much of that code has to do with making the sampler adaptive, so that the propos
 
 # Modifying the *setup* function
 
-The *run* function for the reflection sampler needs to check for the proposed value against the distribution bounds and modify the proposal as needed.
+The *run* function for the reflection sampler needs to check the proposed value against the distribution bounds and modify the proposal as needed.
 
-However, we first need to modify the *setup* function to check if the distribution has finite lower or upper bounds and only consider scalar parameters, thereby avoiding some computation at run-time. We can use 
+However, we first need to modify the *setup* function to check if the distribution has finite lower or upper bounds and only consider scalar parameters, thereby avoiding some computation at run-time. 
 
-```{r}
+```{r, setup-reflect, eval=FALSE}
     setup = function(model, mvSaved, target, control) {
         ###  control list extraction  ###
         adaptive      <- control$adaptive
@@ -123,14 +125,14 @@ However, we first need to modify the *setup* function to check if the distributi
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         if(length(targetAsScalar) > 1)     stop('more than one target; cannot use RW sampler, try RW_block sampler')
 
-        ### ADDED code
+        ################# ADDED code #############################
         dist <- model$getNodeDistribution(target)
         scalar <- getDistribution(dist)$types$value$nDim == 0
         if(scalar)
                 rg <- getDistribution(dist)$range
         if(scalar && (rg[1] > -Inf || rg[2] < Inf))
                   reflect <- TRUE else reflect <- FALSE
-        ###
+        ##########################################################
 
         calcNodes  <- model$getDependencies(target)
         ###  numeric value generation  ###
@@ -148,20 +150,26 @@ However, we first need to modify the *setup* function to check if the distributi
 
 # Modifying the *run* function
 
-```{r, run}
+```{r, run-reflect, eval=FALSE}
     run = function() {
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
+
+        #################### ADDED code #############################
         if(reflect) {
              if(propValue < rg[1]) propValue <- 2*rg[1] - propValue
              if(propValue > rg[2]) propValue <- 2*rg[2] - propValue
-        } 
+        }
+        #############################################################
+ 
         model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
         jump <- decide(logMHR)
         if(jump)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
         else
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
         if(adaptive)     adaptiveProcedure(jump)
     }
 ```
@@ -185,8 +193,10 @@ sampler_RW_reflect <- nimbleFunction(
         adaptInterval <- control$adaptInterval
         scale         <- control$scale
         ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('more than one target; cannot use RW sampler, try RW_block sampler')
+        targetAsScalar <- model$expandNodeNames(target, 
+                       returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     
+                       stop('more than one target; cannot use RW sampler, try RW_block sampler')
 
         ### ADDED code
         dist <- model$getNodeDistribution(target)
@@ -220,9 +230,11 @@ sampler_RW_reflect <- nimbleFunction(
         logMHR <- calculateDiff(model, calcNodes)
         jump <- decide(logMHR)
         if(jump)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
         else
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
         if(adaptive)     adaptiveProcedure(jump)
     },
     
@@ -267,9 +279,8 @@ Using the sampler is simple. Just modify the default MCMC configuration for a mo
 
 Let's try this with the *blocker* model, which is a random effects meta-analysis of clinical trial data. 
 
-Side note: the random effects variance component in this model is given a gamma prior on the precision scale, but best practices for random effects variance components, including a strong argument against the gamma/inverse-gamma prior, can be found in Gelman (2006, Bayesian Analysis 1:515-534).
 
-In this case, we could have used a conjugate sampler, which would automatically respect the lower bound of zero, but for illustration let's compare a standard metropolis sampler with the new reflection sampler. 
+In this case, we could use a conjugate sampler, which would automatically respect the lower bound of zero, but for illustration let's compare a standard Metropolis sampler with the new reflection sampler. 
 
 ```{r, blocker}
 model <- readBUGSmodel('blocker', dir = system.file('classic-bugs','vol1','blocker', package = 'nimble'))
@@ -277,6 +288,7 @@ model$tau
 model$tau <- 0.01
 conf <- configureMCMC(model)
 conf$removeSamplers('tau')
+# as baseline, use standard Metropolis for tau
 conf$addSampler('tau', type = 'RW')
 mcmc <- buildMCMC(conf)
 niter <- 10000
@@ -285,8 +297,19 @@ cmcmc <- compileNimble(mcmc, project = model)
 set.seed(0)
 cmcmc$run(niter)
 smp1 <- as.matrix(cmcmc$mvSamples)
+```
 
+```{r, scopefix, echo=FALSE}
+# not clear why sampler_RW_reflect() not being put into global
+# if this isn't done, configureMCMC fails to find sampler_RW_reflect in knitr
+assign('sampler_RW_reflect', sampler_RW_reflect, .GlobalEnv)
+```
+
+Now we'll try the reflection sampler instead.
+
+```{r, add-reflect}
 conf$removeSamplers('tau')
+# for comparison, consider the reflection sampler
 conf$addSampler('tau', type = 'RW_reflect')
 mcmc <- buildMCMC(conf)
 cmcmc <- compileNimble(mcmc, project = model, resetFunctions = TRUE)
@@ -299,18 +322,21 @@ smp2 <- as.matrix(cmcmc$mvSamples)
 nplot <- 300
 plot(seq_len(nplot), smp1[seq_len(nplot), 'tau'], type = 'l')
 lines(seq_len(nplot), smp2[seq_len(nplot), 'tau'], col = 'red')
-library(coda)
+library(coda, quietly = TRUE)
 effectiveSize(smp1[ , 'tau'])
 effectiveSize(smp2[ , 'tau'])
 ```
 
 So we see that the sampler escaped from near zero more quickly, though given that the posterior is well away from zero, the new sampler didn't make much difference in the overall MCMC performance. 
 
+Side note: the random effects variance component in this model is given a gamma prior on the precision scale, but best practices for random effects variance components, including a strong argument against the gamma/inverse-gamma prior, can be found in Gelman (2006, Bayesian Analysis 1:515-534).
+
+
 # Exercises
 
-1) Write a user-defined sampler that modifies the RW sampler to use a gamma proposal distribution and includes the ratio of the proposal distributions (the Hastings adjustment) for a non-symmetric proposal distribution. Have your proposal centered on the mean of the gamma distribution. When you call *rgamma* in the run function, you'll want to use the {mean, sd} alternative parameterization of the  gamma distribution.
+1) Write a user-defined sampler that modifies Nimble's default Metropolis (*sampler_RW()*) sampler to use a gamma proposal distribution and includes the ratio of the proposal distributions (the Hastings adjustment) for a non-symmetric proposal distribution. Have your proposal centered on the mean of the gamma distribution. When you call *rgamma* in the run function, you'll want to use the {mean, sd} alternative parameterization of the  gamma distribution.
 
-2) Write a user-defined sampler that operates only on the categorical distributin. You could have it be an independence sampler with fixed probabilities of proposing each of the values or a sampler that puts a fixed amount of mass on the current value and distributes the remainder such that the probabilities decays as the difference from the current value increases. 
+2) Write a user-defined sampler that operates only on the categorical distribution. You could have it be an independence sampler with fixed probabilities of proposing each of the values or a sampler that puts a fixed amount of mass on the current value and distributes the remainder such that the probabilities decays as the difference from the current value increases. 
 [check with PdV and DT on how we handle this case now]
 
 3) Consider exercise 2 and modify the probabilities such that they are proportional to the current density of the model for each possible value of the categorical variable. This is a conjugate sampler on a categorical variables. 

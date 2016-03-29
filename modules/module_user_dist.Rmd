@@ -50,7 +50,7 @@ rmyexp <- nimbleFunction(
 
 ```{r, scopefix, echo=FALSE}
 # not clear why dmyexp() not being put into global
-# if this isn't done, registerDistributions fails to find dmyexp
+# if this isn't done, registerDistributions fails to find dmyexp in knitr
 assign('dmyexp', dmyexp, .GlobalEnv)
 assign('rmyexp', rmyexp, .GlobalEnv)
 ```
@@ -173,7 +173,7 @@ rdirchmulti <- nimbleFunction(
 
 ```{r, scopefix2, echo=FALSE}
 # not clear why ddirchmulti() not being put into global
-# if this isn't done, registerDistributions fails to find ddirchmulti
+# if this isn't done, registerDistributions fails to find ddirchmulti in knitr
 assign('ddirchmulti', ddirchmulti, .GlobalEnv)
 assign('rdirchmulti', rdirchmulti, .GlobalEnv)
 ```
