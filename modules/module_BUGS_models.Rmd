@@ -30,6 +30,10 @@ Here we'll give a simple example of building a model. Other modules will show ho
 We'll use the *pump* model example from BUGS. The data set
   describes failure times of some pumps.  
 
+<center><img src="figures/pumpDAG.jpg"></center>
+
+In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with an exchangeable prior, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
+
 # Specifying the BUGS code for a model
 
 Here we specify the pump code directly in R.
@@ -47,7 +51,6 @@ pumpCode <- nimbleCode({
 })
 ```
 
-In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with an exchangeable prior, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
 
 You can also load it directly from the standard BUGS example file formats (see `help(readBUGSmodel)`).
 

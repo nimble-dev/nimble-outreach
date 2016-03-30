@@ -1,0 +1,7 @@
+to create the html for a given module:
+
+make module_BUGS_models.html
+
+or see Makefile for shorthand names for each module; e.g.:
+
+make bugs

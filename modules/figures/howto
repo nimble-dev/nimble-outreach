@@ -1,0 +1,8 @@
+
+# make in powerpoint; save as picture as jpeg
+# on linux:
+convert in.jpg -trim out.jpg
+
+# alternatively, save in powerpoint as pdf
+pdfcrop --margins 0 in.pdf out.pdf
+convert out.pdf out.jpg
