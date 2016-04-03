@@ -79,6 +79,7 @@ So that's not all that impressive as all we've done is match (well, not quite) t
 
 # A (slightly) more involved case
 
+[MOVE THIS to auxiliary file]
 [Note to discuss: why don't we benefit from eliminating loops here relative to R (or is R doing something clever - I don't see how it could)]
 
 ```{r, multi-loop}

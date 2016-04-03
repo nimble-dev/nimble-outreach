@@ -26,6 +26,8 @@ A standard Metropolis sampler could propose a value that is below the lower boun
 
 Instead, we can use *reflection*. If the proposed $\theta^\prime < b$ where $b$ is the bound, simply set $\theta^\prime$ to $b + (b-\theta^\prime)$
 
+ADD figure here to show sampler graphically
+
 # Nimble's Metropolis sampler
 
 Coding this sampler would be easy from scratch and is even easier if we simply make very small changes to the existing Nimble Metropolis sampler.

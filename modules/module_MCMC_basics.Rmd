@@ -14,6 +14,10 @@ library(nimble)
 
 # Setting up the pump model
 
+Here's the graph of the pump model discussed in the BUGS_models module.
+
+<center><img src="figures/pumpDAG.jpg"></center>
+
 These steps just repeat what we did in the BUGS_model module.
 
 ```{r, model-setup}
@@ -202,11 +206,27 @@ for(ch in seq_len(nChains)) {
        Cmcmc$run(niter)
        out[[ch]] <- as.mcmc(as.matrix(Cmcmc$mvSamples)[(1+burnIn):niter, ])
 }
-smp <- do.call(mcmc.list, out)
-gelman.diag(smp)
 ```
 
 Considerations: you'll want to think about how to set up the over-dispersed starting points and the number of iterations to use for burn-in.
+
+
+CHECK if can use a single chain
+
+# Assessing MCMC performance from multiple chains
+
+```{r, gelman-rubin}
+smp <- do.call(mcmc.list, out)
+gelman.diag(smp)
+# and here's a graphical representation of the information
+tsplot(out[[1]][ , 'alpha'], xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+sq <- seq_along(out[[1]][ , 'alpha'])
+for(i in 2:3)
+      lines(sq, out[[i]][ , 'alpha'], col = i)
+```
+
+
 
 # Exercises
 

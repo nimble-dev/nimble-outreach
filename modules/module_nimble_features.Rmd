@@ -219,7 +219,8 @@ One implication of alternative parameterizations is that if you use a parameteri
 We can see this in the simple normal example.
 ```{r, precModel}
 precCode <- nimbleCode({
-y ~ dnorm(0, tau)
+for(i in 1:n) 
+      y[i] ~ dnorm(0, tau)
 tau ~ dgamma(1, 1)
 })
 precModel <- nimbleModel(precCode, inits = list(tau = 100))
@@ -227,6 +228,10 @@ precModel$getNodeNames()
 ```
 
 Here the node called *lifted_d1_over_sqrt_oPtau_cP* is the standard deviation for *y*. That node is a deterministic function of *tau*:
+
+Here's the DAG for this simple model, illustrating the lifted node.
+
+<center><img src="figures/liftedNode.jpg"></center>
 
 ```{r, precModel-details}
 precModel$nodeFunctions$lifted_d1_over_sqrt_oPtau_cP$simulate

@@ -32,9 +32,12 @@ Here's the BUGS code.
 code <- nimbleCode({
   for (i in 1:G) {
      for (j in 1:N) {
-        r[i,j] ~ dbin(p[i,j], n[i,j]);
+     	 # likelihood (data model)
+        r[i,j] ~ dbin(p[i,j], n[i,j])
+	# latent process (random effects)
         p[i,j] ~ dbeta(a[i], b[i]) 
      }
+     # prior for hyperparameters
      a[i] ~ dgamma(1, .001)
      b[i] ~ dgamma(1, .001)
    }
@@ -171,6 +174,10 @@ One common cause of poor MCMC performance is dependence across the levels of a m
 
 When one has conjugacy, as in this case for the $p$ parameters, one can always analytically integrate over those parameters in the model. By reducing dimensionality this can often improve MCMC efficiency though it removes conjugacy, which can also hurt. 
 
+Here's the graph for the model after integrating over the $p$ parameters.
+
+<center><img src="figures/littersDAGinteg.jpg"></center>
+
 One of the major drawbacks is the need to do the integration, which users not familiar with probability may not be able to do easily. That said, let's consider it in this example, by using a user-defined *beta-binomial* distribution. This is the distribution for *y* that results from integrating over *p*.
 
 Actually, given that the module on user-defined distributions provides a Dirichlet-multinomial distribution and the beta-binomial distribution is the special case of that with only two categories, we could just borrow that code.
@@ -231,7 +238,7 @@ One option would be to reparameterize the model from the $a,b$ parameterization 
 
 # MCEM with reparameterization 
 
-Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation.
+Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. We need to be a little bit careful about starting values and constraints in order to get the optimization to converge.
 
 ```{r, mcem-reparam}
 codeReparam <- nimbleCode({
@@ -244,13 +251,15 @@ codeReparam <- nimbleCode({
      sigma[i] ~ dunif(0, 1)
    }
 })
-inits <- list( mu = rep(.5, 2), sigma = rep(.1, 2))
+inits <- list( mu = c(.8, .5), sigma = c(.1, .1))
 modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, inits = inits)
-box = list( list('mu', c(0, 1)), list('sigma', c(0, .5)))  
+box = list( list('mu', c(.1, .98)), list('sigma', c(0, .3)))  
 modelReparam$simulate('p')
 mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, boxConstraints = box)
-# outReparam <- mcemReparam(maxit = 30)
+outReparam <- mcemReparam(maxit = 50)
 # outReparam 
 ```
+need to do again with taking box out from Nelder-Mead
+TRY THIS with original lbfgsb
 
 At the moment this is not working because *optim()* doesn't like getting `-Inf` as the value of the objective function, and because there is something strange going on with the steps in the BFGS optimization. This should be addressed in the next version of Nimble.

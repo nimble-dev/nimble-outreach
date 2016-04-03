@@ -36,16 +36,23 @@ In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $
 
 # Specifying the BUGS code for a model
 
-Here we specify the pump code directly in R.
+Here we specify the pump code directly in R. We can walk through some of details via the comments in the BUGS code.
 
 ```{r model-code}
 library(nimble)
 pumpCode <- nimbleCode({ 
   for (i in 1:N){
-      theta[i] ~ dgamma(alpha,beta)
-      lambda[i] <- theta[i]*t[i]
+
+      # likelihood (data model)
       x[i] ~ dpois(lambda[i])
+
+      # latent process (random effects)
+      # linear predictor      
+      lambda[i] <- theta[i]*t[i]
+      # random effects distribution
+      theta[i] ~ dgamma(alpha,beta)
   }
+  # priors on hyperparameters
   alpha ~ dexp(1.0)
   beta ~ dgamma(0.1,1.0)
 })
@@ -153,17 +160,17 @@ To change initial values for parameters you can use *setInits()* or simply assig
 pump$setInits(list(alpha = 2, beta = 0.5))
 ```
 
-**Question**: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?
+# Use cases for data node functionality
 
-# Setting data values and initial values
+Nimble's developers made the design choice that users being to change data values and also whether  whether a node is treated as a fixed data value or an unknown parameter.
 
-**Question**: What uses might there be for being able to change the data values and change whether a node is treated as a fixed data value or an unknown parameter?
+Some potential uses of this functionality include:
 
  - bootstrapping, jackknife, etc.
  - simulation studies
  - assessment of sensitivity to outliers
  - cross-validation and predictive calculations
-
+ - others?
 
 # Compiling the model for faster operation
 
@@ -178,6 +185,33 @@ Cpump$theta
 pump$theta
 ```
 
+# A very basic MCMC
+
+The steps of running an MCMC are as follows:
+
+ - configure the MCMC
+ - build the MCMC
+ - compile a C++ version of the MCMC
+ - run the MCMC
+ - assess and use the MCMC samples
+
+```{r, mcmc}
+# configure the MCMC and determine which samples to save
+pumpConf <- configureMCMC(pump, print = TRUE)
+pumpConf$addMonitors(c('alpha', 'beta', 'theta'))
+# build the MCMC
+pumpMCMC <- buildMCMC(pumpConf)
+# compile a C++ version
+CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
+# run the MCMC
+niter <- 1000
+set.seed(0)
+CpumpMCMC$run(niter)
+# get the samples as an R matrix
+samples <- as.matrix(CpumpMCMC$mvSamples)
+```
+
+At this point you can what you'd normally do with posterior samples, including create a *coda* *mcmc* object for evaluating MCMC performance.
 
 # Exercises
 

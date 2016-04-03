@@ -108,9 +108,12 @@ A (very) basic model might look like this:
 ```{r, multi}
 code <- nimbleCode({
 for(i in 1:n) {
+  # likelihood - word counts
   y[i, 1:K] ~ dmulti(p[i,1:K], N[i])
+  # latent process (random effects) - topic model
   p[i, 1:K] ~ ddirch(alpha[topic[i], 1:K])
 }
+# prior for hyperparameters
 for(tp in 1:M)
   for(k in 1:K)
   alpha[tp, k] ~ dunif(0, 100)
@@ -193,7 +196,9 @@ We can now rewrite the topic model as follows. We won't apply this to a real dat
 ```{r, dirmulti-topic}
 code2 <- nimbleCode({
 for(i in 1:n)
+  # likelihood 
   y[i,1:K] ~ ddirchmulti(alpha[topic[i], 1:K], N[i])
+# priors for hyperparameters
 for(tp in 1:M)
   for(k in 1:K)
   alpha[tp, k] ~ dunif(0, 100)
