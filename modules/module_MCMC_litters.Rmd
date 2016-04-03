@@ -222,25 +222,26 @@ effectiveSize(as.mcmc(smp_cross))
 We might also be interested in an empirical Bayes (maximum likelihood for the hyperparameters) analysis. This can be done by Monte Carlo Expectation Maximization, an algorithm that integrates over the random effects numerically using an MCMC sampler for the random effects embedded within an optimization over the hyperparameters. 
 
 ```{r, mcem}
-model2 <- model$newModel()   # currently an issue with running MCEM on the same model as an MCMC
-box = list( list(c('a','b'), c(0, Inf)))
-mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 500, boxConstraints = box)
+# currently an issue with running MCEM on the same model as an MCMC
+# so create new copy of model
+model2 <- model$newModel()   
+inits <- list( a = c(12, 12), b=c(12, 12) )
+model2$setInits(inits)
+mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 500, 
+     optimMethod = 'Nelder-Mead')
 print(system.time(   # takes a while:
         out <- mcem(maxit = 100)
 ))
 out 
-# out # after 100
-#       a[1]       a[2]       b[1]       b[2] 
-# 41.0924074  1.5832673  4.6905697  0.5552738 
 ```
 
-The MCEM takes a while - basically slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
+The MCEM is converging quite slowly. In this case, since we can analytically integrate over $p$, we can directly maximize the marginal likelihood and see that the MLE for the first group is $\hat{a_1}=43.5$, $\hat{b_1}=4.94$. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
 
-One option would be to reparameterize the model from the $a,b$ parameterization to the mean and scale of the beta distribution. That's easy in Nimble!
+One option would be to reparameterize the model from the $a,b$ parameterization to the mean and standard deviation of the beta distribution. That's easy in Nimble, since we provide that parameterization as an alternative parameterization!
 
 # MCEM with reparameterization 
 
-Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. For some reason, the L-BFGS-B optimization method was not working well here, so we make use of the Nelder-Mead optimization algorithm.
+Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of $\mu=0.898$ and $\sigma=0.043$, but we'd need to investigate further. Also, at present Nimble's MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1). 
 
 ```{r, mcem-reparam}
 codeReparam <- nimbleCode({
@@ -253,21 +254,15 @@ codeReparam <- nimbleCode({
      sigma[i] ~ dunif(0, 1)
    }
 })
-#inits <- list( mu = c(.8, .5), sigma = c(.1, .1))
 inits <- list( mu = c(.5, .5), sigma = c(.1, .1))
-modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, inits = inits)
-#box = list( list('mu', c(.1, .98)), list('sigma', c(0, .3)))  
-modelReparam$simulate('p')
-# mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, boxConstraints = box)
-mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, optimControl = list(
-            method='Nelder-Mead'))
+modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, 
+             inits = inits)
+mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, 
+            optimMethod = 'Nelder-Mead')
 print(system.time(
-        outReparam <- mcemReparam(maxit = 50)
+        outReparam <- mcemReparam(maxit = 20)
 ))
 outReparam 
 ```
 
-need to do again with taking box out from Nelder-Mead
-TRY THIS with original lbfgsb
 
-At the moment this is not working because *optim()* doesn't like getting `-Inf` as the value of the objective function, and because there is something strange going on with the steps in the BFGS optimization. This should be addressed in the next version of Nimble.
