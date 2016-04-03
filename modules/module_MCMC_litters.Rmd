@@ -63,7 +63,8 @@ model <- nimbleModel(code, constants = consts, data = data, inits = inits)
 Here's Nimble's default MCMC.
 
 ```{r, default, fig.height=5, fig.width=12}
-conf <- configureMCMC(model, thin = 10)
+thin <- 10
+conf <- configureMCMC(model, thin = thin)
 # thinning _only_ to reduce time of plotting 
 #  (thinning is proven to always reduce efficiency in parameter estimation)
 conf$addMonitors(c('a', 'b', 'p'))
@@ -118,12 +119,14 @@ tsplot(smp_hyp_block[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', 
 tsplot(smp_hyp_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 
 library(coda)
-effectiveSize(as.mcmc(smp_hyp_block))
+nBurn <- niter / 5
+postBurn <- (nBurn:niter) / thin
+effectiveSize(as.mcmc(smp_hyp_block[postBurn, ]))
 ```
 
 # Blocking the random effects too
 
-But perhaps we should have blocked the hyperparameters with their dependent random effects. 
+But perhaps we should have blocked the hyperparameters with their dependent random effects. This is how one could do that, though $a$, $b$, and $p$ are on very different scales, which may cause problems, particularly at the start of an adaptive sampler. As we see in the trace plots, this strategy is not working at all.
 
 ```{r, effects-block, fig.height=5, fig.width=12}
 conf$removeSamplers(c('a', 'b', 'p'))
@@ -148,8 +151,6 @@ tsplot(smp_full_block[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'de
 tsplot(smp_full_block[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
 tsplot(smp_full_block[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
 tsplot(smp_full_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
-
-effectiveSize(as.mcmc(smp_full_block))
 ```
 
 More generally, in any model, we might ask if we have the ideal blocking structure? Even in simple models, there is a combinatorial explosion of possible blocks. Sometimes we have some intuition and can do this manually, but sometimes that is a lot of work.
@@ -180,9 +181,7 @@ Here's the graph for the model after integrating over the $p$ parameters.
 
 One of the major drawbacks is the need to do the integration, which users not familiar with probability may not be able to do easily. That said, let's consider it in this example, by using a user-defined *beta-binomial* distribution. This is the distribution for *y* that results from integrating over *p*.
 
-Actually, given that the module on user-defined distributions provides a Dirichlet-multinomial distribution and the beta-binomial distribution is the special case of that with only two categories, we could just borrow that code.
-
-[ To be done ]
+Actually, given that the module on user-defined distributions provides a Dirichlet-multinomial distribution and the beta-binomial distribution is the special case of that with only two categories, we could just borrow that code. See the module user_dist for details and sample code.
 
 # Implicitly integrating over the random effects: cross-level sampler
 
@@ -207,7 +206,7 @@ nimCopy(model, Cmodel)  # reinitialize
 set.seed(0)
 system.time(Cmcmc$run(niter))
 
-smp_cross <- as.matrix(Cmcmc$mvSamples)
+smp_cross <- as.matrix(Cmcmc$mvSamples[postBurn, ])
 
 par(mfrow = c(1,4))
 tsplot(smp_cross[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
@@ -226,8 +225,11 @@ We might also be interested in an empirical Bayes (maximum likelihood for the hy
 model2 <- model$newModel()   # currently an issue with running MCEM on the same model as an MCMC
 box = list( list(c('a','b'), c(0, Inf)))
 mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 500, boxConstraints = box)
-out <- mcem(maxit = 30) 
-out # after 100
+print(system.time(   # takes a while:
+        out <- mcem(maxit = 100)
+))
+out 
+# out # after 100
 #       a[1]       a[2]       b[1]       b[2] 
 # 41.0924074  1.5832673  4.6905697  0.5552738 
 ```
@@ -238,7 +240,7 @@ One option would be to reparameterize the model from the $a,b$ parameterization 
 
 # MCEM with reparameterization 
 
-Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. We need to be a little bit careful about starting values and constraints in order to get the optimization to converge.
+Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. For some reason, the L-BFGS-B optimization method was not working well here, so we make use of the Nelder-Mead optimization algorithm.
 
 ```{r, mcem-reparam}
 codeReparam <- nimbleCode({
@@ -251,14 +253,20 @@ codeReparam <- nimbleCode({
      sigma[i] ~ dunif(0, 1)
    }
 })
-inits <- list( mu = c(.8, .5), sigma = c(.1, .1))
+#inits <- list( mu = c(.8, .5), sigma = c(.1, .1))
+inits <- list( mu = c(.5, .5), sigma = c(.1, .1))
 modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, inits = inits)
-box = list( list('mu', c(.1, .98)), list('sigma', c(0, .3)))  
+#box = list( list('mu', c(.1, .98)), list('sigma', c(0, .3)))  
 modelReparam$simulate('p')
-mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, boxConstraints = box)
-outReparam <- mcemReparam(maxit = 50)
-# outReparam 
+# mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, boxConstraints = box)
+mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, optimControl = list(
+            method='Nelder-Mead'))
+print(system.time(
+        outReparam <- mcemReparam(maxit = 50)
+))
+outReparam 
 ```
+
 need to do again with taking box out from Nelder-Mead
 TRY THIS with original lbfgsb
 

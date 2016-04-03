@@ -15,13 +15,16 @@ library(nimble)
 
 # The BUGS language
 
-The BUGS language is described in detail in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.html). Information on how Nimble's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in Nimble can be found in Section 5 of the [Nimble Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+The BUGS language is described in detail in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.html). 
 
-Basically, one specifies the variables in the hierarchical model as lines of code.
+Basically, one specifies the variables in the hierarchical model as lines of code:
+
   - stochastic nodes (data and parameters) are indicated with `~`
   - deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by `<-`.
 
 There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
+
+Information on how Nimble's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in Nimble can be found in Section 5 of the [Nimble Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
 
 # A basic example
 
@@ -32,7 +35,7 @@ We'll use the *pump* model example from BUGS. The data set
 
 <center><img src="figures/pumpDAG.jpg"></center>
 
-In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with an exchangeable prior, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
+In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with a prior that ties the random effects together using a common distribution, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
 
 # Specifying the BUGS code for a model
 
@@ -81,7 +84,19 @@ pump <- nimbleModel(pumpCode,
 
 If all you want to do is run an MCMC, Nimble's fine-grained control might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
 
+# Nodes and variables
+
+The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
+
+ - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. $\alpha$ in the pump model
+ - data: a known quantity in a model, also represented as a random variable, e.g., $x_1, x_2, \ldots$ in the pump model
+ - constants: other fixed quantities involved in the model, e.g., $N$ in the pump model
+ - node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., $\alpha$ or $x_3$ in the pump model
+ - variable: a collection of one or more nodes with the same name, e.g., $\alpha$ or $x$ in the pump model 
+
 # Inspecting the model
+
+Nimble provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
 
 What are the variables in the model? What are the dependencies of a given node (this is information used in many algorithms)?
 
@@ -199,14 +214,18 @@ The steps of running an MCMC are as follows:
 # configure the MCMC and determine which samples to save
 pumpConf <- configureMCMC(pump, print = TRUE)
 pumpConf$addMonitors(c('alpha', 'beta', 'theta'))
+
 # build the MCMC
 pumpMCMC <- buildMCMC(pumpConf)
+
 # compile a C++ version
 CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
+
 # run the MCMC
 niter <- 1000
 set.seed(0)
 CpumpMCMC$run(niter)
+
 # get the samples as an R matrix
 samples <- as.matrix(CpumpMCMC$mvSamples)
 ```

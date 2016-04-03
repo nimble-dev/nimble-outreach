@@ -12,6 +12,18 @@ library(methods)  # otherwise new() not being found - weird
 library(nimble)
 ```
 
+# Markov chain Monte Carlo (MCMC)
+
+MCMC is one of the main algorithms used for fitting Bayesian models, and is also used as a component in other algorithms, including some that are not Bayesian, such as MCEM.
+
+An MCMC sets up a Markov chain on the unknown parameters of a hierarchical model that one runs for many iterations. If properly constructed the values of the chain represent (correlated) draws from the posterior distribution of the model. These draws can then be used as an approximation to the posterior. 
+
+While MCMC is powerful, it is also dangerous to use without understanding a bit about it. First, one often starts the chain using initial values that are not representative of the posterior. In this case, it can take many iterations before the samples from the chain are representative of the distribution. These initial "burn-in" or "warm-up" samples need to be discared.
+
+Second, even once one is past the burn-in phase, and particularly in models where there is a lot of dependence amongst parameters in the posterior distribution, the chain can take a long time to give enough samples to effectly represent the full posterior distribution. When this happens the chain is said to be poorly mixed or slowly mixing, and one may need to run the chain for many iterations (sometimes millions of iterations).
+
+In general an iteration of the chain sequentially samples the different parameters in the model, sometimes with some of the parameters sampled jointly as a block. There are different sub-algorithms, or samplers, that can be used on any given parameter, and users can choose to try out different samplers to see which give the fastest convergence (i.e., least burn-in) and fastest mixing.
+
 # Setting up the pump model
 
 Here's the graph of the pump model discussed in the BUGS_models module.
@@ -211,7 +223,7 @@ for(ch in seq_len(nChains)) {
 Considerations: you'll want to think about how to set up the over-dispersed starting points and the number of iterations to use for burn-in.
 
 
-CHECK if can use a single chain
+
 
 # Assessing MCMC performance from multiple chains
 

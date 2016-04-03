@@ -16,15 +16,13 @@ library(nimble)
 
 While NIMBLE is largely compatible with BUGS as implemented in WinBUGS/openBUGS/JAGS, we implement things differently in some ways. In this module we'll discuss some of the specific ways that NIMBLE builds models.
 
-# Data nodes and constants
+# Pump model
 
-In BUGS and JAGS, constants such as the number of observations or groups, fixed covariate values, fixed indices for vectors, and data are all set as 'data'. 
+Here's the pump model, also used in some of the other modules.
 
-In NIMBLE, we distinguish between true constants, which are quantities that are never changed, and must be provided when the model is defined, from *data* which is a label for the role a node plays in a model.
+<center><img src="figures/pumpDAG.jpg"></center>
 
-Nodes marked as data will by default be protected from any functions that would simulate over their values (though it is possible to change this behavior).
-
-```{r, data}
+```{r, pump}
 pumpCode <- nimbleCode({ 
   for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta)
@@ -34,7 +32,17 @@ pumpCode <- nimbleCode({
   alpha ~ dexp(1.0)
   beta ~ dgamma(0.1,1.0)
 })
+```
 
+# Data nodes and constants
+
+In BUGS and JAGS, constants such as the number of observations or groups, fixed covariate values, fixed indices for vectors, and data are all set as 'data'. 
+
+In NIMBLE, we distinguish between true constants, which are quantities that are never changed, and must be provided when the model is defined, from *data* which is a label for the role a node plays in a model.
+
+Nodes marked as data will by default be protected from any functions that would simulate over their values (though it is possible to change this behavior).
+
+```{r, data}
 N <- 10
 t <- c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)
 x <- c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22)
@@ -192,7 +200,7 @@ NIMBLE allows you to use alternative parameterizations and allows you to give ar
 
 Thus instead of needing to specify a normal distribution based on the precision you can use the standard deviation directly. For example if you wanted to follow Gelman (2006) in using a uniform prior on the standard deviation scale for the scale of a normal distribution, in BUGS or JAGS that would look like this:
 
-```{r, prec}
+```{r, prec, eval=FALSE}
 precCode <- nimbleCode({
 y ~ dnorm(mu, tau)
 tau <- 1/(sigma*sigma)
@@ -201,7 +209,7 @@ sigma ~ dunif(0, 10)
 ```
 
 In NIMBLE you can (and should) do this simply as:
-```{r, sd}
+```{r, sd, eval=FALSE}
 sdCode <- nimbleCode({
 y ~ dnorm(mu, sd = sigma)
 sigma ~ dunif(0, 10)
@@ -223,7 +231,8 @@ for(i in 1:n)
       y[i] ~ dnorm(0, tau)
 tau ~ dgamma(1, 1)
 })
-precModel <- nimbleModel(precCode, inits = list(tau = 100))
+precModel <- nimbleModel(precCode, inits = list(tau = 100),
+          constants = list(n = 10))
 precModel$getNodeNames()
 ```
 
@@ -237,7 +246,7 @@ Here's the DAG for this simple model, illustrating the lifted node.
 precModel$nodeFunctions$lifted_d1_over_sqrt_oPtau_cP$simulate
 ```
 
-# Lifted nodes: implications for updating model quantities
+# Lifted nodes: how not to code in Nimble
 
 Because of the possibility of lifted nodes, it is important that programs written to adapt to
 different model structures use NIMBLE’s systems for querying the model
@@ -249,7 +258,9 @@ precModel$y
 precModel$lifted_d1_over_sqrt_oPtau_cP
 ```
 
-Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why *y* is close to its mean of zero even though *tau* is very small. 
+Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why the *y* values are  close to their mean of zero even though *tau* is very small. 
+
+# Lifted nodes: how to code in Nimble
 
 And here's correct usage:
 

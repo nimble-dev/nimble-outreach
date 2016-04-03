@@ -103,7 +103,9 @@ One context in which this comes up is topic modeling. You might have textual dat
 
 # Basic topic model 
 
-A (very) basic model might look like this:
+A (very) basic model might look like this.
+
+<center><img src="figures/topicModel.jpg"></center>
 
 ```{r, multi}
 code <- nimbleCode({
@@ -141,7 +143,7 @@ m$y
 
 Those of you familiar with Gibbs sampling may recognize that with a multinomial likelihood and Dirichlet prior, you can analytically integrate over $p[topic,]$ for all topics. This eliminates a layer in the model and should improve MCMC performance by reducing dependence amongst the model parameters and by simply reducing the number of parameters needing to be sampled.
 
-Integrating over the proportions gives the Dirichlet-multinomial distribution, whose [density](https://en.wikipedia.org/wiki/Dirichlet-multinomial_distribution) involves a heap of gamma functions. 
+Integrating over the proportions gives the Dirichlet-multinomial distribution, whose [density](https://en.wikipedia.org/wiki/Dirichlet-multinomial_distribution#For_a_multinomial_distribution_over_category_counts) involves a heap of gamma functions. 
 
 # Dirichlet-multinomial nimbleFunctions
 
@@ -191,7 +193,7 @@ registerDistributions(list(
 
 # Using the user-defined distribution
 
-We can now rewrite the topic model as follows. We won't apply this to a real dataset but one could now use this rewritten model in an algorithm such as MCMC, as in the first exercise.
+We can now rewrite the topic model as follows. We won't apply this to a real dataset, but one could now use this rewritten model in an algorithm such as MCMC, as in the first exercise.
 
 ```{r, dirmulti-topic}
 code2 <- nimbleCode({
