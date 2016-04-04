@@ -241,7 +241,7 @@ One option would be to reparameterize the model from the $a,b$ parameterization 
 
 # MCEM with reparameterization 
 
-Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of $\mu=0.898$ and $\sigma=0.043$, but we'd need to investigate further. Also, at present Nimble's MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1). 
+Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of $\hat\mu=0.898$ and $\hat\sigma=0.043$, but we'd need to investigate further. Also, at present Nimble's MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1). 
 
 ```{r, mcem-reparam}
 codeReparam <- nimbleCode({
