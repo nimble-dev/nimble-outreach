@@ -5,3 +5,6 @@ make module_BUGS_models.html
 or see Makefile for shorthand names for each module; e.g.:
 
 make bugs
+
+
+This will create both a single page html and a multi-page (slides) version of the html. 

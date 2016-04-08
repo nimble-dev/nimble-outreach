@@ -1,0 +1,61 @@
+List of available and planned modules and status. See also the file ../materials in the outreach repository for other notes related to potential modules.
+
+MCMC concepts
+planned
+
+BUGS code intro
+     planned
+
+basic model building
+     available
+
+basic MCMC
+     available
+
+customizing MCMC
+
+data nodes
+     available
+
+constants and RHS variables
+     available
+
+user-defined distributions
+     available
+
+comparing MCMCs
+
+vectorized BUGS expressions
+           available; needs work
+
+user-defined functions: covariance function example
+             planned
+
+user-defined samplers
+available
+
+RC functions
+available
+
+modelValues
+planned
+
+Programming with models (1): operating a model
+available 
+
+Programming with models (2): determining model structure
+available 
+
+Programming with models (3): nimbleFunction concepts and basic MLE example
+in progress
+
+Programming with models (4): nimbleFunction example - posterior predictive p-values
+planned
+
+Censoring/Truncation
+        possible
+
+particle filtering introduction
+
+particle filtering more advanced
+

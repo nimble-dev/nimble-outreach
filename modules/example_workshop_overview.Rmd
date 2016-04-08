@@ -130,6 +130,13 @@ Here are some of the features you can do in Nimble that we are most excited abou
 * Email [nimble.stats@gmail.com](the Nimble development team)
 * Follow announcements via the [Nimble announcements list](https://groups.google.com/forum/#!forum/nimble-announce)
 
+# Participating in NIMBLE
+
+* File bug reports or feature requests as [https://github.com/nimble-dev](Github issues).
+* Email [nimble.stats@gmail.com](the Nimble development team) if you're interested in participating in the development of Nimble.
+* Develop an algorithm using NIMBLE and either share it with us (e.g., by a Git pull request or more informall) or develop an R package that depends on Nimble.
+* We have funding to bring selected users to Berkeley for intensive collaboration; contact us if you have an interesting use for NIMBLE in mind and want to explore possibilities with us.
+
 
 # The Legal Stuff
 

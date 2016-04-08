@@ -1,8 +1,12 @@
-User-defined distributions 
-==========================
-NIMBLE training materials module
----------------------------------
-Nimble Development Team
+---
+title: "User-defined distributions"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
 
 ```{r chunksetup, include=FALSE} 
 # include any code here you don't want to show up in the document,
