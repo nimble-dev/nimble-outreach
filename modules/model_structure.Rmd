@@ -6,11 +6,6 @@ output:
   html_document:
     code_folding: show
 ---
-Using BUGS Models
-==========================
-NIMBLE training materials module
----------------------------------
-Nimble Development Team
 
 ```{r chunksetup, include=FALSE} 
 # include any code here you don't want to show up in the document,
@@ -18,6 +13,7 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
+read_chunk("chunks.R")
 ```
 
 # Running example: the pump model

@@ -14,6 +14,7 @@ output:
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
+read_chunk('chunks.R')
 ```
 
 # Data nodes and constants
@@ -56,7 +57,6 @@ pump <- nimbleModel(pumpCode,
 As discussed, we can set data values, but we cannot simulate into a data node. 
 
 ```{r, data-manip}
-Now let's look
 pump$isData('x')
 pump$x
 pump$simulate('x')
@@ -73,6 +73,26 @@ and JAGS, NIMBLE allows both to be provided in the the constants
 argument to *nimbleModel()*, in which case NIMBLE determines which are
 which, based on which variables appear on the left-hand side of BUGS
 declarations.
+
+# Setting data with *setData()*
+
+We can also use *setData()* to set the data values after the model is build.
+
+```{r, setdata}
+N <- 10
+t <- c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)
+x <- c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22)
+pumpConsts <- list(t = t, N = 10)
+pumpData <- list(x = x)
+pumpInits <- list(alpha = 1, beta = 1,
+         theta = rep(0.1, pumpConsts$N))
+pump <- nimbleModel(pumpCode,  constants = pumpConsts, inits = pumpInits)
+pump$x
+pump$isData('x')
+pump$setData(pumpData)
+pump$x
+pump$isData('x')
+```
 
 
 # Data nodes and missing values

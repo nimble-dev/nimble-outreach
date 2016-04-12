@@ -25,6 +25,6 @@ model_structure: model_structure.html
 operating_model: operating_model.html
 run_mcmc: run_mcmc.html
 user_sampler: user_sampler.html
-use_dist: user_dist.html
+user_dist: user_dist.html
 vectorizing: vectorizing.html
 

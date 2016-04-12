@@ -31,7 +31,7 @@ Caveats:
 
 # A basic demonstration
 
-Suppose we wanted to mimic R's vectorization capabilities. Here are a couple examples. The first one is silly because we can already have R exponentiate a vector and that exponentiation happens in compiled code. The second one might seem silly, but it's not, because R will make two separate calls to compiled code and therefore run two loops, while our nimbleFunction only runs one loop.
+Suppose we wanted to mimic R's vectorization capabilities. First we'll see a basic example of exponentiating all the elements of a vector.  Doing that via Nimble is a bit silly because we can already have R exponentiate a vector and that exponentiation happens in compiled code. 
 
 nimbleFunctions used in this way need a run function, type and dimension information for arguments and a *returnType()* line.
 
@@ -179,5 +179,5 @@ props2 <- cmprobit(alphas, M)
 )
 ```
 
-So we get a nice 5-fold speedup, even though all of the R code was vectorized. In the first exercise, you'll consider an example of replacing an explicit for loop in R.
+So we get a nice 5-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.
 

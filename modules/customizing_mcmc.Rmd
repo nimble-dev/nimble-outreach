@@ -13,6 +13,7 @@ output:
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
+read_chunk('chunks.R')
 ```
 
 
@@ -23,7 +24,7 @@ Here's the graph of the pump model.
 
 <center><img src="figures/pumpDAG.jpg"></center>
 
-Here we set up the pump model and build a default MCMC. 
+Here we set up the pump model.
 
 ```{r, pump-code}
 ```
@@ -32,12 +33,45 @@ Here we set up the pump model and build a default MCMC.
 ```{r, pump-compile}
 ```
 
+# NIMBLE's default MCMC
+
+Here are the results from running NIMBLE's default MCMC:
+
+```{r, pump-default, fig.height=5, fig.width=12}
+pumpConf <- configureMCMC(pump, print = TRUE)
+pumpConf$addMonitors(c('alpha', 'beta', 'theta'))
+pumpMCMC <- buildMCMC(pumpConf)
+CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
+
+niter <- 1000
+burnin <- 200
+
+CpumpMCMC$run(niter)
+samples <- as.matrix(CpumpMCMC$mvSamples)
+
+library(coda)
+mcmc <- as.mcmc(samples[(burnin+1):nrow(samples), ])
+crosscorr(mcmc[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])
+effectiveSize(mcmc)
+
+par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
+tsplot(samples[ , 'alpha'], xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+tsplot(samples[ , 'beta'], xlab = 'iteration',
+     ylab = expression(beta), main = expression(beta))
+plot(samples[ , 'alpha'], samples[ , 'beta'], xlab = expression(alpha),
+     ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
+tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
+     ylab = expression(theta[1]), main = expression(theta[1]))
+```
 
 # Customizing samplers
 
 One of Nimble's most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with Nimble's default MCMC and then make modifications. 
 
 ```{r customize-mcmc}
+pumpConf <- configureMCMC(pump)
+pumpConf$addMonitors(c('alpha', 'beta', 'theta'))
 pumpConf$getSamplers()
 pumpConf$removeSamplers('alpha')
 pumpConf$addSampler(target = c('alpha'), type = 'slice')
@@ -54,6 +88,7 @@ We can look at diagnostics and see if the change in samplers had an effect. Inte
 
 ```{r output2, fig.height=5, fig.width=12}
 samples2 <- as.matrix(CpumpMCMC$mvSamples)
+
 mcmc2 <- as.mcmc(samples2[(burnin+1):nrow(samples2), ])
 crosscorr(mcmc2[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])
 effectiveSize(mcmc2)
@@ -63,7 +98,7 @@ plot(samples2[ , 'alpha'], type = 'l', xlab = 'iteration',
      ylab = expression(alpha), main = expression(alpha))
 plot(samples2[ , 'beta'], type = 'l', xlab = 'iteration',
      ylab = expression(beta), main = expression(beta))
-plot(samples2[ , 'alpha'], samples[ , 'beta'], xlab = expression(alpha),
+plot(samples2[ , 'alpha'], samples2[ , 'beta'], xlab = expression(alpha),
      ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
 plot(samples2[ , 'theta[1]'], type = 'l', xlab = 'iteration',
      ylab = expression(theta[1]), main = expression(theta[1]))
@@ -89,10 +124,23 @@ Cpump$setInits(pumpInits)
 set.seed(0)
 CpumpMCMC$run(niter)
 
+
+```{r output3, fig.height=5, fig.width=12}
 samples3 <- as.matrix(CpumpMCMC$mvSamples)
 mcmc3 <- as.mcmc(samples3[(burnin+1):nrow(samples3), ])
 crosscorr(mcmc3[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])
 effectiveSize(mcmc3)
+
+par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
+plot(samples3[ , 'alpha'], type = 'l', xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+plot(samples3[ , 'beta'], type = 'l', xlab = 'iteration',
+     ylab = expression(beta), main = expression(beta))
+plot(samples3[ , 'alpha'], samples3[ , 'beta'], xlab = expression(alpha),
+     ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
+plot(samples3[ , 'theta[1]'], type = 'l', xlab = 'iteration',
+     ylab = expression(theta[1]), main = expression(theta[1]))
+
 ```
 
 In this case the block sampler appears to be less effective, but it might just be that the adaptation hasn't had enough time to take full effect in only 1000 iterations.  Very often block sampling gives big improvements.

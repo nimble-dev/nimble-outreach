@@ -14,6 +14,7 @@ output:
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
+read_chunk('chunks.R')
 ```
 
 # Data nodes and constants
@@ -48,11 +49,13 @@ When a variable is specified only on the right-hand side of expression(s) in the
 Let's see this with the pump model. First note that ```pump$t``` does not exist because *t* was given as a constant.
 
 ```{r, rhs-constant}
-pump$t
+try(pump$t)
 pump$getNodeNames()
 ```
 
-Now we'll set *t* as a variable. It still doesn't appear in the list of nodes, but we can access it. 
+# Setting right-hand side nodes
+
+Now we'll set *t* as a variable instead of a constant. It still doesn't appear in the list of nodes, but we can access it. 
 
 ```{r, rhs-variable}
 pumpInits <- list(alpha = 1, beta = 1,

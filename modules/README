@@ -1,10 +1,11 @@
-to create the html for a given module:
+All modules available, planned, desired, etc. are listed in MODULES, including their status.
 
-make module_BUGS_models.html
+To create the html for a given module:
+
+make data_nodes.html
 
 or see Makefile for shorthand names for each module; e.g.:
 
-make bugs
-
+make data_nodes
 
 This will create both a single page html and a multi-page (slides) version of the html. 

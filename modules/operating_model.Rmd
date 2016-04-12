@@ -6,11 +6,7 @@ output:
   html_document:
     code_folding: show
 ---
-Using BUGS Models
-==========================
-NIMBLE training materials module
----------------------------------
-Nimble Development Team
+
 
 ```{r chunksetup, include=FALSE} 
 # include any code here you don't want to show up in the document,
@@ -18,6 +14,7 @@ Nimble Development Team
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
+read_chunk("chunks.R")
 ```
 
 # Running example: the pump model
@@ -56,7 +53,7 @@ pump$theta
 pump$getLogProb('theta')  # log-prior for random effects
 ```
 
-# Operating the model: *calculate()* and *simulate()*
+# Operating the model: *calculate()* 
 
 We have control over the model. In particular, for every node, Nimble provides *calculate()* and *simulate()* functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms. 
 
@@ -67,6 +64,8 @@ pump$alpha <- 0.5
 pump$calculate(pump$getDependencies('alpha'))   # or calculate(pump, ...)
 pump$getLogProb('theta')  # equivalent to pump$logProb_theta or getLogProb(pump, 'theta')
 ```
+
+# Operating the model: *simulate()*
  
 If we want to simulate (from the prior), we can do that too.
 

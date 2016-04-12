@@ -197,7 +197,7 @@ registerDistributions(list(
 
 # Using the user-defined distribution
 
-We can now rewrite the topic model as follows. We won't apply this to a real dataset, but one could now use this rewritten model in an algorithm such as MCMC, as in the first exercise.
+We can now rewrite the topic model as follows. We won't apply this to a real dataset, but one could now use this rewritten model in an algorithm such as MCMC, as in one of the exercises.
 
 ```{r, dirmulti-topic}
 code2 <- nimbleCode({
@@ -223,5 +223,4 @@ In real document analysis, you would want to infer topics for unlabelled documen
 
 Also, a standard model for topic analysis, called *latent Dirichlet allocation*, allows each document to be a mixture of topics. One could expand the code here to allow for that. 
 
-# Exercises
 
