@@ -1,7 +1,7 @@
 ---
 title: "Programming with models (2): Inspecting model structure"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -41,7 +41,7 @@ The parameters and data in a model are represented as nodes in a graph. Here we 
 
 # Inspecting the model
 
-Nimble provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
+NIMBLE provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
 
 What are the variables in the model? What are the dependencies of a given node (this is information used in many algorithms)?
 

@@ -1,7 +1,7 @@
 ---
 title: "Compiling parts of R"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -26,12 +26,12 @@ How might you use this functionality?  Basically, this is useful for math-focuse
 
 Caveats:
 
-  - the Nimble compiler can't compile arbitrary R code, only code that is part of the Nimble DSL
+  - the NIMBLE compiler can't compile arbitrary R code, only code that is part of the NIMBLE DSL
   - you need to give a bit of information about variable types and dimensions
 
 # A basic demonstration
 
-Suppose we wanted to mimic R's vectorization capabilities. First we'll see a basic example of exponentiating all the elements of a vector.  Doing that via Nimble is a bit silly because we can already have R exponentiate a vector and that exponentiation happens in compiled code. 
+Suppose we wanted to mimic R's vectorization capabilities. First we'll see a basic example of exponentiating all the elements of a vector.  Doing that via NIMBLE is a bit silly because we can already have R exponentiate a vector and that exponentiation happens in compiled code. 
 
 nimbleFunctions used in this way need a run function, type and dimension information for arguments and a *returnType()* line.
 
@@ -41,7 +41,7 @@ nimExp <- nimbleFunction(
        run = function(x = double(1)) {
            returnType(double(1))
            n <- length(x)
-           # Nimble needs help in determining the dimension and size of out
+           # NIMBLE needs help in determining the dimension and size of out
            declare(out, double(1))
            setSize(out, n)
            # core computation
@@ -51,7 +51,7 @@ nimExp <- nimbleFunction(
 })
 ```
 
-We need the *declare()* and *setSize()* in this case (but not the next one) because it's hard for the Nimble compiler to figure out the dimension/size of *out*.
+We need the *declare()* and *setSize()* in this case (but not the next one) because it's hard for the NIMBLE compiler to figure out the dimension/size of *out*.
 
 Actually nimbleFunctions can handle vectorized code using the Eigen linear algebra package, so let's consider a different implementation.
 

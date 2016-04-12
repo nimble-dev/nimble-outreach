@@ -1,7 +1,7 @@
 ---
 title: "Building a model"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -17,7 +17,7 @@ library(nimble)
 
 # A basic example
 
-Here we'll give a simple example of building a model. Other modules will show how one can fit the model and give more detail on various features of Nimble.
+Here we'll give a simple example of building a model. Other modules will show how one can fit the model and give more detail on various features of NIMBLE.
 
 We'll use the *pump* model example from BUGS. The data set
   describes failure times of some pumps.  
@@ -53,11 +53,11 @@ pumpCode <- nimbleCode({
 
 You can also load it directly from the standard BUGS example file formats (see `help(readBUGSmodel)`).
 
-# Building a model in Nimble
+# Building a model in NIMBLE
 
 In BUGS or JAGS, one would provide the model code, input data and constant values, and (optionally) initial parameter values and the software would directly create and run an MCMC, returning the results to you.
 
-In Nimble, you have more fine-grained control over these steps. The first step is to build an R representation of the model.
+In NIMBLE, you have more fine-grained control over these steps. The first step is to build an R representation of the model.
 
 ```{r build-model}
 N <- 10
@@ -71,7 +71,7 @@ pump <- nimbleModel(pumpCode,
           data = pumpData, constants = pumpConsts, inits = pumpInits)
 ```
 
-If all you want to do is run an MCMC, Nimble's fine-grained control might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
+If all you want to do is run an MCMC, NIMBLE's fine-grained control might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
 
 # Nodes and variables
 

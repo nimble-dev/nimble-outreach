@@ -1,7 +1,7 @@
 ---
 title: "Indexing and model checking"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -18,7 +18,7 @@ library(nimble)
 
 # Indexing
 
-Nimble can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the *dimensions* argument to *nimbleModel()*.
+NIMBLE can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the *dimensions* argument to *nimbleModel()*.
 
 For simplicity, we'll just consider specifying dimensions explicitly in the BUGS code. Here's a normal-Wishart example; note that we have indices on all non-scalar objects. 
 
@@ -34,7 +34,7 @@ code <- nimbleCode({
 
 # Model checking
 
-  - In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, Nimble does fairly aggressive model checking. 
+  - In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, NIMBLE does fairly aggressive model checking. 
   - This checking can take a bit of time.
   - We report cases where models are created but values for nodes of the model are NA. It's perfectly fine to create a model and not provide values for nodes until later (e.g., letting an MCMC sample from the prior to set initial values), but we do warn you if that's the case, as seen here for *y*, *mu0* and *mu* (and therefore for the objects storing their probability density values also).
 

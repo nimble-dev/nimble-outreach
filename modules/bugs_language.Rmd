@@ -1,7 +1,7 @@
 ---
 title: "The BUGS language"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -25,9 +25,9 @@ Basically, one specifies the variables in the hierarchical model as lines of cod
   - stochastic nodes (data and parameters) are indicated with `~`
   - deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by `<-`.
 
-There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
+There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed NIMBLE R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
 
-Information on how Nimble's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in Nimble can be found in Section 5 of the [Nimble Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+Information on how NIMBLE's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in NIMBLE can be found in Section 5 of the [NIMBLE Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
 
 # A basic example
 

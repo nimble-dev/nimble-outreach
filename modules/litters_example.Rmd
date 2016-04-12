@@ -1,7 +1,7 @@
 ---
 title: "Extended example: the litters model"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -20,11 +20,11 @@ library(nimble)
 
 Here we'll work through an extended example of customizing an MCMC (and considering maximum likelihood via MCEM) for a tricky, but simple, example model.
 
-The example is the *litters* example from the original BUGS examples, available with Nimble in the *classic-bugs/vol1/litters* directory of the installed package (call ```searchpaths()``` after loading the Nimble package to find where this directory is).
+The example is the *litters* example from the original BUGS examples, available with NIMBLE in the *classic-bugs/vol1/litters* directory of the installed package (call ```searchpaths()``` after loading the NIMBLE package to find where this directory is).
 
 # Litters model
 
-Here's the original litters model. There are $G=2$ groups of rat litters, with $N=16$  litters (i.e., mothers) in each group, and a variable number of pups in each litter. Survival of the pups in a litter is governed by a survival probability for each litter, but the probabilities for the litters within a group are considered to come from a common distribution, thereby borrowing strength across the litters in a group.
+Here's the original litters model. There are $G=2$ groups of rat litters, with $N=16$  litters (i.e., mothers) in each group, and a variable number of pups in each litter. Survival of the pups in a litter is governed by a survival probability for each litter, $p_{i,j}, but the probabilities for the litters within a group are considered to come from a common distribution, thereby borrowing strength across the litters in a group.
 
 <center><img src="figures/littersDAG.jpg"></center>
 
@@ -64,7 +64,7 @@ model <- nimbleModel(code, constants = consts, data = data, inits = inits)
 
 # Basic MCMC
 
-Here's Nimble's default MCMC.
+Here's NIMBLE's default MCMC.
 
 ```{r, default, fig.height=5, fig.width=12}
 thin <- 10
@@ -92,13 +92,15 @@ tsplot(smp_basic[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim
 tsplot(smp_basic[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 
 library(coda)
-effectiveSize(as.mcmc(smp_basic))
+nBurn <- niter / 5
+postBurn <- (nBurn:niter) / thin
+effectiveSize(as.mcmc(smp_basic[postBurn, ]))
 ```
 
 
 # Blocking the hyperparameters
 
-Given the posterior correlation between the hyperparameters for each group, an obvious first step is to try a block samplers on $(a_1,b_1)$ and $(a_2, b_2)$.
+Given the posterior correlation between the hyperparameters for each group, an obvious first step is to try (separate) block samplers on $(a_1,b_1)$ and $(a_2, b_2)$.
 
 ```{r, hyp-block, fig.height=5, fig.width=12}
 conf$removeSamplers(c('a', 'b'))
@@ -122,9 +124,6 @@ tsplot(smp_hyp_block[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
 tsplot(smp_hyp_block[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
 tsplot(smp_hyp_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 
-library(coda)
-nBurn <- niter / 5
-postBurn <- (nBurn:niter) / thin
 effectiveSize(as.mcmc(smp_hyp_block[postBurn, ]))
 ```
 
@@ -134,10 +133,10 @@ But perhaps we should have blocked the hyperparameters with their dependent rand
 
 ```{r, effects-block, fig.height=5, fig.width=12}
 conf$removeSamplers(c('a', 'b', 'p'))
-gp1nodes <- model$getDependencies(c('a[1]', 'b[1]'), stochOnly = TRUE)
-gp2nodes <- model$getDependencies(c('a[2]', 'b[2]'), stochOnly = TRUE)
-conf$addSampler(gp1nodes, 'RW_block')
-conf$addSampler(gp2nodes, 'RW_block')
+group1nodes <- model$getDependencies(c('a[1]', 'b[1]'), stochOnly = TRUE)
+group2nodes <- model$getDependencies(c('a[2]', 'b[2]'), stochOnly = TRUE)
+conf$addSampler(group1nodes, 'RW_block')
+conf$addSampler(group2nodes, 'RW_block')
 
 mcmc <- buildMCMC(conf)
 Cmcmc <- compileNimble(mcmc, project = model, resetFunctions = TRUE)
@@ -161,13 +160,13 @@ More generally, in any model, we might ask if we have the ideal blocking structu
 
 # Automated blocking
 
-The Nimble developers have developed a procedure for automated blocking in MCMC, based on considering the posterior correlation of all parameters in initial trial runs of the MCMC, as discussed [here](http://arxiv.org/abs/1503.05621).
+The NIMBLE developers have developed a procedure for automated blocking in MCMC, based on considering the posterior correlation of all parameters in initial trial runs of the MCMC, as discussed [here](http://arxiv.org/abs/1503.05621).
 
 Let's try automated blocking for this model.
 
 ```{r, autoBlock}
 auto <- autoBlock(model, autoIt = 10000, run = list())
-confAuto <- auto$spec  # 'spec' is a holdever from a previous version of R and will be changed to 'conf' shortly
+confAuto <- auto$conf
 mcmc <- buildMCMC(confAuto)
 ```
 
@@ -210,7 +209,7 @@ nimCopy(model, Cmodel)  # reinitialize
 set.seed(0)
 system.time(Cmcmc$run(niter))
 
-smp_cross <- as.matrix(Cmcmc$mvSamples[postBurn, ])
+smp_cross <- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1,4))
 tsplot(smp_cross[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
@@ -218,7 +217,7 @@ tsplot(smp_cross[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
 tsplot(smp_cross[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
 tsplot(smp_cross[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 
-effectiveSize(as.mcmc(smp_cross))
+effectiveSize(as.mcmc(smp_cross[postBurn, ]))
 ```
 
 # Using MCEM 
@@ -231,7 +230,7 @@ We might also be interested in an empirical Bayes (maximum likelihood for the hy
 model2 <- model$newModel()   
 inits <- list( a = c(12, 12), b=c(12, 12) )
 model2$setInits(inits)
-mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 500, 
+mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 250, 
      optimMethod = 'Nelder-Mead')
 print(system.time(   # takes a while:
         out <- mcem(maxit = 100)
@@ -241,11 +240,11 @@ out
 
 The MCEM is converging quite slowly. In this case, since we can analytically integrate over $p$, we can directly maximize the marginal likelihood and see that the MLE for the first group is $\hat{a_1}=43.5$, $\hat{b_1}=4.94$. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
 
-One option would be to reparameterize the model from the $a,b$ parameterization to the mean and standard deviation of the beta distribution. That's easy in Nimble, since we provide that parameterization as an alternative parameterization!
+One option would be to reparameterize the model from the $a,b$ parameterization to the mean and standard deviation of the beta distribution. That's easy in NIMBLE, since we provide that parameterization as an alternative parameterization!
 
 # MCEM with reparameterization 
 
-Here we use Nimble's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of $\hat\mu=0.898$ and $\hat\sigma=0.043$, but we'd need to investigate further. Also, at present Nimble's MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1). 
+Here we use NIMBLE's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of $\hat\mu=0.898$ and $\hat\sigma=0.043$, but we'd need to investigate further. Also, at present NIMBLE's MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1). 
 
 ```{r, mcem-reparam}
 codeReparam <- nimbleCode({
@@ -261,7 +260,7 @@ codeReparam <- nimbleCode({
 inits <- list( mu = c(.5, .5), sigma = c(.1, .1))
 modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, 
              inits = inits)
-mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 500, 
+mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 250, 
             optimMethod = 'Nelder-Mead')
 print(system.time(
         outReparam <- mcemReparam(maxit = 20)

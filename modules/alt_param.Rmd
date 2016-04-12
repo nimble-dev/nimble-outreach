@@ -1,7 +1,7 @@
 ---
 title: "Alternative parameterizations and 'lifted nodes'"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -70,7 +70,7 @@ Here's the DAG for this simple model, illustrating the lifted node.
 precModel$nodeFunctions$lifted_d1_over_sqrt_oPtau_cP$simulate
 ```
 
-# Lifted nodes: how not to code in Nimble
+# Lifted nodes: how not to code in NIMBLE
 
 Because of the possibility of lifted nodes, it is important that programs written to adapt to
 different model structures use NIMBLE’s systems for querying the model
@@ -84,7 +84,7 @@ precModel$lifted_d1_over_sqrt_oPtau_cP
 
 Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why the *y* values are  close to their mean of zero even though *tau* is very small. 
 
-# Lifted nodes: how to code in Nimble
+# Lifted nodes: how to code in NIMBLE
 
 And here's correct usage:
 

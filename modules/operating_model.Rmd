@@ -1,7 +1,7 @@
 ---
 title: "Programming with models (1): Operating a model"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -55,9 +55,9 @@ pump$getLogProb('theta')  # log-prior for random effects
 
 # Operating the model: *calculate()* 
 
-We have control over the model. In particular, for every node, Nimble provides *calculate()* and *simulate()* functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms. 
+We have control over the model. In particular, for every node, NIMBLE provides *calculate()* and *simulate()* functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms. 
 
-Let's change values in the model and recalculate the density values. As we'll discuss in a later module, Nimble sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask Nimble to do so based on the dependencies of the altered node.
+Let's change values in the model and recalculate the density values. As we'll discuss in a later module, NIMBLE sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask NIMBLE to do so based on the dependencies of the altered node.
 
 ```{r, model-operate}
 pump$alpha <- 0.5
@@ -81,5 +81,5 @@ pump$calculate(pump$getDependencies('theta'))  # recalculate dependents
 pump$lambda
 ```
 
-**Question**: The Nimble developers chose to not automatically recalculate density values when a node's value changes nor deterministic dependent nodes when a parent node changes. We can discuss the the design considerations in making that choice and the advantages and disadvantages of the choice.
+**Question**: The NIMBLE developers chose to not automatically recalculate density values when a node's value changes nor deterministic dependent nodes when a parent node changes. We can discuss the the design considerations in making that choice and the advantages and disadvantages of the choice.
 

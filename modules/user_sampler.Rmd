@@ -1,7 +1,7 @@
 ---
 title: "User-defined MCMC samplers"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -18,9 +18,9 @@ library(nimble)
 
 # Introduction
 
-Nimble's MCMC system was designed to be extensible - it's easy for users to add samplers and use them right away for their models.
+NIMBLE's MCMC system was designed to be extensible - it's easy for users to add samplers and use them right away for their models.
 
-Let's start with a very basic example that slightly extends Nimble's built-in Metropolis sampler.
+Let's start with a very basic example that slightly extends NIMBLE's built-in Metropolis sampler.
 
 # The reflection sampler
 
@@ -80,15 +80,15 @@ sampler_RW_reflect <- nimbleFunction(
 
 # Comments
 
-1) This implementation doesn't account for bounds induced by user-defined truncation of a node in a model nor the bounds defined by the parameters of a uniform distribution. That would require more diving into Nimble's internal plumbing, though in the future more information on the bounds of a node at run-time should be available.
+1) This implementation doesn't account for bounds induced by user-defined truncation of a node in a model nor the bounds defined by the parameters of a uniform distribution. That would require more diving into NIMBLE's internal plumbing, though in the future more information on the bounds of a node at run-time should be available.
 
-2) We used some functionality that may not be fully explained in Nimble's documentation. For this sort of thing, you can always ask a question in the Nimble user Google group. 
+2) We used some functionality that may not be fully explained in NIMBLE's documentation. For this sort of thing, you can always ask a question in the NIMBLE user Google group. 
 
-# Nimble's Metropolis sampler
+# NIMBLE's Metropolis sampler
 
-Often it's easiest when writing a new sampler that is similar to an existing Nimble sampler to just modify the code for the existing sampler. In this case, Nimble's exisiting random walk sampler has some nice additional functionality that we can include in our reflection sampler, specifically the ability to adapt the proposal variance. 
+Often it's easiest when writing a new sampler that is similar to an existing NIMBLE sampler to just modify the code for the existing sampler. In this case, NIMBLE's exisiting random walk sampler has some nice additional functionality that we can include in our reflection sampler, specifically the ability to adapt the proposal variance. 
 
-Let's look at the code for the Metropolis sampler. You can find this in the file *R/MCMC_samplers.R* in the source code for the Nimble package (note that ```nimble:::sampler_RW``` is not useful to look at, as it shows a modified version of this -- the nimbleFunction after it has been built).
+Let's look at the code for the Metropolis sampler. You can find this in the file *R/MCMC_samplers.R* in the source code for the NIMBLE package (note that ```nimble:::sampler_RW``` is not useful to look at, as it shows a modified version of this -- the nimbleFunction after it has been built).
 
 ```{r, Metr}
 sampler_RW <- nimbleFunction(
@@ -169,7 +169,7 @@ Much of that code has to do with making the sampler adaptive, so that the propos
 
 # The full reflection sampler function
 
-Below is the full new reflection sampler, building on Nimble's baseline random walk sampler to include adaptation.
+Below is the full new reflection sampler, building on NIMBLE's baseline random walk sampler to include adaptation.
 
 
 ```{r, newSampler}

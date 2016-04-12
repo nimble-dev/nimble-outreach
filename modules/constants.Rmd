@@ -1,7 +1,7 @@
 ---
 title: "Constants"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -23,7 +23,7 @@ In BUGS and JAGS, constants such as the number of observations or groups, fixed 
 
 In NIMBLE, we distinguish between true constants, which are quantities that are never changed, and must be provided when the model is defined, from *data* which is a label for the role a node plays in a model.
 
-Finally, Nimble also allows one to specify right-hand-side-only variables that are not nodes in the model but can be changed.
+Finally, NIMBLE also allows one to specify right-hand-side-only variables that are not nodes in the model but can be changed.
 
 Let's work through an example using the pump model.
 

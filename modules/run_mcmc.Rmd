@@ -1,7 +1,7 @@
 ---
 title: "Running an MCMC"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -43,9 +43,9 @@ We first need to build the model.
 
 # Configuring a basic MCMC
 
-Setting up and running an MCMC in Nimble takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.
+Setting up and running an MCMC in NIMBLE takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.
 
-First we *configure* the MCMC, which means setting up the samplers to be used for each node or group of nodes. Nimble provides a default configuration, but we'll see shortly how you can modify that. 
+First we *configure* the MCMC, which means setting up the samplers to be used for each node or group of nodes. NIMBLE provides a default configuration, but we'll see shortly how you can modify that. 
 
 ```{r, conf}
 pumpConf <- configureMCMC(pump, print = TRUE)
@@ -67,7 +67,7 @@ CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
 
 # Running the MCMC
 
-Now let's run the MCMC. We don't recommend running the R version of the MCMC for very many iterations - it's really slow - in part because iterating in R is slow and in part because iterating with a model in Nimble requires even more overhead. 
+Now let's run the MCMC. We don't recommend running the R version of the MCMC for very many iterations - it's really slow - in part because iterating in R is slow and in part because iterating with a model in NIMBLE requires even more overhead. 
 
 ```{r run-mcmc}
 niter <- 1000
@@ -108,7 +108,7 @@ tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
 
 # Using CODA
 
-Nimble does not provide any MCMC diagnostics. (At least not yet; there's no reason one couldn't write code for various diagnostics using the Nimble system.)  But one can easily use CODA or other R packages with the MCMC output from a Nimble MCMC.
+NIMBLE does not provide any MCMC diagnostics. (At least not yet; there's no reason one couldn't write code for various diagnostics using the NIMBLE system.)  But one can easily use CODA or other R packages with the MCMC output from a NIMBLE MCMC.
 
 ```{r coda}
 library(coda)
@@ -122,7 +122,7 @@ One could apply the commonly used Gelman-Rubin potential scale reduction factor 
 
 # Running multiple chains
 
-At the moment, we haven't set up Nimble to automatically run multiple chains, such as would be needed for calculation of the Gelman-Rubin potential scale reduction factor (*gelman.diag()* in the *coda* package). But it's straightforward to do this yourself.
+At the moment, we haven't set up NIMBLE to automatically run multiple chains, such as would be needed for calculation of the Gelman-Rubin potential scale reduction factor (*gelman.diag()* in the *coda* package). But it's straightforward to do this yourself.
 
 ```{r, multi-chain}
 nChains <- 3

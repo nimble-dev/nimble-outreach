@@ -115,7 +115,7 @@ Not bad: going to C++ gives us a speedup of approximately 40-fold.
 
 # User-defined samplers
 
-1) Write a user-defined sampler that modifies Nimble's default Metropolis (*sampler_RW()*) sampler to use a gamma proposal distribution and includes the ratio of the proposal distributions (the Hastings adjustment) for a non-symmetric proposal distribution. Have your proposal centered on the mean of the gamma distribution. When you call *rgamma* in the run function, you'll want to use the {mean, sd} alternative parameterization of the  gamma distribution.
+1) Write a user-defined sampler that modifies NIMBLE's default Metropolis (*sampler_RW()*) sampler to use a gamma proposal distribution and includes the ratio of the proposal distributions (the Hastings adjustment) for a non-symmetric proposal distribution. Have your proposal centered on the mean of the gamma distribution. When you call *rgamma* in the run function, you'll want to use the {mean, sd} alternative parameterization of the  gamma distribution.
 
 2) Write a user-defined sampler that operates only on the categorical distribution. You could have it be an independence sampler with fixed probabilities of proposing each of the values or a sampler that puts a fixed amount of mass on the current value and distributes the remainder such that the probabilities decays as the difference from the current value increases. 
 [check with PdV and DT on how we handle this case now]

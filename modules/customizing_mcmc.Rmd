@@ -1,7 +1,7 @@
 ---
 title: "Customizing an MCMC"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -67,7 +67,7 @@ tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
 
 # Customizing samplers
 
-One of Nimble's most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with Nimble's default MCMC and then make modifications. 
+One of NIMBLE's most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with NIMBLE's default MCMC and then make modifications. 
 
 ```{r customize-mcmc}
 pumpConf <- configureMCMC(pump)
@@ -106,7 +106,7 @@ plot(samples2[ , 'theta[1]'], type = 'l', xlab = 'iteration',
 
 # Blocking parameters
 
-Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, Nimble makes it easy for users to choose what parameters to sample in blocks.
+Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, NIMBLE makes it easy for users to choose what parameters to sample in blocks.
 
 We'll try that here for $\alpha$ and $\beta$.
 

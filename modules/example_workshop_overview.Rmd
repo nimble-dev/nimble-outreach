@@ -39,12 +39,12 @@ I encourage you to:
 A few additional thoughts on my pedagogical philosophy here:
 
 - I want to expose you to a lot of tools and ideas that you can come back to when you need them and when you have time for more depth.
-- My aim is not to show you how to use specific statistical methods or analysis techniques. My goal is to get you up to speed generally in Nimble.
-- It can be hard to absorb everything in such a concentrated situation. Hopefully the material presented will be useful to you over the longer-term as you do more work with Nimble.
+- My aim is not to show you how to use specific statistical methods or analysis techniques. My goal is to get you up to speed generally in NIMBLE.
+- It can be hard to absorb everything in such a concentrated situation. Hopefully the material presented will be useful to you over the longer-term as you do more work with NIMBLE.
 
 # RStudio and R Markdown
 
-We'll present most of the material from within RStudio, using R Markdown documents with embedded R code. R Markdown is an extension to the Markdown markup language that makes it easy to write HTML in a simple plain text format.  This allows us to both run the R/Nimble code directly as well as compile on-the-fly to an HTML file that can be used for presentation. All files will be available on [Github](https://github.com/nimble-dev/nimble-outreach).  
+We'll present most of the material from within RStudio, using R Markdown documents with embedded R code. R Markdown is an extension to the Markdown markup language that makes it easy to write HTML in a simple plain text format.  This allows us to both run the R/NIMBLE code directly as well as compile on-the-fly to an HTML file that can be used for presentation. All files will be available on [Github](https://github.com/nimble-dev/nimble-outreach).  
 
 Note: The files named *moduleX_blah_slides.html* have individual slides, while the files named *moduleX_blah.html* have the same content but all on one page.
 
@@ -82,11 +82,11 @@ Then to update from the repository to get any changes we've made:
 - `cd /directory/where/you/put/the/repository/nimble-outreach`
 - `git pull`
 
-# Installing Nimble
+# Installing NIMBLE
 
-Nimble is on CRAN and can be installed in the usual way for an R package, or can be downloaded directly from [http://r-nimble.org/download](http://r-nimble.org/download). More details can also be found in Section 4 of the [Nimble manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
+NIMBLE is on CRAN and can be installed in the usual way for an R package, or can be downloaded directly from [http://r-nimble.org/download](http://r-nimble.org/download). More details can also be found in Section 4 of the [NIMBLE manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
 
-# What is Nimble?
+# What is NIMBLE?
 
 - A system for using algorithms on hierarchical statistical models
 - A system for programming algorithms to be used on hierarchical models
@@ -94,9 +94,9 @@ Nimble is on CRAN and can be installed in the usual way for an R package, or can
 - A flexible extension of the BUGS and JAGS systems
 
 
-# Why Nimble?
+# Why NIMBLE?
 
-Here are some of the features you can do in Nimble that we are most excited about and that distinguish Nimble from other software:
+Here are some of the features you can do in NIMBLE that we are most excited about and that distinguish NIMBLE from other software:
 
 - customize your MCMCs, including choosing what parameters to block
 - define your own distributions and functions for use in BUGS code
@@ -104,12 +104,12 @@ Here are some of the features you can do in Nimble that we are most excited abou
 - write an algorithm in our system for easy dissemination to others
 - compile mathematical operations in R without needing to know or write C or C++
 
-# Why Not Nimble?
+# Why Not NIMBLE?
 
 * For MCMCs that rely heavily on Gibbs sampling, JAGS may be faster because of more efficient internal implementation of the calculations
-* For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in Nimble (but in many examples we've tried we've been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers.
-* Nimble does not (yet) allow for stochastic indexing; JAGS is your best bet for that.
-* Nimble can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good). We anticipate big improvements in future versions of Nimble (in the late 2016 into 2017 timeframe).
+* For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in NIMBLE (but in many examples we've tried we've been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers.
+* NIMBLE does not (yet) allow for stochastic indexing; JAGS is your best bet for that.
+* NIMBLE can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good). We anticipate big improvements in future versions of NIMBLE (in the late 2016 into 2017 timeframe).
 
 # What are my other options? 
 
@@ -126,18 +126,18 @@ Here are some of the features you can do in Nimble that we are most excited abou
 
 # Getting help with NIMBLE
 
-* Post to the [Nimble user group](https://groups.google.com/forum/#!forum/nimble-users)
-* Email [nimble.stats@gmail.com](the Nimble development team)
-* Follow announcements via the [Nimble announcements list](https://groups.google.com/forum/#!forum/nimble-announce)
+* Post to the [NIMBLE user group](https://groups.google.com/forum/#!forum/nimble-users)
+* Email [nimble.stats@gmail.com](the NIMBLE development team)
+* Follow announcements via the [NIMBLE announcements list](https://groups.google.com/forum/#!forum/nimble-announce)
 
 # Participating in NIMBLE
 
 * File bug reports or feature requests as [https://github.com/nimble-dev](Github issues).
-* Email [nimble.stats@gmail.com](the Nimble development team) if you're interested in participating in the development of Nimble.
-* Develop an algorithm using NIMBLE and either share it with us (e.g., by a Git pull request or more informall) or develop an R package that depends on Nimble.
+* Email [nimble.stats@gmail.com](the NIMBLE development team) if you're interested in participating in the development of NIMBLE.
+* Develop an algorithm using NIMBLE and either share it with us (e.g., by a Git pull request or more informall) or develop an R package that depends on NIMBLE.
 * We have funding to bring selected users to Berkeley for intensive collaboration; contact us if you have an interesting use for NIMBLE in mind and want to explore possibilities with us.
 
 
 # The Legal Stuff
 
-- This material was created by the Nimble development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution
+- This material was created by the NIMBLE development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution

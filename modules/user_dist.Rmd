@@ -1,7 +1,7 @@
 ---
 title: "User-defined distributions"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
@@ -18,15 +18,15 @@ library(nimble)
 
 # Introduction
 
-Nimble provides a variety of distributions, as seen in Section 5.2.3 of the [Nimble manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
+NIMBLE provides a variety of distributions, as seen in Section 5.2.3 of the [NIMBLE manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
 
-However, there are lots of other probability distributions out there that you might want to use. So Nimble allows you to code up your own distribution and then use it in BUGS code.
+However, there are lots of other probability distributions out there that you might want to use. So NIMBLE allows you to code up your own distribution and then use it in BUGS code.
 
 Furthermore, in some cases one can use a user-defined distribution as a way to reduce computation by analytically integrating over a component of the model.
 
 # Basic example
 
-To illustrate, suppose that Nimble did not provide an exponential distribution. Here's what you would do to code up your own exponential distribution and make it available in BUGS code.
+To illustrate, suppose that NIMBLE did not provide an exponential distribution. Here's what you would do to code up your own exponential distribution and make it available in BUGS code.
 
 First we write nimbleFunctions for the density and simulation functions. Note the naming is analogous to how probability distributions are handled in R. 
 
@@ -74,12 +74,12 @@ registerDistributions(list(
                )))
 ```
 
-This makes Nimble aware of the distribution as a BUGS distribution. 
+This makes NIMBLE aware of the distribution as a BUGS distribution. 
 
 Comments: 
 
   - If you want to allow users to use different parameterizations for the distribution, you can do this via the *Rdist* element. Here we allow use of *scale*, with the conversion from *scale* to the canonical *rate* specified.
-  - The *altParams* information can be used in Nimble's MCMC conjugacy system and sequential Monte Carlo system but is not required.
+  - The *altParams* information can be used in NIMBLE's MCMC conjugacy system and sequential Monte Carlo system but is not required.
 
 # Using the distribution
 
@@ -99,7 +99,7 @@ plot(seq_len(niter), as.matrix(mcmc$mvSamples)[,1], type = 'l')
 
 # A more interesting example
 
-While educational, the exponential example is not particularly interesting given Nimble already provides that distribution.  Let's consider an example where using a user-defined distribution can improve MCMC performance (run time and sampling efficiency).
+While educational, the exponential example is not particularly interesting given NIMBLE already provides that distribution.  Let's consider an example where using a user-defined distribution can improve MCMC performance (run time and sampling efficiency).
 
 When working with multinomial data, the Dirichlet distribution can be used to relate the probability vector in the multinomial to covariates and to induce over-dispersion.
 
@@ -219,7 +219,7 @@ m2$y
 
 # Final thoughts
 
-In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of $\alpha$ that indicate the unknown topic of each such document, but at the moment, Nimble does not allow for random indices. 
+In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of $\alpha$ that indicate the unknown topic of each such document, but at the moment, NIMBLE does not allow for random indices. 
 
 Also, a standard model for topic analysis, called *latent Dirichlet allocation*, allows each document to be a mixture of topics. One could expand the code here to allow for that. 
 

@@ -1,7 +1,7 @@
-.PHONY: example_workshop_overview alt_param bugs_language build_model compile_R constants customizing_mcmc data_nodes indexing litters_example mcmc_concepts model_structure operating_model run_mcmc user_sampler vectorizing user_dist
+.PHONY: example_workshop_overview alt_param bugs_language build_model compile_R constants customizing_mcmc data_nodes indexing litters_example mcmc_concepts model_structure operating_model run_mcmc user_sampler vectorizing user_dist user_function
 
 # all: clean example_workshop_overview build_model
-all: clean example alt_param bugs_language build_model compile_R constants customizing_mcmc data_nodes indexing litters_example mcmc_concepts model_structure operating_model run_mcmc user_sampler vectorizing user_dist
+all: clean example alt_param bugs_language build_model compile_R constants customizing_mcmc data_nodes indexing litters_example mcmc_concepts model_structure operating_model run_mcmc user_sampler vectorizing user_dist user_function
 
 clean:
 	rm -rf *.md *.html *.pdf cache/ figure/
@@ -26,5 +26,6 @@ operating_model: operating_model.html
 run_mcmc: run_mcmc.html
 user_sampler: user_sampler.html
 user_dist: user_dist.html
+user_function: user_function.html
 vectorizing: vectorizing.html
 

@@ -1,7 +1,7 @@
 ---
 title: "Vectorizing in NIMBLE"
 subtitle: "NIMBLE training materials module"
-author: "Nimble Development Team"
+author: "NIMBLE Development Team"
 output:
   html_document:
     code_folding: show
