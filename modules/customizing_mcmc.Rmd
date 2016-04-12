@@ -1,0 +1,100 @@
+---
+title: "Customizing an MCMC"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+
+
+# The pump model
+
+Here's the graph of the pump model.
+
+<center><img src="figures/pumpDAG.jpg"></center>
+
+Here we set up the pump model and build a default MCMC. 
+
+```{r, pump-code}
+```
+```{r, pump-model}
+```
+```{r, pump-compile}
+```
+
+
+# Customizing samplers
+
+One of Nimble's most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with Nimble's default MCMC and then make modifications. 
+
+```{r customize-mcmc}
+pumpConf$getSamplers()
+pumpConf$removeSamplers('alpha')
+pumpConf$addSampler(target = c('alpha'), type = 'slice')
+
+pumpMCMC <- buildMCMC(pumpConf)
+CpumpMCMC <- compileNimble(pumpMCMC, project = pump, resetFunctions = TRUE)
+
+Cpump$setInits(pumpInits)
+set.seed(0)
+CpumpMCMC$run(niter)
+```
+
+We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between $\alpha$ and $\beta$, a simple change just to the univariate sampler for $\alpha$ has had a real effect on MCMC performance.
+
+```{r output2, fig.height=5, fig.width=12}
+samples2 <- as.matrix(CpumpMCMC$mvSamples)
+mcmc2 <- as.mcmc(samples2[(burnin+1):nrow(samples2), ])
+crosscorr(mcmc2[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])
+effectiveSize(mcmc2)
+
+par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
+plot(samples2[ , 'alpha'], type = 'l', xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+plot(samples2[ , 'beta'], type = 'l', xlab = 'iteration',
+     ylab = expression(beta), main = expression(beta))
+plot(samples2[ , 'alpha'], samples[ , 'beta'], xlab = expression(alpha),
+     ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
+plot(samples2[ , 'theta[1]'], type = 'l', xlab = 'iteration',
+     ylab = expression(theta[1]), main = expression(theta[1]))
+```
+
+# Blocking parameters
+
+Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, Nimble makes it easy for users to choose what parameters to sample in blocks.
+
+We'll try that here for $\alpha$ and $\beta$.
+
+
+```{r customize-mcmc2}
+pumpConf$getSamplers()
+pumpConf$removeSamplers(c('alpha', 'beta'))
+pumpConf$addSampler(target = c('alpha','beta'), type = 'RW_block', 
+control = list(adaptInterval = 100))
+
+pumpMCMC <- buildMCMC(pumpConf)
+CpumpMCMC <- compileNimble(pumpMCMC, project = pump, resetFunctions = TRUE)
+
+Cpump$setInits(pumpInits)
+set.seed(0)
+CpumpMCMC$run(niter)
+
+samples3 <- as.matrix(CpumpMCMC$mvSamples)
+mcmc3 <- as.mcmc(samples3[(burnin+1):nrow(samples3), ])
+crosscorr(mcmc3[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])
+effectiveSize(mcmc3)
+```
+
+In this case the block sampler appears to be less effective, but it might just be that the adaptation hasn't had enough time to take full effect in only 1000 iterations.  Very often block sampling gives big improvements.
+
+

@@ -1,61 +1,70 @@
 List of available and planned modules and status. See also the file ../materials in the outreach repository for other notes related to potential modules.
 
-MCMC concepts
-planned
+mcmc_concepts: MCMC concepts
+   rump exists
 
-BUGS code intro
-     planned
+bugs_language: BUGS code intro
+   rump exists
 
-basic model building
-     available
+build_model: basic model building
+   available
 
-basic MCMC
-     available
+run_mcmc: basic MCMC
+   available
 
-customizing MCMC
+customizing_mcmc: customizing MCMC
+   available
 
-data nodes
-     available
+alternative_param: alternative parameterizations and lifted nodes
+   available
+                
+data_nodes: data nodes
+   available
 
-constants and RHS variables
-     available
+constants: constants and RHS variables
+   available
 
 user-defined distributions
-     available
+   available
 
 comparing MCMCs
+   planned
 
-vectorized BUGS expressions
-           available; needs work
+vectorizing: vectorized BUGS expressions
+   rump exists; needs work
 
 user-defined functions: covariance function example
-             planned
+   planned
 
-user-defined samplers
-available
+user_sampler: user-defined samplers
+   available
 
-RC functions
-available
+compile_R: RC functions
+   available
+
+indexing: indexing and model checking
+   available
 
 modelValues
-planned
+   planned
 
-Programming with models (1): operating a model
-available 
+operating_model: Programming with models (1): operating a model
+   available; might want more material
 
-Programming with models (2): determining model structure
-available 
+model_structure: Programming with models (2): determining model structure
+   available; could use more material
 
 Programming with models (3): nimbleFunction concepts and basic MLE example
-in progress
+   planned
 
 Programming with models (4): nimbleFunction example - posterior predictive p-values
-planned
+   planned
 
 Censoring/Truncation
-        possible
+   TBD
 
 particle filtering introduction
-
+   TBD
+ 
 particle filtering more advanced
-
+   TBD

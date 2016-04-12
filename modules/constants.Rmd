@@ -1,0 +1,67 @@
+---
+title: "Constants"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Data nodes and constants
+
+In BUGS and JAGS, constants such as the number of observations or groups, fixed covariate values, fixed indices for vectors, and data are all set as 'data'. 
+
+In NIMBLE, we distinguish between true constants, which are quantities that are never changed, and must be provided when the model is defined, from *data* which is a label for the role a node plays in a model.
+
+Finally, Nimble also allows one to specify right-hand-side-only variables that are not nodes in the model but can be changed.
+
+Let's work through an example using the pump model.
+
+# Pump model
+
+Here's the pump model, also used in some of the other modules.
+
+<center><img src="figures/pumpDAG.jpg"></center>
+
+```{r, pump-code}
+```
+```{r, pump-model}
+```
+
+
+
+# Constants vs. right-hand side nodes
+
+Regression predictors (i.e., covariates or independent variables) can be treated either as constants or as nodes in the model. The latter allows one to change the values after the model is built. 
+
+When a variable is specified only on the right-hand side of expression(s) in the model, it does not become a node in the model because it is not a parameter or data, but it is a variable in the model that can be assigned new values. 
+
+Let's see this with the pump model. First note that ```pump$t``` does not exist because *t* was given as a constant.
+
+```{r, rhs-constant}
+pump$t
+pump$getNodeNames()
+```
+
+Now we'll set *t* as a variable. It still doesn't appear in the list of nodes, but we can access it. 
+
+```{r, rhs-variable}
+pumpInits <- list(alpha = 1, beta = 1,
+         theta = rep(0.1, pumpConsts$N), t = t)
+pump2 <- nimbleModel(pumpCode, constants = list(N = N),
+      data = pumpData, inits = pumpInits) 
+pump2$getNodeNames()
+pump2$t
+pump2$t[1] <- 7.3
+pump2$t
+```
+

@@ -1,8 +1,12 @@
-Compiling Parts of R
-==========================
-NIMBLE training materials module
----------------------------------
-Nimble Development Team
+---
+title: "Compiling parts of R"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
 
 ```{r chunksetup, include=FALSE} 
 # include any code here you don't want to show up in the document,
@@ -177,72 +181,3 @@ props2 <- cmprobit(alphas, M)
 
 So we get a nice 5-fold speedup, even though all of the R code was vectorized. In the first exercise, you'll consider an example of replacing an explicit for loop in R.
 
-# Exercises
-
-1) Let's consider using a nimbleFunction to replace a for loop that can't be avoided in R. Write a second order random walk using a nimbleFunction. Here's the code for the R version. 
-
-```{r, markov-exer}
-set.seed(0)
-n <- 1e6
-path <- rep(0, n)
-rho1 <- .8
-rho2 <- .1
-path[1:2] <- rnorm(2)
-print(system.time(
-for(i in 3:n)
-      path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
-))
-tsplot(path[1:5000])
-```
-
-Now fill out the nimbleFunction version and test the timing.
-
-```{r, markov-exer-scaffold, eval=FALSE}
-mc <- nimbleFunction(
-   run = function( ... ) ) {
-       returnType( ... )
-       ...
-       return(...)
-})
-cmc <- compileNimble(mc)
-set.seed(0)
-system.time(path <- cmc(n, rho1, rho2))
-```
-
-2) Generalize your code to work for an arbitrary order of dependence.
-
-3) Use *nimStop()* as part of an error check that ensures that the length of the path to be sampled is longer than the order of the dependence. 
-
-
-# solution to problem 1
-
-```{r, solution}
-set.seed(0)
-n <- 1e6
-path <- rep(0, n)
-rho1 <- .8
-rho2 <- .1
-path[1:2] <- rnorm(2)
-print(system.time(
-for(i in 3:n)
-      path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
-))
-tsplot(path[1:5000])
-
-
-mc <- nimbleFunction(
-   run = function(n = double(0), rho1 = double(0), rho2 = double(0)) {
-       returnType(double(1))
-       declare(path, double(1, n))
-       path[1] <- rnorm(1)
-       path[2] <- rnorm(1)
-       for(i in 3:n) 
-             path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
-       return(path)
-})
-cmc <- compileNimble(mc)
-set.seed(0)
-system.time(path <- cmc(n, rho1, rho2))
-```
-
-Not bad: going to C++ gives us a speedup of approximately 40-fold. 

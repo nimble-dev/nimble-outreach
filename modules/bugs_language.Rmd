@@ -1,0 +1,65 @@
+---
+title: "The BUGS language"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+
+# The BUGS language
+
+The BUGS language is described in detail in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.html). 
+
+Basically, one specifies the variables in the hierarchical model as lines of code:
+
+  - stochastic nodes (data and parameters) are indicated with `~`
+  - deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by `<-`.
+
+There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed Nimble R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
+
+Information on how Nimble's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in Nimble can be found in Section 5 of the [Nimble Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+
+# A basic example
+
+
+We'll use the *pump* model example from the original BUGS software. The data set
+  describes the failure rates of some pumps.  
+
+<center><img src="figures/pumpDAG.jpg"></center>
+
+In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with a prior that ties the random effects together using a common distribution, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
+
+# Specifying the BUGS code for a model
+
+Here we specify the pump code directly in R. We can walk through some of details via the comments in the BUGS code.
+
+```{r model-code}
+library(nimble)
+pumpCode <- nimbleCode({ 
+  for (i in 1:N){
+
+      # likelihood (data model)
+      x[i] ~ dpois(lambda[i])
+
+      # latent process (random effects)
+      # linear predictor      
+      lambda[i] <- theta[i]*t[i]
+      # random effects distribution
+      theta[i] ~ dgamma(alpha,beta)
+  }
+  # priors on hyperparameters
+  alpha ~ dexp(1.0)
+  beta ~ dgamma(0.1,1.0)
+})
+```
+

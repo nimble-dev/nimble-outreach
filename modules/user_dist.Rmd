@@ -225,8 +225,3 @@ Also, a standard model for topic analysis, called *latent Dirichlet allocation*,
 
 # Exercises
 
-1) Simulate some data under the topic model given above and then fit the data via MCMC. Compare computational time and mixing for the multinomial likelihood plus Dirichlet prior model to those from the Dirichlet-multinomial representation.
-
-2) Write the Pareto distribution as a user-defined distribution.
-
-3) Write an "IID normal" distribution that can be used for a vector of $n$ normally distributed random variables, $y_i \sim N(\mu, \sigma)$. Compare the speed of an MCMC based on using a for loop and *dnorm* in BUGS code to that based on using the user-defined distribution. When using the standard specification, make sure the MCMC does not use conjugate (Gibbs) sampling so results are comparable (you can set `useConjugacy=FALSE` in *configureMCMC()*). This makes for an apples to apples comparison since our MCMC system won't know how to use your IID normal distribution for conjugate updates. 

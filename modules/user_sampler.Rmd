@@ -1,8 +1,12 @@
-User-defined MCMC samplers
-==========================
-NIMBLE training materials module
----------------------------------
-Nimble Development Team
+---
+title: "User-defined MCMC samplers"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
 
 ```{r chunksetup, include=FALSE} 
 # include any code here you don't want to show up in the document,
@@ -28,9 +32,61 @@ Instead, we can use *reflection*. If the proposed $\theta^\prime < b$ where $b$ 
 
 <center><img src="figures/reflection.jpg"></center>
 
+
+# Writing a nimbleFunction for the reflection sampler
+
+The *run* function for the reflection sampler needs to check the proposed value against the distribution bounds and modify the proposal as needed.
+
+However, we first need to modify the *setup* function to check if the distribution has finite lower or upper bounds and only consider scalar parameters, thereby avoiding some computation at run-time. 
+
+```{r, reflect-sampler}
+sampler_RW_reflect <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control, scale) {
+        dist <- model$getNodeDistribution(target)
+        scalar <- getDistribution(dist)$types$value$nDim == 0
+        if(scalar)
+                rg <- getDistribution(dist)$range
+        if(scalar && (rg[1] > -Inf || rg[2] < Inf))
+                  reflect <- TRUE else reflect <- FALSE
+
+        calcNodes  <- model$getDependencies(target)
+    },
+    
+    run = function() {
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+
+        if(reflect) {
+             if(propValue < rg[1]) propValue <- 2*rg[1] - propValue
+             if(propValue > rg[2]) propValue <- 2*rg[2] - propValue
+        }
+ 
+        model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+    },
+    methods = list(
+            reset = function () {}
+            )
+)
+```
+
+
+# Comments
+
+1) This implementation doesn't account for bounds induced by user-defined truncation of a node in a model nor the bounds defined by the parameters of a uniform distribution. That would require more diving into Nimble's internal plumbing, though in the future more information on the bounds of a node at run-time should be available.
+
+2) We used some functionality that may not be fully explained in Nimble's documentation. For this sort of thing, you can always ask a question in the Nimble user Google group. 
+
 # Nimble's Metropolis sampler
 
-Coding this sampler would be easy from scratch and is even easier if we simply make very small changes to the existing Nimble Metropolis sampler.
+Often it's easiest when writing a new sampler that is similar to an existing Nimble sampler to just modify the code for the existing sampler. In this case, Nimble's exisiting random walk sampler has some nice additional functionality that we can include in our reflection sampler, specifically the ability to adapt the proposal variance. 
 
 Let's look at the code for the Metropolis sampler. You can find this in the file *R/MCMC_samplers.R* in the source code for the Nimble package (note that ```nimble:::sampler_RW``` is not useful to look at, as it shows a modified version of this -- the nimbleFunction after it has been built).
 
@@ -111,82 +167,10 @@ sampler_RW <- nimbleFunction(
 
 Much of that code has to do with making the sampler adaptive, so that the proposal scale adapts so that a good acceptance rate is achieved.
 
-# Modifying the *setup* function
+# The full reflection sampler function
 
-The *run* function for the reflection sampler needs to check the proposed value against the distribution bounds and modify the proposal as needed.
+Below is the full new reflection sampler, building on Nimble's baseline random walk sampler to include adaptation.
 
-However, we first need to modify the *setup* function to check if the distribution has finite lower or upper bounds and only consider scalar parameters, thereby avoiding some computation at run-time. 
-
-```{r, setup-reflect, eval=FALSE}
-    setup = function(model, mvSaved, target, control) {
-        ###  control list extraction  ###
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
-        ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('more than one target; cannot use RW sampler, try RW_block sampler')
-
-        ################# ADDED code #############################
-        dist <- model$getNodeDistribution(target)
-        scalar <- getDistribution(dist)$types$value$nDim == 0
-        if(scalar)
-                rg <- getDistribution(dist)$range
-        if(scalar && (rg[1] > -Inf || rg[2] < Inf))
-                  reflect <- TRUE else reflect <- FALSE
-        ##########################################################
-
-        calcNodes  <- model$getDependencies(target)
-        ###  numeric value generation  ###
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
-        scaleHistory          <- c(0, 0)
-        acceptanceRateHistory <- c(0, 0)
-        ## variables previously inside of nested functions:
-        optimalAR <- 0.44
-        gamma1    <- 0
-    }
-```
-
-# Modifying the *run* function
-
-```{r, run-reflect, eval=FALSE}
-    run = function() {
-        propValue <- rnorm(1, mean = model[[target]], sd = scale)
-
-        #################### ADDED code #############################
-        if(reflect) {
-             while(propValue < rg[1] | propValue > rg[2]) {
-                   if(propValue < rg[1]) propValue <- 2*rg[1] - propValue
-                   if(propValue > rg[2]) propValue <- 2*rg[2] - propValue
-             }
-        }
-        #############################################################
- 
-        model[[target]] <<- propValue
-        logMHR <- calculateDiff(model, calcNodes)
-        jump <- decide(logMHR)
-        if(jump)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
-                         logProb = TRUE)
-        else
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
-                         logProb = TRUE)
-        if(adaptive)     adaptiveProcedure(jump)
-    }
-```
-
-# Comments
-
-1) This implementation doesn't account for bounds induced by user-defined truncation of a node in a model nor the bounds defined by the parameters of a uniform distribution. That would require more diving into Nimble's internal plumbing, though in the future more information on the bounds of a node at run-time should be available.
-
-2) We used some functionality that may not be fully explained in Nimble's documentation. For this sort of thing, you can always ask a question in the Nimble user Google group. 
-
-# The full sampler function
-
-We also need to change the name of the function.
 
 ```{r, newSampler}
 sampler_RW_reflect <- nimbleFunction(
@@ -202,14 +186,14 @@ sampler_RW_reflect <- nimbleFunction(
         if(length(targetAsScalar) > 1)     
                        stop('more than one target; cannot use RW sampler, try RW_block sampler')
 
-        ### ADDED code
+        ### ADDED code ############################################
         dist <- model$getNodeDistribution(target)
         scalar <- getDistribution(dist)$types$value$nDim == 0
         if(scalar)
                 rg <- getDistribution(dist)$range
         if(scalar && (rg[1] > -Inf || rg[2] < Inf))
                   reflect <- TRUE else reflect <- FALSE
-        ###
+        ###########################################################
 
         calcNodes  <- model$getDependencies(target)
         ###  numeric value generation  ###
@@ -226,10 +210,16 @@ sampler_RW_reflect <- nimbleFunction(
     
     run = function() {
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
+
+        ### ADDED code ############################################
         if(reflect) {
-             if(propValue < rg[1]) propValue <- 2*rg[1] - propValue
-             if(propValue > rg[2]) propValue <- 2*rg[2] - propValue
-        } 
+             while(propValue < rg[1] | propValue > rg[2]) {
+                   if(propValue < rg[1]) propValue <- 2*rg[1] - propValue
+                   if(propValue > rg[2]) propValue <- 2*rg[2] - propValue
+             }
+        }
+        ###########################################################
+
         model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
         jump <- decide(logMHR)
@@ -336,11 +326,3 @@ So we see that the sampler escaped from near zero more quickly, though given tha
 Side note: the random effects variance component in this model is given a gamma prior on the precision scale, but best practices for random effects variance components, including a strong argument against the gamma/inverse-gamma prior, can be found in Gelman (2006, Bayesian Analysis 1:515-534).
 
 
-# Exercises
-
-1) Write a user-defined sampler that modifies Nimble's default Metropolis (*sampler_RW()*) sampler to use a gamma proposal distribution and includes the ratio of the proposal distributions (the Hastings adjustment) for a non-symmetric proposal distribution. Have your proposal centered on the mean of the gamma distribution. When you call *rgamma* in the run function, you'll want to use the {mean, sd} alternative parameterization of the  gamma distribution.
-
-2) Write a user-defined sampler that operates only on the categorical distribution. You could have it be an independence sampler with fixed probabilities of proposing each of the values or a sampler that puts a fixed amount of mass on the current value and distributes the remainder such that the probabilities decays as the difference from the current value increases. 
-[check with PdV and DT on how we handle this case now]
-
-3) Consider exercise 2 and modify the probabilities such that they are proportional to the current density of the model for each possible value of the categorical variable. This is a conjugate sampler on a categorical variables. 

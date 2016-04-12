@@ -1,0 +1,162 @@
+---
+title: "Running an MCMC"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+
+# A very basic MCMC
+
+The steps of running an MCMC are as follows:
+
+ - configure the MCMC
+ - build the MCMC
+ - compile a C++ version of the MCMC
+ - run the MCMC
+ - assess and use the MCMC samples
+
+
+# Build the model
+
+We first need to build the model.
+
+```{r, pump-code}
+```
+
+```{r, pump-model}
+```
+
+```{r, pump-compile}
+```
+
+# Configuring a basic MCMC
+
+Setting up and running an MCMC in Nimble takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.
+
+First we *configure* the MCMC, which means setting up the samplers to be used for each node or group of nodes. Nimble provides a default configuration, but we'll see shortly how you can modify that. 
+
+```{r, conf}
+pumpConf <- configureMCMC(pump, print = TRUE)
+```
+You also specify what nodes you'd like to get the MCMC samples provided as output.
+
+```{r, monitor}
+pumpConf$addMonitors(c('alpha', 'beta', 'theta'))
+```
+
+# Building the MCMC algorithm for the model 
+
+Next we'll build the MCMC algorithm for the model under the default configuration. And we'll create a compiled (i.e., C++) version of the MCMC that is equivalent in functionality but will run much faster.
+
+```{r build-mcmc}
+pumpMCMC <- buildMCMC(pumpConf)
+CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
+```
+
+# Running the MCMC
+
+Now let's run the MCMC. We don't recommend running the R version of the MCMC for very many iterations - it's really slow - in part because iterating in R is slow and in part because iterating with a model in Nimble requires even more overhead. 
+
+```{r run-mcmc}
+niter <- 1000
+set.seed(0)
+print(system.time(pumpMCMC$run(5)))  # R version
+set.seed(0)
+print(system.time(
+CpumpMCMC$run(niter)
+))
+```
+
+# Working with MCMC output
+
+The R and C MCMC samples are the same, so you can use the R MCMC for debugging. It's possible to step through the code line by line using R's debugging capabilities (not shown).
+
+```{r Rmcmc}
+Rsamples <- as.matrix(pumpMCMC$mvSamples)
+samples <- as.matrix(CpumpMCMC$mvSamples)
+
+identical(Rsamples, samples[1:5, ])
+```
+
+Now let's look at the MCMC performance
+
+```{r output-mcmc, fig.height=5, fig.width=12}
+tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
+
+par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
+tsplot(samples[ , 'alpha'], xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+tsplot(samples[ , 'beta'], xlab = 'iteration',
+     ylab = expression(beta), main = expression(beta))
+plot(samples[ , 'alpha'], samples[ , 'beta'], xlab = expression(alpha),
+     ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
+tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
+     ylab = expression(theta[1]), main = expression(theta[1]))
+```
+
+# Using CODA
+
+Nimble does not provide any MCMC diagnostics. (At least not yet; there's no reason one couldn't write code for various diagnostics using the Nimble system.)  But one can easily use CODA or other R packages with the MCMC output from a Nimble MCMC.
+
+```{r coda}
+library(coda)
+burnin <- 100
+mcmc <- as.mcmc(samples[(burnin+1):nrow(samples), ])
+crosscorr(mcmc[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])
+effectiveSize(mcmc)
+```
+
+One could apply the commonly used Gelman-Rubin potential scale reduction factor diagnostic, but one would need to run multiple chains.
+
+# Running multiple chains
+
+At the moment, we haven't set up Nimble to automatically run multiple chains, such as would be needed for calculation of the Gelman-Rubin potential scale reduction factor (*gelman.diag()* in the *coda* package). But it's straightforward to do this yourself.
+
+```{r, multi-chain}
+nChains <- 3
+pumpInits <- list(list(alpha = 1, beta = 1), list(alpha = 0.1, beta =30), list(alpha = 30, beta = 0.1))
+out <- list()
+set.seed(0)
+niter <- 3000
+burnIn <- 1000
+for(ch in seq_len(nChains)) {
+       Cpump$setInits(pumpInits[[ch]])
+       Cpump$simulate(pump$getDependencies(c('alpha','beta')))
+       Cmcmc <- compileNimble(pumpMCMC, project = pump, resetFunctions = TRUE)
+       Cmcmc$run(niter)
+       out[[ch]] <- as.mcmc(as.matrix(Cmcmc$mvSamples)[(1+burnIn):niter, ])
+}
+```
+
+Considerations: you'll want to think about how to set up the over-dispersed starting points and the number of iterations to use for burn-in.
+
+
+
+
+# Assessing MCMC performance from multiple chains
+
+```{r, gelman-rubin}
+smp <- do.call(mcmc.list, out)
+gelman.diag(smp)
+# and here's a graphical representation of the information
+tsplot(out[[1]][ , 'alpha'], xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+sq <- seq_along(out[[1]][ , 'alpha'])
+for(i in 2:3)
+      lines(sq, out[[i]][ , 'alpha'], col = i)
+```
+
+
+
+

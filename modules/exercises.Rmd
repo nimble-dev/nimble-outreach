@@ -1,0 +1,123 @@
+# Writing a model and operating it
+
+1) Write BUGS code for a normal random effects model with 6 groups and 10 observations in each group. You'll need multiple variance components.
+
+2) Set the hyperparameters (the variance components) for the model and simulate the random means and observations. Now fix the data nodes as 'data'. See what happens if you try to use *simulate()* on the data nodes. 
+
+3) Calculate the full density of the model. Next calculate just the log-likelihood.
+
+4) Compile the model and compare the time of calculating the full density in the compiled C++ model to the original R version of the model. (It may not be much different here for such a small model). You could use *system.time()* or for this comparison of a very fast calculation, *microbenchmark()* in the  *microbenchmark* package is likely to be more helpful.
+
+
+
+# Using MCMC
+
+1) Compare the MCMC performance of using univariate slice samplers on $\alpha$ and $\beta$ to the default samplers and to the blocked Metropolis sampler for ${\alpha, \beta}$ for longer MCMC runs. 
+
+2) Change the sampler for $\theta$ to be a single block Metropolis sampler. How does that affect MCMC performance? How much time does it take to run a set of 10 individual conjugate samplers on the elements of $\theta$ (from the default configuration) compared to a single block sampler on the vector $\theta$. 
+
+3) Suppose you wanted to consider the predictive distribution for a new pump. 
+    - Create a new version of the model that allows for this.  
+    - Set the data for the new model such that the new pump's number of failures is missing and not treated as a data node (see the BUGS_model module for information on working with data).
+    - Set up an MCMC for the new model. What kind of sampling should happen for the new pump failures? 
+
+# Customizing MCMC
+
+1) Compare the MCMC performance of using univariate slice samplers on $\alpha$ and $\beta$ to the default samplers and to the blocked Metropolis sampler for ${\alpha, \beta}$ for longer MCMC runs. 
+
+2) Change the sampler for $\theta$ to be a single block Metropolis sampler. How does that affect MCMC performance? How much time does it take to run a set of 10 individual conjugate samplers on the elements of $\theta$ (from the default configuration) compared to a single block sampler on the vector $\theta$. 
+
+3) Suppose you wanted to consider the predictive distribution for a new pump. 
+    - Create a new version of the model that allows for this.  
+    - Set the data for the new model such that the new pump's number of failures is missing and not treated as a data node (see the BUGS_model module for information on working with data).
+    - Set up an MCMC for the new model. What kind of sampling should happen for the new pump failures? 
+
+
+# Compiling R code
+
+
+1) Let's consider using a nimbleFunction to replace a for loop that can't be avoided in R. Write a second order random walk using a nimbleFunction. Here's the code for the R version. 
+
+```{r, markov-exer}
+set.seed(0)
+n <- 1e6
+path <- rep(0, n)
+rho1 <- .8
+rho2 <- .1
+path[1:2] <- rnorm(2)
+print(system.time(
+for(i in 3:n)
+      path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
+))
+tsplot(path[1:5000])
+```
+
+Now fill out the nimbleFunction version and test the timing.
+
+```{r, markov-exer-scaffold, eval=FALSE}
+mc <- nimbleFunction(
+   run = function( ... ) ) {
+       returnType( ... )
+       ...
+       return(...)
+})
+cmc <- compileNimble(mc)
+set.seed(0)
+system.time(path <- cmc(n, rho1, rho2))
+```
+
+2) Generalize your code to work for an arbitrary order of dependence.
+
+3) Use *nimStop()* as part of an error check that ensures that the length of the path to be sampled is longer than the order of the dependence. 
+
+
+# solution to problem 1
+
+```{r, solution}
+set.seed(0)
+n <- 1e6
+path <- rep(0, n)
+rho1 <- .8
+rho2 <- .1
+path[1:2] <- rnorm(2)
+print(system.time(
+for(i in 3:n)
+      path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
+))
+tsplot(path[1:5000])
+
+
+mc <- nimbleFunction(
+   run = function(n = double(0), rho1 = double(0), rho2 = double(0)) {
+       returnType(double(1))
+       declare(path, double(1, n))
+       path[1] <- rnorm(1)
+       path[2] <- rnorm(1)
+       for(i in 3:n) 
+             path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
+       return(path)
+})
+cmc <- compileNimble(mc)
+set.seed(0)
+system.time(path <- cmc(n, rho1, rho2))
+```
+
+Not bad: going to C++ gives us a speedup of approximately 40-fold. 
+
+
+# User-defined distributions
+
+1) Simulate some data under the topic model given above and then fit the data via MCMC. Compare computational time and mixing for the multinomial likelihood plus Dirichlet prior model to those from the Dirichlet-multinomial representation.
+
+2) Write the Pareto distribution as a user-defined distribution.
+
+3) Write an "IID normal" distribution that can be used for a vector of $n$ normally distributed random variables, $y_i \sim N(\mu, \sigma)$. Compare the speed of an MCMC based on using a for loop and *dnorm* in BUGS code to that based on using the user-defined distribution. When using the standard specification, make sure the MCMC does not use conjugate (Gibbs) sampling so results are comparable (you can set `useConjugacy=FALSE` in *configureMCMC()*). This makes for an apples to apples comparison since our MCMC system won't know how to use your IID normal distribution for conjugate updates. 
+
+# User-defined samplers
+
+1) Write a user-defined sampler that modifies Nimble's default Metropolis (*sampler_RW()*) sampler to use a gamma proposal distribution and includes the ratio of the proposal distributions (the Hastings adjustment) for a non-symmetric proposal distribution. Have your proposal centered on the mean of the gamma distribution. When you call *rgamma* in the run function, you'll want to use the {mean, sd} alternative parameterization of the  gamma distribution.
+
+2) Write a user-defined sampler that operates only on the categorical distribution. You could have it be an independence sampler with fixed probabilities of proposing each of the values or a sampler that puts a fixed amount of mass on the current value and distributes the remainder such that the probabilities decays as the difference from the current value increases. 
+[check with PdV and DT on how we handle this case now]
+
+3) Consider exercise 2 and modify the probabilities such that they are proportional to the current density of the model for each possible value of the categorical variable. This is a conjugate sampler on a categorical variables. 

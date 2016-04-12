@@ -1,0 +1,86 @@
+---
+title: "Programming with models (1): Operating a model"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+Using BUGS Models
+==========================
+NIMBLE training materials module
+---------------------------------
+Nimble Development Team
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Running example: the pump model
+
+We first need to build the model.
+
+```{r, pump-code}
+```
+
+```{r, pump-model}
+```
+
+```{r, pump-compile}
+```
+
+# Nodes and variables
+
+The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
+
+ - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. $\alpha$ in the pump model
+ - data: a known quantity in a model, also represented as a random variable, e.g., $x_1, x_2, \ldots$ in the pump model
+ - constants: other fixed quantities involved in the model, e.g., $N$ in the pump model
+ - node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., $\alpha$ or $x_3$ in the pump model
+ - variable: a collection of one or more nodes with the same name, e.g., $\alpha$ or $x$ in the pump model 
+
+# Values in the model
+
+What's the current value in a node or the value of the log probability density for that node?
+
+```{r, model-values}
+pump$x  
+pump$logProb_x  # log-likelihood components
+pump$getLogProb('x') # log-likelihood
+pump$lambda
+pump$theta
+pump$getLogProb('theta')  # log-prior for random effects
+```
+
+# Operating the model: *calculate()* and *simulate()*
+
+We have control over the model. In particular, for every node, Nimble provides *calculate()* and *simulate()* functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms. 
+
+Let's change values in the model and recalculate the density values. As we'll discuss in a later module, Nimble sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask Nimble to do so based on the dependencies of the altered node.
+
+```{r, model-operate}
+pump$alpha <- 0.5
+pump$calculate(pump$getDependencies('alpha'))   # or calculate(pump, ...)
+pump$getLogProb('theta')  # equivalent to pump$logProb_theta or getLogProb(pump, 'theta')
+```
+ 
+If we want to simulate (from the prior), we can do that too.
+
+```{r, model-simulate}
+set.seed(0)  # so the calculations are reproducible
+pump$simulate('theta')  # simulate from prior
+pump$theta
+pump$getLogProb('theta')  # log prob not yet updated!
+pump$calculate('theta')   # update it
+getLogProb(pump, 'theta')  # now we're good
+pump$lambda  # again, not updated
+pump$calculate(pump$getDependencies('theta'))  # recalculate dependents
+pump$lambda
+```
+
+**Question**: The Nimble developers chose to not automatically recalculate density values when a node's value changes nor deterministic dependent nodes when a parent node changes. We can discuss the the design considerations in making that choice and the advantages and disadvantages of the choice.
+

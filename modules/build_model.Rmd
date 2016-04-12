@@ -1,0 +1,85 @@
+---
+title: "Building a model"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# A basic example
+
+Here we'll give a simple example of building a model. Other modules will show how one can fit the model and give more detail on various features of Nimble.
+
+We'll use the *pump* model example from BUGS. The data set
+  describes failure times of some pumps.  
+
+<center><img src="figures/pumpDAG.jpg"></center>
+
+In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $i$ is assumed to follow a Poisson distribution, with mean $\lambda_i = \theta_i \cdot t_i$ where $t_i$ is the length of operation of the pump in thousands of hours and $\theta_i$ is the failure rate. The model then borrows strength across pumps with a prior that ties the random effects together using a common distribution, $\theta_i \sim \mbox{Gamma}(\alpha, \beta)$. $\alpha$ and $\beta$ are the hyperparameters of this random effects distribution. 
+
+# Specifying the BUGS code for a model
+
+Here we specify the pump code directly in R. We can walk through some of details via the comments in the BUGS code.
+
+```{r model-code}
+library(nimble)
+pumpCode <- nimbleCode({ 
+  for (i in 1:N){
+
+      # likelihood (data model)
+      x[i] ~ dpois(lambda[i])
+
+      # latent process (random effects)
+      # linear predictor      
+      lambda[i] <- theta[i]*t[i]
+      # random effects distribution
+      theta[i] ~ dgamma(alpha,beta)
+  }
+  # priors on hyperparameters
+  alpha ~ dexp(1.0)
+  beta ~ dgamma(0.1,1.0)
+})
+```
+
+
+You can also load it directly from the standard BUGS example file formats (see `help(readBUGSmodel)`).
+
+# Building a model in Nimble
+
+In BUGS or JAGS, one would provide the model code, input data and constant values, and (optionally) initial parameter values and the software would directly create and run an MCMC, returning the results to you.
+
+In Nimble, you have more fine-grained control over these steps. The first step is to build an R representation of the model.
+
+```{r build-model}
+N <- 10
+t <- c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)
+x <- c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22)
+pumpConsts <- list(t = t, N = 10)
+pumpData <- list(x = x)
+pumpInits <- list(alpha = 1, beta = 1,
+         theta = rep(0.1, pumpConsts$N))
+pump <- nimbleModel(pumpCode, 
+          data = pumpData, constants = pumpConsts, inits = pumpInits)
+```
+
+If all you want to do is run an MCMC, Nimble's fine-grained control might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
+
+# Nodes and variables
+
+The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
+
+ - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. $\alpha$ in the pump model
+ - data: a known quantity in a model, also represented as a random variable, e.g., $x_1, x_2, \ldots$ in the pump model
+ - constants: other fixed quantities involved in the model, e.g., $N$ in the pump model
+ - node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., $\alpha$ or $x_3$ in the pump model
+ - variable: a collection of one or more nodes with the same name, e.g., $\alpha$ or $x$ in the pump model 
+

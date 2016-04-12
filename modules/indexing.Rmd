@@ -1,0 +1,93 @@
+---
+title: "Indexing and model checking"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Indexing
+
+Nimble can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the *dimensions* argument to *nimbleModel()*.
+
+For simplicity, we'll just consider specifying dimensions explicitly in the BUGS code. Here's a normal-Wishart example; note that we have indices on all non-scalar objects. 
+
+```{r, indices}
+code <- nimbleCode({
+     for(i in 1:n) {
+           y[i, 1:K] ~ dmnorm(mu[1:K], C[1:K, 1:K])
+     }
+     mu[1:K] ~ dmnorm(mu0[1:K], Cmu[1:K, 1:K])
+     C[1:K, 1:K] ~ dwish(C0[1:K, 1:K], df = 1)
+})
+```
+
+# Model checking
+
+  - In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, Nimble does fairly aggressive model checking. 
+  - This checking can take a bit of time.
+  - We report cases where models are created but values for nodes of the model are NA. It's perfectly fine to create a model and not provide values for nodes until later (e.g., letting an MCMC sample from the prior to set initial values), but we do warn you if that's the case, as seen here for *y*, *mu0* and *mu* (and therefore for the objects storing their probability density values also).
+
+```{r, indices2}
+code <- nimbleCode({
+     for(i in 1:n) {
+           y[i, 1:K] ~ dmnorm(mu[1:K], C[1:K, 1:K])
+     }
+     mu[1:K] ~ dmnorm(mu0[1:K], Cmu[1:K, 1:K])
+     C[1:K, 1:K] ~ dwish(C0[1:K, 1:K], df = 5)
+})
+K <- 4; n <- 10
+model <- nimbleModel(code, constants = list(n = n, K = K),
+      inits = list(C0 = diag(rep(1,K)), Cmu = diag(rep(1, K)),
+      C = diag(rep(1, K))))
+```
+
+# Model checking, part 2
+
+Now let's see what happens when there is a size mismatch in the BUGS code. Note the definition of ```mu[1:3]```, whereas $K=4$. 
+
+```{r, indices3}
+# now have a dimension mismatch - mu[1:3] has mean mu0[1:K]
+code <- nimbleCode({
+     for(i in 1:n) {
+           y[i, 1:K] ~ dmnorm(mu[1:K], C[1:K, 1:K])
+     }
+     mu[1:3] ~ dmnorm(mu0[1:K], Cmu[1:K, 1:K])
+     C[1:K, 1:K] ~ dwish(C0[1:K, 1:K], df = 1)
+})
+model <- nimbleModel(code, constants = list(n = n, K = K),
+      inits = list(C0 = diag(rep(1,K)), Cmu = diag(rep(1, K)),
+      C = diag(rep(1, K))))
+```
+
+# Model checking, part 3
+
+And finally let's see an example where we forget to provide indexing.
+
+```{r, indices4}
+code <- nimbleCode({
+     for(i in 1:n) {
+           y[i, 1:K] ~ dmnorm(mu, C)
+     }
+     mu ~ dmnorm(mu0, Cmu)
+     C ~ dwish(C0, df = 1)
+})
+model <- nimbleModel(code, constants = list(n = n, K = K),
+      inits = list(C0 = diag(rep(1,K)), Cmu = diag(rep(1, K)),
+      C = diag(rep(1, K))))
+
+```
+
+As you can see, sometimes our error messages are less helpful than they could be.
+
+You can turn off the checking with ```check=FALSE``` in *nimbleModel()*.

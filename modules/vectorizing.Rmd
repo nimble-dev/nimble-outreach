@@ -1,0 +1,67 @@
+---
+title: "Vectorizing in NIMBLE"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Vectorization
+
+For both deterministic and stochastic nodes, there are cases where one might declare an array of scalar nodes or one might declare a single vector node. Which you choose has implications for computational efficiency.
+
+
+For example, consider the following two examples:
+```{r, nonvector}
+code <- nimbleCode({
+     for(i in 1:n) {
+           logmu[i] <- log(mu[i])
+           y[i] ~ dnorm(logmu[i], sd = sigma)
+     }
+})
+```
+
+In this example, for each $i$, `y[i]` and `logmu[i]` are scalar nodes. There are separate simulate and calculate functions for each. A disadvantage of this is that for very large $n$, it can take some time to create and compile the model and associated algorithms. An advantage in this case is that presuming the calculations for each $i$ can be done independently in a given algorithm, unnecessary calculations don't need to be done. For example in doing MCMC sampling for `mu[i]` one needs only calculate `log(mu[i])` and the density for `y[i]`.  
+
+Now suppose that one had done this:
+```{r, partial-vector}
+code <- nimbleCode({
+     logmu[1:n] <- log(mu[1:n])
+     for(i in 1:n) {
+           y[i] ~ dnorm(logmu[i], sd = sigma)
+     }
+})
+```
+
+Now calculation of *logmu* is done for all the elements at once. There are fewer nodes in the model, which can speed building and compiling models and algorithsm. But if one does an MCMC with Metropolis sampling on each `mu[i]` the logarithm is calculated for all of the elements unnecessarily. In contrast, if one has a block sampler on all of the *mu* elements, then it's fine to have the logarithm calculated for all of the elements. 
+
+# A fully-vectorized example
+
+Finally, consider a fully-vectorized implementation. 
+
+```{r, full-vector}
+code <- nimbleCode({
+     logmu[1:n] <- log(mu[1:n])
+     y[1:n] ~ dmnorm(logmu[1:n], cov = C[1:n, 1:n])
+     C[1:n, 1:n] <- sig*sig*I[1:n,1:n]
+})
+```
+
+Now there are many fewer nodes, speeding up building and compilation. If one has a joint sampler on all of the elements of *mu*, then all calculations are done in a vectorized fashion (using the Eigen linear algebra package under the hood).
+
+In future releases of NIMBLE we anticipate large improvements in handling of models with many nodes, so the benefits of explicitly vectorizing your BUGS code should decrease.
+
+# Summary
+
+Using vectorized declarations, including multivariate distributions, can be better in the current NIMBLE because it creates fewer nodes and reduces building and compilation times.  Whether you choose to vectorize depends largely on whether you use algorithms that operate on individual elements separately or operate collectively on the entire vector, such as scalar Metropolis samplers versus blocked samplers in MCMC. 
+

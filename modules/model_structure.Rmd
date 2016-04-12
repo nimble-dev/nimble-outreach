@@ -1,0 +1,58 @@
+---
+title: "Programming with models (2): Inspecting model structure"
+subtitle: "NIMBLE training materials module"
+author: "Nimble Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+Using BUGS Models
+==========================
+NIMBLE training materials module
+---------------------------------
+Nimble Development Team
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Running example: the pump model
+
+We first need to build the model.
+
+```{r, pump-code}
+```
+
+```{r, pump-model}
+```
+
+```{r, pump-compile}
+```
+
+# Nodes and variables
+
+The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
+
+ - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. $\alpha$ in the pump model
+ - data: a known quantity in a model, also represented as a random variable, e.g., $x_1, x_2, \ldots$ in the pump model
+ - constants: other fixed quantities involved in the model, e.g., $N$ in the pump model
+ - node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., $\alpha$ or $x_3$ in the pump model
+ - variable: a collection of one or more nodes with the same name, e.g., $\alpha$ or $x$ in the pump model 
+
+# Inspecting the model
+
+Nimble provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
+
+What are the variables in the model? What are the dependencies of a given node (this is information used in many algorithms)?
+
+```{r, model-nodes}
+pump$getNodeNames()
+hypers <- pump$getNodeNames(topOnly = TRUE)
+hypers
+pump$getDependencies(hypers)
+```
+
