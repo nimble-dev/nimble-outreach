@@ -1,27 +1,27 @@
 List of available and planned modules and status. See also the file ../materials in the outreach repository for other notes related to potential modules.
 
-* mcmc_concepts: MCMC concepts
+mcmc_concepts: MCMC concepts
    rump exists
 
-* bugs_language: BUGS code intro
+bugs_language: BUGS code intro
    rump exists
 
-* build_model: basic model building
+build_model: basic model building
    available
 
-* run_mcmc: basic MCMC
+run_mcmc: basic MCMC
    available
 
-* customizing_mcmc: customizing MCMC
+customizing_mcmc: customizing MCMC
    available
 
-* alt_param: alternative parameterizations and lifted nodes
+alt_param: alternative parameterizations and lifted nodes
    available
                 
-* data_nodes: data nodes
+data_nodes: data nodes
    available
 
-* constants: constants and RHS variables
+constants: constants and RHS variables
    available
 
 user-defined distributions
@@ -30,7 +30,7 @@ user-defined distributions
 comparing MCMCs
    planned
 
-* vectorizing: vectorized BUGS expressions
+vectorizing: vectorized BUGS expressions
    rump exists; needs work
 
 user-defined functions: covariance function example
@@ -39,10 +39,10 @@ user-defined functions: covariance function example
 user_sampler: user-defined samplers
    available
 
-* compile_R: RC functions
+compile_R: RC functions
    available
 
-* indexing: indexing and model checking
+indexing: indexing and model checking
    available
 
 modelValues
@@ -51,7 +51,7 @@ modelValues
 operating_model: Programming with models (1): operating a model
    available; might want more material
 
-* model_structure: Programming with models (2): determining model structure
+model_structure: Programming with models (2): determining model structure
    available; could use more material
 
 Programming with models (3): nimbleFunction concepts and basic MLE example
