@@ -16,7 +16,7 @@ library(methods)  # otherwise new() not being found - weird
 library(nimble)
 ```
 
-# Using nimbleFunctions to compile R code 
+# Using *nimbleFunctions* to compile R code 
 
 While nimbleFunctions are primarily designed to write algorithms to be applied to hierarchical models, you can also use nimbleFunctions as a way to compile your R code to fast C++ code without needing to write any C++ code. Note that this is unlike Rcpp, which provides tools for you to more easily write C++ code that can be called from R.
 
