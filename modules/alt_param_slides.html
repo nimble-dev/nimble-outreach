@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <meta name="author" content="Nimble Development Team" />
+  <meta name="author" content="NIMBLE Development Team" />
   <title>Alternative parameterizations and 'lifted nodes'</title>
   <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
@@ -35,7 +35,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
   <h1 class="title">Alternative parameterizations and 'lifted nodes'</h1>
   <h1 class="subtitle">NIMBLE training materials module</h1>
   <p class="author">
-Nimble Development Team
+NIMBLE Development Team
   </p>
 </div>
 <div id="alternative-parameterizations" class="slide section level1">
@@ -93,22 +93,22 @@ precModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(prec
 ## {
 ##     model$lifted_d1_over_sqrt_oPtau_cP[1] &lt;&lt;- 1/sqrt(model$tau[1])
 ## }
-## &lt;environment: 0x56fa3d0&gt;</code></pre>
+## &lt;environment: 0x5c43170&gt;</code></pre>
 </div>
 <div id="lifted-nodes-how-not-to-code-in-nimble" class="slide section level1">
-<h1>Lifted nodes: how not to code in Nimble</h1>
+<h1>Lifted nodes: how not to code in NIMBLE</h1>
 <p>Because of the possibility of lifted nodes, it is important that programs written to adapt to different model structures use NIMBLE’s systems for querying the model graph. For example, here's incorrect usage that results in a bug.</p>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$tau &lt;-<span class="st"> </span><span class="fl">0.0001</span>
 precModel$<span class="kw">simulate</span>(<span class="st">'y'</span>)
 precModel$y</code></pre>
-<pre><code>##  [1]  0.01483441  0.01362321  0.02284451 -0.05144258  0.03878888
-##  [6]  0.13083871  0.03074534  0.04055190  0.05113123 -0.14591207</code></pre>
+<pre><code>##  [1]  0.0930873227  0.0646901354  0.1169299235  0.0214820729  0.0078717089
+##  [6]  0.0150873297  0.0008392669  0.0110520670 -0.0760261984  0.1879022717</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
 <pre><code>## [1] 0.1</code></pre>
 <p>Whoops, <em>y</em> was simulated based on the value of the lifted node, which was not updated based on the new value of <em>tau</em>. That's why the <em>y</em> values are close to their mean of zero even though <em>tau</em> is very small.</p>
 </div>
 <div id="lifted-nodes-how-to-code-in-nimble" class="slide section level1">
-<h1>Lifted nodes: how to code in Nimble</h1>
+<h1>Lifted nodes: how to code in NIMBLE</h1>
 <p>And here's correct usage:</p>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$tau &lt;-<span class="st"> </span><span class="fl">0.0001</span>
 precModel$<span class="kw">calculate</span>(precModel$<span class="kw">getDependencies</span>(<span class="st">'tau'</span>))</code></pre>
@@ -116,8 +116,8 @@ precModel$<span class="kw">calculate</span>(precModel$<span class="kw">getDepend
 <pre class="sourceCode r"><code class="sourceCode r"><span class="co"># precModel$calculate() # would also work but recalculates entire model</span>
 precModel$<span class="kw">simulate</span>(<span class="st">'y'</span>)
 precModel$y</code></pre>
-<pre><code>##  [1]  -20.53037  -15.26838  151.70149   14.05487  -71.39942  183.27985
-##  [7]   64.48850   98.59151   10.24719 -124.43594</code></pre>
+<pre><code>##  [1]  116.22888   -8.76069  -21.56618  150.44370  -10.15058 -101.00062
+##  [7]  261.13866 -174.60000   50.09315   89.74166</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
 <pre><code>## [1] 100</code></pre>
 <p>If one skips the calculate step and assumes the nodes are only those that appear in the BUGS code, one may not get correct results.</p>

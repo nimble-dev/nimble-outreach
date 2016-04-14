@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="author" content="Nimble Development Team" />
+<meta name="author" content="NIMBLE Development Team" />
 
 
 <title>User-defined distributions</title>
@@ -123,20 +123,20 @@ $(document).ready(function () {
 
 <h1 class="title">User-defined distributions</h1>
 <h3 class="subtitle"><em>NIMBLE training materials module</em></h3>
-<h4 class="author"><em>Nimble Development Team</em></h4>
+<h4 class="author"><em>NIMBLE Development Team</em></h4>
 
 </div>
 
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>Nimble provides a variety of distributions, as seen in Section 5.2.3 of the <a href="http://r-nimble.org/manuals/NimbleUserManual.pdf">Nimble manual</a>.</p>
-<p>However, there are lots of other probability distributions out there that you might want to use. So Nimble allows you to code up your own distribution and then use it in BUGS code.</p>
+<p>NIMBLE provides a variety of distributions, as seen in Section 5.2.3 of the <a href="http://r-nimble.org/manuals/NimbleUserManual.pdf">NIMBLE manual</a>.</p>
+<p>However, there are lots of other probability distributions out there that you might want to use. So NIMBLE allows you to code up your own distribution and then use it in BUGS code.</p>
 <p>Furthermore, in some cases one can use a user-defined distribution as a way to reduce computation by analytically integrating over a component of the model.</p>
 </div>
 <div id="basic-example" class="section level1">
 <h1>Basic example</h1>
-<p>To illustrate, suppose that Nimble did not provide an exponential distribution. Here’s what you would do to code up your own exponential distribution and make it available in BUGS code.</p>
+<p>To illustrate, suppose that NIMBLE did not provide an exponential distribution. Here’s what you would do to code up your own exponential distribution and make it available in BUGS code.</p>
 <p>First we write nimbleFunctions for the density and simulation functions. Note the naming is analogous to how probability distributions are handled in R.</p>
 <ul>
 <li>The ‘d’ function should have <em>log</em> as its last argument, a binary argument for whether the log density is returned or not.</li>
@@ -171,11 +171,11 @@ rmyexp &lt;- nimbleFunction(
                range = c(0, Inf)
                )))</code></pre>
 <pre><code>## Overwriting the following user-supplied distributions: dmyexp .</code></pre>
-<p>This makes Nimble aware of the distribution as a BUGS distribution.</p>
+<p>This makes NIMBLE aware of the distribution as a BUGS distribution.</p>
 <p>Comments:</p>
 <ul>
 <li>If you want to allow users to use different parameterizations for the distribution, you can do this via the <em>Rdist</em> element. Here we allow use of <em>scale</em>, with the conversion from <em>scale</em> to the canonical <em>rate</em> specified.</li>
-<li>The <em>altParams</em> information can be used in Nimble’s MCMC conjugacy system and sequential Monte Carlo system but is not required.</li>
+<li>The <em>altParams</em> information can be used in NIMBLE’s MCMC conjugacy system and sequential Monte Carlo system but is not required.</li>
 </ul>
 </div>
 <div id="using-the-distribution" class="section level1">
@@ -210,7 +210,7 @@ mcmc$run(niter)</code></pre>
 </div>
 <div id="a-more-interesting-example" class="section level1">
 <h1>A more interesting example</h1>
-<p>While educational, the exponential example is not particularly interesting given Nimble already provides that distribution. Let’s consider an example where using a user-defined distribution can improve MCMC performance (run time and sampling efficiency).</p>
+<p>While educational, the exponential example is not particularly interesting given NIMBLE already provides that distribution. Let’s consider an example where using a user-defined distribution can improve MCMC performance (run time and sampling efficiency).</p>
 <p>When working with multinomial data, the Dirichlet distribution can be used to relate the probability vector in the multinomial to covariates and to induce over-dispersion.</p>
 <p>One context in which this comes up is topic modeling. You might have textual data from multiple documents, with each document being about a topic. The probabilities of words in each document in a topic can be represented as being a sample from a Dirichlet distribution for that topic.</p>
 </div>
@@ -334,7 +334,7 @@ m2$y</code></pre>
 </div>
 <div id="final-thoughts" class="section level1">
 <h1>Final thoughts</h1>
-<p>In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of <span class="math">\(\alpha\)</span> that indicate the unknown topic of each such document, but at the moment, Nimble does not allow for random indices.</p>
+<p>In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of <span class="math">\(\alpha\)</span> that indicate the unknown topic of each such document, but at the moment, NIMBLE does not allow for random indices.</p>
 <p>Also, a standard model for topic analysis, called <em>latent Dirichlet allocation</em>, allows each document to be a mixture of topics. One could expand the code here to allow for that.</p>
 </div>
 

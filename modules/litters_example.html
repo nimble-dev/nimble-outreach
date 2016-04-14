@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="author" content="Nimble Development Team" />
+<meta name="author" content="NIMBLE Development Team" />
 
 
 <title>Extended example: the litters model</title>
@@ -123,7 +123,7 @@ $(document).ready(function () {
 
 <h1 class="title">Extended example: the litters model</h1>
 <h3 class="subtitle"><em>NIMBLE training materials module</em></h3>
-<h4 class="author"><em>Nimble Development Team</em></h4>
+<h4 class="author"><em>NIMBLE Development Team</em></h4>
 
 </div>
 
@@ -131,7 +131,7 @@ $(document).ready(function () {
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
 <p>Here we’ll work through an extended example of customizing an MCMC (and considering maximum likelihood via MCEM) for a tricky, but simple, example model.</p>
-<p>The example is the <em>litters</em> example from the original BUGS examples, available with Nimble in the <em>classic-bugs/vol1/litters</em> directory of the installed package (call <code>searchpaths()</code> after loading the Nimble package to find where this directory is).</p>
+<p>The example is the <em>litters</em> example from the original BUGS examples, available with NIMBLE in the <em>classic-bugs/vol1/litters</em> directory of the installed package (call <code>searchpaths()</code> after loading the NIMBLE package to find where this directory is).</p>
 </div>
 <div id="litters-model" class="section level1">
 <h1>Litters model</h1>
@@ -176,7 +176,7 @@ model &lt;- nimbleModel(code, constants = consts, data = data, inits = inits)</c
 </div>
 <div id="basic-mcmc" class="section level1">
 <h1>Basic MCMC</h1>
-<p>Here’s Nimble’s default MCMC.</p>
+<p>Here’s NIMBLE’s default MCMC.</p>
 <pre class="r"><code>thin &lt;- 10
 conf &lt;- configureMCMC(model, thin = thin)
 # thinning _only_ to reduce time of plotting 
@@ -192,7 +192,7 @@ niter &lt;- 10000
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.633   0.003   0.637</code></pre>
+##   0.649   0.000   0.649</code></pre>
 <pre class="r"><code>smp_basic &lt;- as.matrix(Cmcmc$mvSamples)
 
 tsplot &lt;- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
@@ -237,7 +237,7 @@ niter &lt;- 10000
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.561   0.000   0.560</code></pre>
+##   0.575   0.000   0.575</code></pre>
 <pre class="r"><code>smp_hyp_block &lt;- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1, 4))
@@ -279,7 +279,7 @@ nimCopy(model, Cmodel)  # reinitialize
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.377   0.273   0.325</code></pre>
+##   0.409   0.299   0.355</code></pre>
 <pre class="r"><code>smp_full_block &lt;- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1,4))
@@ -292,14 +292,14 @@ tsplot(smp_full_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '',
 </div>
 <div id="automated-blocking" class="section level1">
 <h1>Automated blocking</h1>
-<p>The Nimble developers have developed a procedure for automated blocking in MCMC, based on considering the posterior correlation of all parameters in initial trial runs of the MCMC, as discussed <a href="http://arxiv.org/abs/1503.05621">here</a>.</p>
+<p>The NIMBLE developers have developed a procedure for automated blocking in MCMC, based on considering the posterior correlation of all parameters in initial trial runs of the MCMC, as discussed <a href="http://arxiv.org/abs/1503.05621">here</a>.</p>
 <p>Let’s try automated blocking for this model.</p>
 <pre class="r"><code>auto &lt;- autoBlock(model, autoIt = 10000, run = list())</code></pre>
 <pre><code>## 
 ## Auto-Blocking summary:
 ##            mcmc    node     S    C Efficiency
-## 1    All Scalar    a[1] 17.27 0.44      39.51
-## 2 Auto-Blocking p[1, 7] 39.27 0.37     107.59
+## 1    All Scalar    a[1] 17.27 0.65       26.6
+## 2 Auto-Blocking p[1, 7] 39.27 0.38      102.8
 ## 
 ## Auto-Blocking converged on the node groupings:
 ## [1] a[1], b[1]
@@ -343,7 +343,7 @@ nimCopy(model, Cmodel)  # reinitialize
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   1.756   0.000   1.755</code></pre>
+##   1.795   0.000   1.796</code></pre>
 <pre class="r"><code>smp_cross &lt;- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1,4))
@@ -381,16 +381,16 @@ print(system.time(   # takes a while:
         out &lt;- mcem(maxit = 100)
 ))</code></pre>
 <pre><code>##    user  system elapsed 
-## 757.752   0.012 757.528</code></pre>
+## 767.896   0.000 767.682</code></pre>
 <pre class="r"><code>out </code></pre>
 <pre><code>##      a[1]      a[2]      b[1]      b[2] 
 ## 46.384250  1.597070  5.296314  0.560738</code></pre>
 <p>The MCEM is converging quite slowly. In this case, since we can analytically integrate over <span class="math">\(p\)</span>, we can directly maximize the marginal likelihood and see that the MLE for the first group is <span class="math">\(\hat{a_1}=43.5\)</span>, <span class="math">\(\hat{b_1}=4.94\)</span>. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.</p>
-<p>One option would be to reparameterize the model from the <span class="math">\(a,b\)</span> parameterization to the mean and standard deviation of the beta distribution. That’s easy in Nimble, since we provide that parameterization as an alternative parameterization!</p>
+<p>One option would be to reparameterize the model from the <span class="math">\(a,b\)</span> parameterization to the mean and standard deviation of the beta distribution. That’s easy in NIMBLE, since we provide that parameterization as an alternative parameterization!</p>
 </div>
 <div id="mcem-with-reparameterization" class="section level1">
 <h1>MCEM with reparameterization</h1>
-<p>Here we use Nimble’s alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of <span class="math">\(\hat\mu=0.898\)</span> and <span class="math">\(\hat\sigma=0.043\)</span>, but we’d need to investigate further. Also, at present Nimble’s MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1).</p>
+<p>Here we use NIMBLE’s alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of <span class="math">\(\hat\mu=0.898\)</span> and <span class="math">\(\hat\sigma=0.043\)</span>, but we’d need to investigate further. Also, at present NIMBLE’s MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1).</p>
 <pre class="r"><code>codeReparam &lt;- nimbleCode({
   for (i in 1:G) {
      for (j in 1:N) {
@@ -416,7 +416,7 @@ print(system.time(
         outReparam &lt;- mcemReparam(maxit = 20)
 ))</code></pre>
 <pre><code>##    user  system elapsed 
-## 163.842   0.047 163.834</code></pre>
+## 193.972   0.000 193.917</code></pre>
 <pre class="r"><code>outReparam </code></pre>
 <pre><code>##      mu[1]      mu[2]   sigma[1]   sigma[2] 
 ## 0.88962536 0.73966793 0.03887207 0.24748506</code></pre>

@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="author" content="Nimble Development Team" />
+<meta name="author" content="NIMBLE Development Team" />
 
 
 <title>Indexing and model checking</title>
@@ -123,14 +123,14 @@ $(document).ready(function () {
 
 <h1 class="title">Indexing and model checking</h1>
 <h3 class="subtitle"><em>NIMBLE training materials module</em></h3>
-<h4 class="author"><em>Nimble Development Team</em></h4>
+<h4 class="author"><em>NIMBLE Development Team</em></h4>
 
 </div>
 
 
 <div id="indexing" class="section level1">
 <h1>Indexing</h1>
-<p>Nimble can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the <em>dimensions</em> argument to <em>nimbleModel()</em>.</p>
+<p>NIMBLE can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the <em>dimensions</em> argument to <em>nimbleModel()</em>.</p>
 <p>For simplicity, we’ll just consider specifying dimensions explicitly in the BUGS code. Here’s a normal-Wishart example; note that we have indices on all non-scalar objects.</p>
 <pre class="r"><code>code &lt;- nimbleCode({
      for(i in 1:n) {
@@ -143,7 +143,7 @@ $(document).ready(function () {
 <div id="model-checking" class="section level1">
 <h1>Model checking</h1>
 <ul>
-<li>In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, Nimble does fairly aggressive model checking.</li>
+<li>In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, NIMBLE does fairly aggressive model checking.</li>
 <li>This checking can take a bit of time.</li>
 <li>We report cases where models are created but values for nodes of the model are NA. It’s perfectly fine to create a model and not provide values for nodes until later (e.g., letting an MCMC sample from the prior to set initial values), but we do warn you if that’s the case, as seen here for <em>y</em>, <em>mu0</em> and <em>mu</em> (and therefore for the objects storing their probability density values also).</li>
 </ul>

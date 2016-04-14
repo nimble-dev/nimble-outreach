@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <meta name="author" content="Nimble Development Team" />
+  <meta name="author" content="NIMBLE Development Team" />
   <title>Programming with models (1): Operating a model</title>
   <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
@@ -35,7 +35,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
   <h1 class="title">Programming with models (1): Operating a model</h1>
   <h1 class="subtitle">NIMBLE training materials module</h1>
   <p class="author">
-Nimble Development Team
+NIMBLE Development Team
   </p>
 </div>
 <div id="running-example-the-pump-model" class="slide section level1">
@@ -103,8 +103,8 @@ pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(pumpCode,
 </div>
 <div id="operating-the-model-calculate" class="slide section level1">
 <h1>Operating the model: <em>calculate()</em></h1>
-<p>We have control over the model. In particular, for every node, Nimble provides <em>calculate()</em> and <em>simulate()</em> functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms.</p>
-<p>Let's change values in the model and recalculate the density values. As we'll discuss in a later module, Nimble sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask Nimble to do so based on the dependencies of the altered node.</p>
+<p>We have control over the model. In particular, for every node, NIMBLE provides <em>calculate()</em> and <em>simulate()</em> functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms.</p>
+<p>Let's change values in the model and recalculate the density values. As we'll discuss in a later module, NIMBLE sometimes introduces hidden nodes not specified in the model, so when calculating probabilities, it's best to ask NIMBLE to do so based on the dependencies of the altered node.</p>
 <pre class="sourceCode r"><code class="sourceCode r">pump$alpha &lt;-<span class="st"> </span><span class="fl">0.5</span>
 pump$<span class="kw">calculate</span>(pump$<span class="kw">getDependencies</span>(<span class="st">'alpha'</span>))   <span class="co"># or calculate(pump, ...)</span></code></pre>
 <pre><code>## [1] 4.289276</code></pre>
@@ -132,7 +132,7 @@ pump$theta</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">pump$lambda</code></pre>
 <pre><code>##  [1] 132.78345233  23.96185872  89.60830986   0.67423872   0.22895975
 ##  [6]   6.49360478   0.36457127   4.15238160   0.04640312   2.19421807</code></pre>
-<p><strong>Question</strong>: The Nimble developers chose to not automatically recalculate density values when a node's value changes nor deterministic dependent nodes when a parent node changes. We can discuss the the design considerations in making that choice and the advantages and disadvantages of the choice.</p>
+<p><strong>Question</strong>: The NIMBLE developers chose to not automatically recalculate density values when a node's value changes nor deterministic dependent nodes when a parent node changes. We can discuss the the design considerations in making that choice and the advantages and disadvantages of the choice.</p>
 </div>
 </body>
 </html>

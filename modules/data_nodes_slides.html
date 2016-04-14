@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <meta name="author" content="Nimble Development Team" />
+  <meta name="author" content="NIMBLE Development Team" />
   <title>Data nodes</title>
   <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
@@ -35,7 +35,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
   <h1 class="title">Data nodes</h1>
   <h1 class="subtitle">NIMBLE training materials module</h1>
   <p class="author">
-Nimble Development Team
+NIMBLE Development Team
   </p>
 </div>
 <div id="data-nodes-and-constants" class="slide section level1">
@@ -105,7 +105,7 @@ pump$<span class="kw">isData</span>(<span class="st">'x'</span>)</code></pre>
 <pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">pump$<span class="kw">simulate</span>(<span class="st">'x'</span>)
 pump$x</code></pre>
-<pre><code>##  [1]  6  3  7 14  1  1  0  0  0  0</code></pre>
+<pre><code>##  [1] 11  3  5 10  0  3  0  0  0  1</code></pre>
 <p>For compatibility with BUGS and JAGS, NIMBLE allows both to be provided in the the constants argument to <em>nimbleModel()</em>, in which case NIMBLE determines which are which, based on which variables appear on the left-hand side of BUGS declarations.</p>
 </div>
 <div id="setting-data-with-setdata" class="slide section level1">

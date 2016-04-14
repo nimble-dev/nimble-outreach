@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <meta name="author" content="Nimble Development Team" />
+  <meta name="author" content="NIMBLE Development Team" />
   <title>Compiling parts of R</title>
   <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
@@ -35,11 +35,11 @@ code > span.er { color: #ff0000; font-weight: bold; }
   <h1 class="title">Compiling parts of R</h1>
   <h1 class="subtitle">NIMBLE training materials module</h1>
   <p class="author">
-Nimble Development Team
+NIMBLE Development Team
   </p>
 </div>
 <div id="using-nimblefunctions-to-compile-r-code" class="slide section level1">
-<h1>Using nimbleFunctions to compile R code</h1>
+<h1>Using <em>nimbleFunctions</em> to compile R code</h1>
 <p>While nimbleFunctions are primarily designed to write algorithms to be applied to hierarchical models, you can also use nimbleFunctions as a way to compile your R code to fast C++ code without needing to write any C++ code. Note that this is unlike Rcpp, which provides tools for you to more easily write C++ code that can be called from R.</p>
 </div>
 <div id="uses-of-this-functionality" class="slide section level1">
@@ -47,20 +47,20 @@ Nimble Development Team
 <p>How might you use this functionality? Basically, this is useful for math-focused code that can't be easily vectorized.</p>
 <p>Caveats:</p>
 <ul>
-<li>the Nimble compiler can't compile arbitrary R code, only code that is part of the Nimble DSL</li>
+<li>the NIMBLE compiler can't compile arbitrary R code, only code that is part of the NIMBLE DSL</li>
 <li>you need to give a bit of information about variable types and dimensions</li>
 </ul>
 </div>
 <div id="a-basic-demonstration" class="slide section level1">
 <h1>A basic demonstration</h1>
-<p>Suppose we wanted to mimic R's vectorization capabilities. First we'll see a basic example of exponentiating all the elements of a vector. Doing that via Nimble is a bit silly because we can already have R exponentiate a vector and that exponentiation happens in compiled code.</p>
+<p>Suppose we wanted to mimic R's vectorization capabilities. First we'll see a basic example of exponentiating all the elements of a vector. Doing that via NIMBLE is a bit silly because we can already have R exponentiate a vector and that exponentiation happens in compiled code.</p>
 <p>nimbleFunctions used in this way need a run function, type and dimension information for arguments and a <em>returnType()</em> line.</p>
 <pre class="sourceCode r"><code class="sourceCode r">nimExp &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
        <span class="co"># run-time code for our computation</span>
        <span class="dt">run =</span> function(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {
            <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))
            n &lt;-<span class="st"> </span><span class="kw">length</span>(x)
-           <span class="co"># Nimble needs help in determining the dimension and size of out</span>
+           <span class="co"># NIMBLE needs help in determining the dimension and size of out</span>
            <span class="kw">declare</span>(out, <span class="kw">double</span>(<span class="dv">1</span>))
            <span class="kw">setSize</span>(out, n)
            <span class="co"># core computation</span>
@@ -68,7 +68,7 @@ Nimble Development Team
                 out[i] &lt;-<span class="st"> </span><span class="kw">exp</span>(x[i])
            <span class="kw">return</span>(out)
 })</code></pre>
-<p>We need the <em>declare()</em> and <em>setSize()</em> in this case (but not the next one) because it's hard for the Nimble compiler to figure out the dimension/size of <em>out</em>.</p>
+<p>We need the <em>declare()</em> and <em>setSize()</em> in this case (but not the next one) because it's hard for the NIMBLE compiler to figure out the dimension/size of <em>out</em>.</p>
 <p>Actually nimbleFunctions can handle vectorized code using the Eigen linear algebra package, so let's consider a different implementation.</p>
 <pre class="sourceCode r"><code class="sourceCode r">nimExp2 &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
        <span class="dt">run =</span> function(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {
@@ -88,9 +88,9 @@ x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="fl">1
                <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">'test'</span>,<span class="st">'replications'</span>,<span class="st">'elapsed'</span>),
                <span class="dt">replications =</span> <span class="dv">10</span>)</code></pre>
 <pre><code>##                  test replications elapsed
-## 1      out0 &lt;- exp(x)           10   0.344
-## 2  out1 &lt;- cnimExp(x)           10   0.333
-## 3 out2 &lt;- cnimExp2(x)           10   0.276</code></pre>
+## 1      out0 &lt;- exp(x)           10   0.349
+## 2  out1 &lt;- cnimExp(x)           10   0.357
+## 3 out2 &lt;- cnimExp2(x)           10   0.273</code></pre>
 <p>So that's not all that impressive as all we've done is match (well, not quite) the speed of the native R compiled code.</p>
 </div>
 <div id="a-more-involved-example" class="slide section level1">
@@ -152,7 +152,7 @@ M &lt;-<span class="st"> </span><span class="dv">1000000</span>
         props[<span class="kw">as.integer</span>(<span class="kw">names</span>(tbl))] &lt;-<span class="st"> </span>tbl /<span class="st"> </span>M
 })</code></pre>
 <pre><code>##    user  system elapsed 
-##   2.995   0.035   3.031</code></pre>
+##   3.111   0.072   3.185</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">mprobit &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
          <span class="dt">run =</span> function(<span class="dt">alphas =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">M =</span> <span class="kw">double</span>(<span class="dv">0</span>)) {
              <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))
@@ -188,7 +188,7 @@ cmprobit =<span class="st"> </span><span class="kw">compileNimble</span>(mprobit
 props2 &lt;-<span class="st"> </span><span class="kw">cmprobit</span>(alphas, M)
 )</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.529   0.000   0.528</code></pre>
+##   0.518   0.000   0.518</code></pre>
 <p>So we get a nice 5-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.</p>
 </div>
 </body>

@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <meta name="author" content="Nimble Development Team" />
+  <meta name="author" content="NIMBLE Development Team" />
   <title>User-defined MCMC samplers</title>
   <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
@@ -35,13 +35,13 @@ code > span.er { color: #ff0000; font-weight: bold; }
   <h1 class="title">User-defined MCMC samplers</h1>
   <h1 class="subtitle">NIMBLE training materials module</h1>
   <p class="author">
-Nimble Development Team
+NIMBLE Development Team
   </p>
 </div>
 <div id="introduction" class="slide section level1">
 <h1>Introduction</h1>
-<p>Nimble's MCMC system was designed to be extensible - it's easy for users to add samplers and use them right away for their models.</p>
-<p>Let's start with a very basic example that slightly extends Nimble's built-in Metropolis sampler.</p>
+<p>NIMBLE's MCMC system was designed to be extensible - it's easy for users to add samplers and use them right away for their models.</p>
+<p>Let's start with a very basic example that slightly extends NIMBLE's built-in Metropolis sampler.</p>
 </div>
 <div id="the-reflection-sampler" class="slide section level1">
 <h1>The reflection sampler</h1>
@@ -97,14 +97,14 @@ Nimble Development Team
 <div id="comments" class="slide section level1">
 <h1>Comments</h1>
 <ol style="list-style-type: decimal">
-<li><p>This implementation doesn't account for bounds induced by user-defined truncation of a node in a model nor the bounds defined by the parameters of a uniform distribution. That would require more diving into Nimble's internal plumbing, though in the future more information on the bounds of a node at run-time should be available.</p></li>
-<li><p>We used some functionality that may not be fully explained in Nimble's documentation. For this sort of thing, you can always ask a question in the Nimble user Google group.</p></li>
+<li><p>This implementation doesn't account for bounds induced by user-defined truncation of a node in a model nor the bounds defined by the parameters of a uniform distribution. That would require more diving into NIMBLE's internal plumbing, though in the future more information on the bounds of a node at run-time should be available.</p></li>
+<li><p>We used some functionality that may not be fully explained in NIMBLE's documentation. For this sort of thing, you can always ask a question in the NIMBLE user Google group.</p></li>
 </ol>
 </div>
 <div id="nimbles-metropolis-sampler" class="slide section level1">
-<h1>Nimble's Metropolis sampler</h1>
-<p>Often it's easiest when writing a new sampler that is similar to an existing Nimble sampler to just modify the code for the existing sampler. In this case, Nimble's exisiting random walk sampler has some nice additional functionality that we can include in our reflection sampler, specifically the ability to adapt the proposal variance.</p>
-<p>Let's look at the code for the Metropolis sampler. You can find this in the file <em>R/MCMC_samplers.R</em> in the source code for the Nimble package (note that <code>nimble:::sampler_RW</code> is not useful to look at, as it shows a modified version of this -- the nimbleFunction after it has been built).</p>
+<h1>NIMBLE's Metropolis sampler</h1>
+<p>Often it's easiest when writing a new sampler that is similar to an existing NIMBLE sampler to just modify the code for the existing sampler. In this case, NIMBLE's exisiting random walk sampler has some nice additional functionality that we can include in our reflection sampler, specifically the ability to adapt the proposal variance.</p>
+<p>Let's look at the code for the Metropolis sampler. You can find this in the file <em>R/MCMC_samplers.R</em> in the source code for the NIMBLE package (note that <code>nimble:::sampler_RW</code> is not useful to look at, as it shows a modified version of this -- the nimbleFunction after it has been built).</p>
 <pre class="sourceCode r"><code class="sourceCode r">sampler_RW &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
     <span class="dt">contains =</span> sampler_BASE,
     <span class="dt">setup =</span> function(model, mvSaved, target, control) {
@@ -180,7 +180,7 @@ Nimble Development Team
 </div>
 <div id="the-full-reflection-sampler-function" class="slide section level1">
 <h1>The full reflection sampler function</h1>
-<p>Below is the full new reflection sampler, building on Nimble's baseline random walk sampler to include adaptation.</p>
+<p>Below is the full new reflection sampler, building on NIMBLE's baseline random walk sampler to include adaptation.</p>
 <pre class="sourceCode r"><code class="sourceCode r">sampler_RW_reflect &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
     <span class="dt">contains =</span> sampler_BASE,
     <span class="dt">setup =</span> function(model, mvSaved, target, control) {

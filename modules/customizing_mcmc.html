@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="author" content="Nimble Development Team" />
+<meta name="author" content="NIMBLE Development Team" />
 
 
 <title>Customizing an MCMC</title>
@@ -123,7 +123,7 @@ $(document).ready(function () {
 
 <h1 class="title">Customizing an MCMC</h1>
 <h3 class="subtitle"><em>NIMBLE training materials module</em></h3>
-<h4 class="author"><em>Nimble Development Team</em></h4>
+<h4 class="author"><em>NIMBLE Development Team</em></h4>
 
 </div>
 
@@ -223,7 +223,7 @@ tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
 </div>
 <div id="customizing-samplers" class="section level1">
 <h1>Customizing samplers</h1>
-<p>One of Nimble’s most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with Nimble’s default MCMC and then make modifications.</p>
+<p>One of NIMBLE’s most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with NIMBLE’s default MCMC and then make modifications.</p>
 <pre class="r"><code>pumpConf &lt;- configureMCMC(pump)
 pumpConf$addMonitors(c('alpha', 'beta', 'theta'))</code></pre>
 <pre><code>## thin = 1: alpha, beta, theta</code></pre>
@@ -291,7 +291,7 @@ plot(samples2[ , 'theta[1]'], type = 'l', xlab = 'iteration',
 </div>
 <div id="blocking-parameters" class="section level1">
 <h1>Blocking parameters</h1>
-<p>Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, Nimble makes it easy for users to choose what parameters to sample in blocks.</p>
+<p>Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, NIMBLE makes it easy for users to choose what parameters to sample in blocks.</p>
 <p>We’ll try that here for <span class="math">\(\alpha\)</span> and <span class="math">\(\beta\)</span>.</p>
 <pre class="r"><code>pumpConf$getSamplers()</code></pre>
 <pre><code>## [[1]]

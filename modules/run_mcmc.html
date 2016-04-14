@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="author" content="Nimble Development Team" />
+<meta name="author" content="NIMBLE Development Team" />
 
 
 <title>Running an MCMC</title>
@@ -123,7 +123,7 @@ $(document).ready(function () {
 
 <h1 class="title">Running an MCMC</h1>
 <h3 class="subtitle"><em>NIMBLE training materials module</em></h3>
-<h4 class="author"><em>Nimble Development Team</em></h4>
+<h4 class="author"><em>NIMBLE Development Team</em></h4>
 
 </div>
 
@@ -176,8 +176,8 @@ pump &lt;- nimbleModel(pumpCode,
 </div>
 <div id="configuring-a-basic-mcmc" class="section level1">
 <h1>Configuring a basic MCMC</h1>
-<p>Setting up and running an MCMC in Nimble takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.</p>
-<p>First we <em>configure</em> the MCMC, which means setting up the samplers to be used for each node or group of nodes. Nimble provides a default configuration, but we’ll see shortly how you can modify that.</p>
+<p>Setting up and running an MCMC in NIMBLE takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.</p>
+<p>First we <em>configure</em> the MCMC, which means setting up the samplers to be used for each node or group of nodes. NIMBLE provides a default configuration, but we’ll see shortly how you can modify that.</p>
 <pre class="r"><code>pumpConf &lt;- configureMCMC(pump, print = TRUE)</code></pre>
 <pre><code>## [1] RW sampler: alpha,  adaptive: TRUE,  adaptInterval: 200,  scale: 1
 ## [2] conjugate_dgamma_dgamma sampler: beta,  dep_dgamma: theta[1], theta[2], theta[3], theta[4], theta[5], theta[6], theta[7], theta[8], theta[9], theta[10]
@@ -203,7 +203,7 @@ CpumpMCMC &lt;- compileNimble(pumpMCMC, project = pump)</code></pre>
 </div>
 <div id="running-the-mcmc" class="section level1">
 <h1>Running the MCMC</h1>
-<p>Now let’s run the MCMC. We don’t recommend running the R version of the MCMC for very many iterations - it’s really slow - in part because iterating in R is slow and in part because iterating with a model in Nimble requires even more overhead.</p>
+<p>Now let’s run the MCMC. We don’t recommend running the R version of the MCMC for very many iterations - it’s really slow - in part because iterating in R is slow and in part because iterating with a model in NIMBLE requires even more overhead.</p>
 <pre class="r"><code>niter &lt;- 1000
 set.seed(0)
 print(system.time(pumpMCMC$run(5)))  # R version</code></pre>
@@ -237,13 +237,13 @@ print(system.time(pumpMCMC$run(5)))  # R version</code></pre>
 ## Warning in dgamma(model$theta[i], shape = model$alpha[1], scale = model
 ## $lifted_d1_over_beta[1], : NaNs produced</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.422   0.008   0.431</code></pre>
+##   0.430   0.004   0.434</code></pre>
 <pre class="r"><code>set.seed(0)
 print(system.time(
 CpumpMCMC$run(niter)
 ))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.025   0.000   0.024</code></pre>
+##   0.024   0.000   0.024</code></pre>
 </div>
 <div id="working-with-mcmc-output" class="section level1">
 <h1>Working with MCMC output</h1>
@@ -269,7 +269,7 @@ tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
 </div>
 <div id="using-coda" class="section level1">
 <h1>Using CODA</h1>
-<p>Nimble does not provide any MCMC diagnostics. (At least not yet; there’s no reason one couldn’t write code for various diagnostics using the Nimble system.) But one can easily use CODA or other R packages with the MCMC output from a Nimble MCMC.</p>
+<p>NIMBLE does not provide any MCMC diagnostics. (At least not yet; there’s no reason one couldn’t write code for various diagnostics using the NIMBLE system.) But one can easily use CODA or other R packages with the MCMC output from a NIMBLE MCMC.</p>
 <pre class="r"><code>library(coda)
 burnin &lt;- 100
 mcmc &lt;- as.mcmc(samples[(burnin+1):nrow(samples), ])
@@ -289,7 +289,7 @@ crosscorr(mcmc[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])</code
 </div>
 <div id="running-multiple-chains" class="section level1">
 <h1>Running multiple chains</h1>
-<p>At the moment, we haven’t set up Nimble to automatically run multiple chains, such as would be needed for calculation of the Gelman-Rubin potential scale reduction factor (<em>gelman.diag()</em> in the <em>coda</em> package). But it’s straightforward to do this yourself.</p>
+<p>At the moment, we haven’t set up NIMBLE to automatically run multiple chains, such as would be needed for calculation of the Gelman-Rubin potential scale reduction factor (<em>gelman.diag()</em> in the <em>coda</em> package). But it’s straightforward to do this yourself.</p>
 <pre class="r"><code>nChains &lt;- 3
 pumpInits &lt;- list(list(alpha = 1, beta = 1), list(alpha = 0.1, beta =30), list(alpha = 30, beta = 0.1))
 out &lt;- list()
