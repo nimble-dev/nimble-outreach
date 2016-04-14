@@ -18,19 +18,9 @@
 
 3) Suppose you wanted to consider the predictive distribution for a new pump. 
     - Create a new version of the model that allows for this.  
-    - Set the data for the new model such that the new pump's number of failures is missing and not treated as a data node (see the BUGS_model module for information on working with data).
+    - Set the data for the new model such that the new pump's number of failures is missing and not treated as a data node (see the data_nodes module for information on working with data).
     - Set up an MCMC for the new model. What kind of sampling should happen for the new pump failures? 
 
-# Customizing MCMC
-
-1) Compare the MCMC performance of using univariate slice samplers on $\alpha$ and $\beta$ to the default samplers and to the blocked Metropolis sampler for ${\alpha, \beta}$ for longer MCMC runs. 
-
-2) Change the sampler for $\theta$ to be a single block Metropolis sampler. How does that affect MCMC performance? How much time does it take to run a set of 10 individual conjugate samplers on the elements of $\theta$ (from the default configuration) compared to a single block sampler on the vector $\theta$. 
-
-3) Suppose you wanted to consider the predictive distribution for a new pump. 
-    - Create a new version of the model that allows for this.  
-    - Set the data for the new model such that the new pump's number of failures is missing and not treated as a data node (see the BUGS_model module for information on working with data).
-    - Set up an MCMC for the new model. What kind of sampling should happen for the new pump failures? 
 
 
 # Compiling R code

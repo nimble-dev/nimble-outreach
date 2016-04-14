@@ -1,9 +1,11 @@
-ISBA NIMBLE workshop, Introduction
-=====================================
-June 2016, ISBA World Meeting
--------------------------------------
-
-Chris Paciorek, Department of Statistics, UC Berkeley
+---
+title: "ISBA NIMBLE workshop"
+subtitle: "June 2016, ISBA World Meeting"
+author: "Chris Paciorek, Department of Statistics, UC Berkeley"
+output:
+  html_document:
+    code_folding: show
+---
 
 # A few administrative things
 
@@ -16,7 +18,7 @@ To get the materials look ahead to slide 6 for instructions. Alternatively, simp
 
 ## Asking questions and making comments
 
-Please ask questions and make comments as we go through the material. You can also share ideas, code snippets, and error messages, as well as ask questions through an online shared document at [Mozilla etherpad].
+Please ask questions and make comments as we go through the material. You can also share ideas, code snippets, and error messages, as well as ask questions through an online shared document at [https://v.etherpad.org/p/nimble_dlab_2016](https://v.etherpad.org/p/nimble_dlab_2016).
 
 
 # How we'll operate
@@ -101,13 +103,13 @@ Here are some of the features you can do in NIMBLE that we are most excited abou
 - customize your MCMCs, including choosing what parameters to block
 - define your own distributions and functions for use in BUGS code
 - use a variety of algorithms on your model, including MCMC, sequential Monte Carlo (particle filtering), and MCEM
-- write an algorithm in our system for easy dissemination to others
+- write an algorithm in our system for easy dissemination to others, including your own MCMC sampler
 - compile mathematical operations in R without needing to know or write C or C++
 
 # Why Not NIMBLE?
 
-* For MCMCs that rely heavily on Gibbs sampling, JAGS may be faster because of more efficient internal implementation of the calculations
-* For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in NIMBLE (but in many examples we've tried we've been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers.
+* For MCMCs that rely heavily on Gibbs sampling, JAGS may be faster because of more efficient internal implementation of the calculations.
+* For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in NIMBLE (but in many examples we've tried we've been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers).
 * NIMBLE does not (yet) allow for stochastic indexing; JAGS is your best bet for that.
 * NIMBLE can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good). We anticipate big improvements in future versions of NIMBLE (in the late 2016 into 2017 timeframe).
 
@@ -132,12 +134,45 @@ Here are some of the features you can do in NIMBLE that we are most excited abou
 
 # Participating in NIMBLE
 
-* File bug reports or feature requests as [https://github.com/nimble-dev](Github issues).
+* File bug reports or feature requests as [Github issues](https://github.com/nimble-dev).
 * Email [nimble.stats@gmail.com](the NIMBLE development team) if you're interested in participating in the development of NIMBLE.
-* Develop an algorithm using NIMBLE and either share it with us (e.g., by a Git pull request or more informall) or develop an R package that depends on NIMBLE.
+* Develop an algorithm using NIMBLE and either share it with us (e.g., by a Git pull request or more informally) or develop an R package that depends on NIMBLE.
 * We have funding to bring selected users to Berkeley for intensive collaboration; contact us if you have an interesting use for NIMBLE in mind and want to explore possibilities with us.
 
 
 # The Legal Stuff
 
-- This material was created by the NIMBLE development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution
+- This material was created by the NIMBLE development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution.
+
+# Modules
+
+Here are the modules we'll work through for this workshop, though we probably won't get to all of them.
+
+ - Introduction to NIMBLE
+    1. [The BUGS language](bugs_language_slides.html)
+    2. [Building a model in NIMBLE](build_model_slides.html)
+    3. [Running an MCMC](run_mcmc.html)
+    4. [Specifying data](data_nodes_slides.html)
+ - Advanced MCMC
+    1. [Customizing an MCMC](customizing_mcmc_slides.html)
+    2. [An extended example](litters_exapmle_slides.html)
+ - More on specifying BUGS models
+    2. [Alternative parameterizations](alt_param_slides.html)
+    3. [Indexing](indexing.html)
+    4. [User-defined distributions](user_dist_slides.html)
+ - Programming in NIMBLE
+    1. [Operating a NIMBLE model](operating_model_slides.html)
+    2. [Inspecting model structure](model_structure_slides.html)
+    3. [Writing an algorithm using nimbleFunctions](nimbleFunctions_slides.html)
+
+Exercises can be found [here](exercises.html).
+    
+Other topics
+
+1. [Vectorizing BUGS code](vectorizing_slides.html)
+2. [Constants in BUGS code](constants_slides.html)
+3. [User-defined functions in BUGS code](user_function.Rmd)
+4. [Compiling R code](compiling_R_slides.html)
+5. [Writing your own MCMC sampler](user_sampler_slides.html)
+
+
