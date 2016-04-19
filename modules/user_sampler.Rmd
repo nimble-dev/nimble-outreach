@@ -277,7 +277,8 @@ Let's try this with the *blocker* model, which is a random effects meta-analysis
 In this case, we could use a conjugate sampler, which would automatically respect the lower bound of zero, but for illustration let's compare a standard Metropolis sampler with the new reflection sampler. 
 
 ```{r, blocker}
-model <- readBUGSmodel('blocker', dir = system.file('classic-bugs','vol1','blocker', package = 'nimble'))
+model <- readBUGSmodel('blocker', dir = system.file('classic-bugs',
+      'vol1','blocker', package = 'nimble'))
 model$tau
 model$tau <- 0.01
 conf <- configureMCMC(model)

@@ -278,7 +278,8 @@ NIMBLE Development Team
 <p>Using the sampler is simple. Just modify the default MCMC configuration for a model to use the new sampler on a node of interest.</p>
 <p>Let's try this with the <em>blocker</em> model, which is a random effects meta-analysis of clinical trial data.</p>
 <p>In this case, we could use a conjugate sampler, which would automatically respect the lower bound of zero, but for illustration let's compare a standard Metropolis sampler with the new reflection sampler.</p>
-<pre class="sourceCode r"><code class="sourceCode r">model &lt;-<span class="st"> </span><span class="kw">readBUGSmodel</span>(<span class="st">'blocker'</span>, <span class="dt">dir =</span> <span class="kw">system.file</span>(<span class="st">'classic-bugs'</span>,<span class="st">'vol1'</span>,<span class="st">'blocker'</span>, <span class="dt">package =</span> <span class="st">'nimble'</span>))</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r">model &lt;-<span class="st"> </span><span class="kw">readBUGSmodel</span>(<span class="st">'blocker'</span>, <span class="dt">dir =</span> <span class="kw">system.file</span>(<span class="st">'classic-bugs'</span>,
+      <span class="st">'vol1'</span>,<span class="st">'blocker'</span>, <span class="dt">package =</span> <span class="st">'nimble'</span>))</code></pre>
 <pre><code>## defining model...</code></pre>
 <pre><code>## Detected rc,rt as data within 'constants'.
 ## Adding rc,rt as data for building model.</code></pre>
