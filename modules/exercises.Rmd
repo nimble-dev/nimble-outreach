@@ -1,6 +1,6 @@
 # Writing a model and operating it
 
-1) Write BUGS code for a normal random effects model with 6 groups and 10 observations in each group. You'll need multiple variance components.
+1) Write BUGS code for a normal random effects model with 6 groups and 10 observations in each group. 
 
 2) Set the hyperparameters (the variance components) for the model and simulate the random means and observations. Now fix the data nodes as 'data'. See what happens if you try to use *simulate()* on the data nodes. 
 

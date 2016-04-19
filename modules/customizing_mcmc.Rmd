@@ -67,6 +67,8 @@ tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
 
 # Customizing samplers
 
+As those who've worked with MCMC before know, MCMC is a family of algorithms and there are many ways to run an MCMC for any given model, including the choice of the kind of sampler used for each parameter in the model. 
+
 One of NIMBLE's most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with NIMBLE's default MCMC and then make modifications. 
 
 ```{r customize-mcmc}
@@ -85,6 +87,8 @@ CpumpMCMC$run(niter)
 ```
 
 We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between $\alpha$ and $\beta$, a simple change just to the univariate sampler for $\alpha$ has had a real effect on MCMC performance.
+
+Caveat: the real question is the effective sample size per unit of computation time, but we don't assess that here.
 
 ```{r output2, fig.height=5, fig.width=12}
 samples2 <- as.matrix(CpumpMCMC$mvSamples)

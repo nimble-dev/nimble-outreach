@@ -93,7 +93,7 @@ precModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(prec
 ## {
 ##     model$lifted_d1_over_sqrt_oPtau_cP[1] &lt;&lt;- 1/sqrt(model$tau[1])
 ## }
-## &lt;environment: 0x5c43170&gt;</code></pre>
+## &lt;environment: 0x4e2a0a8&gt;</code></pre>
 </div>
 <div id="lifted-nodes-how-not-to-code-in-nimble" class="slide section level1">
 <h1>Lifted nodes: how not to code in NIMBLE</h1>
@@ -101,9 +101,9 @@ precModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(prec
 <pre class="sourceCode r"><code class="sourceCode r">precModel$tau &lt;-<span class="st"> </span><span class="fl">0.0001</span>
 precModel$<span class="kw">simulate</span>(<span class="st">'y'</span>)
 precModel$y</code></pre>
-<pre><code>##  [1]  0.0930873227  0.0646901354  0.1169299235  0.0214820729  0.0078717089
-##  [6]  0.0150873297  0.0008392669  0.0110520670 -0.0760261984  0.1879022717</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
+<pre><code>##  [1] -1.878457e-02 -1.087755e-01  3.123348e-05 -6.932321e-04 -2.310133e-02
+##  [6] -1.209622e-01  7.124795e-02 -1.180527e-01  6.547985e-02 -1.569518e-02</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r">precModel$lifted_d1_over_sqrt_oPtau_cP <span class="co"># does not equal sqrt(1/precModel$tau)</span></code></pre>
 <pre><code>## [1] 0.1</code></pre>
 <p>Whoops, <em>y</em> was simulated based on the value of the lifted node, which was not updated based on the new value of <em>tau</em>. That's why the <em>y</em> values are close to their mean of zero even though <em>tau</em> is very small.</p>
 </div>
@@ -116,8 +116,8 @@ precModel$<span class="kw">calculate</span>(precModel$<span class="kw">getDepend
 <pre class="sourceCode r"><code class="sourceCode r"><span class="co"># precModel$calculate() # would also work but recalculates entire model</span>
 precModel$<span class="kw">simulate</span>(<span class="st">'y'</span>)
 precModel$y</code></pre>
-<pre><code>##  [1]  116.22888   -8.76069  -21.56618  150.44370  -10.15058 -101.00062
-##  [7]  261.13866 -174.60000   50.09315   89.74166</code></pre>
+<pre><code>##  [1]  47.599654 -38.930179 -64.911010  15.699083  -4.236273 -99.723801
+##  [7] -81.711771 -49.869479 -61.919299 -41.989795</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
 <pre><code>## [1] 100</code></pre>
 <p>If one skips the calculate step and assumes the nodes are only those that appear in the BUGS code, one may not get correct results.</p>

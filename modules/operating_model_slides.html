@@ -113,7 +113,7 @@ pump$<span class="kw">calculate</span>(pump$<span class="kw">getDependencies</sp
 </div>
 <div id="operating-the-model-simulate" class="slide section level1">
 <h1>Operating the model: <em>simulate()</em></h1>
-<p>If we want to simulate (from the prior), we can do that too.</p>
+<p>If we want to simulate (from the prior), we can do that too. <em>simulate()</em> puts new values into the model; if you want to see those values, you need to look into the model.</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>)  <span class="co"># so the calculations are reproducible</span>
 pump$<span class="kw">simulate</span>(<span class="st">'theta'</span>)  <span class="co"># simulate from prior</span>
 pump$theta</code></pre>

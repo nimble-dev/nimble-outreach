@@ -73,15 +73,6 @@ pump <- nimbleModel(pumpCode,
 
 If all you want to do is run an MCMC, NIMBLE's fine-grained control might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.
 
-# Nodes and variables
-
-The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
-
- - *parameter*: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. $\alpha$ in the pump model
- - *data*: a known quantity in a model, also represented as a random variable, e.g., $x_1, x_2, \ldots$ in the pump model
- - *constants*: other fixed quantities involved in the model, e.g., $N$ in the pump model
- - *node*: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., $\alpha$ or $x_3$ in the pump model
- - *variable*: a collection of one or more nodes with the same name, e.g., $\alpha$ or $x$ in the pump model 
 
 # Compiling a model
 

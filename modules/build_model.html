@@ -180,17 +180,6 @@ pump &lt;- nimbleModel(pumpCode,
 <pre><code>## model building finished</code></pre>
 <p>If all you want to do is run an MCMC, NIMBLE’s fine-grained control might not be so interesting to you. But by providing an explicit model object, we allow you to operate the model and program with it.</p>
 </div>
-<div id="nodes-and-variables" class="section level1">
-<h1>Nodes and variables</h1>
-<p>The parameters and data in a model are represented as nodes in a graph. Here we define some terms:</p>
-<ul>
-<li><em>parameter</em>: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. <span class="math">\(\alpha\)</span> in the pump model</li>
-<li><em>data</em>: a known quantity in a model, also represented as a random variable, e.g., <span class="math">\(x_1, x_2, \ldots\)</span> in the pump model</li>
-<li><em>constants</em>: other fixed quantities involved in the model, e.g., <span class="math">\(N\)</span> in the pump model</li>
-<li><em>node</em>: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., <span class="math">\(\alpha\)</span> or <span class="math">\(x_3\)</span> in the pump model</li>
-<li><em>variable</em>: a collection of one or more nodes with the same name, e.g., <span class="math">\(\alpha\)</span> or <span class="math">\(x\)</span> in the pump model</li>
-</ul>
-</div>
 <div id="compiling-a-model" class="section level1">
 <h1>Compiling a model</h1>
 <p>In general, you’ll want a version of the model that allows for fast computation (this can then be used by any algorithms you use on the model).</p>

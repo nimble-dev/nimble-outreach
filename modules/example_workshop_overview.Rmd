@@ -13,7 +13,7 @@ output:
 
 The Github site ([https://github.com/nimble-dev/nimble-outreach](https://github.com/nimble-dev/nimble-outreach)) is the master repository for materials for the modules; you can also get the individual files from Github. 
 
-To get the materials look ahead to slide 6 for instructions. Alternatively, simply go to https://github.com/nimble-dev/nimble-outreach and click on the 'Download ZIP' button in the lower right of the window.
+To get the materials look ahead to slide 6 for instructions. Alternatively, simply go to https://github.com/nimble-dev/nimble-outreach and click on the 'Download ZIP' button in the right side of the window.
 
 
 ## Asking questions and making comments

@@ -43,6 +43,8 @@ In this model, there are $N=10$ pumps. The number of failures, $x_i$, for pump $
 
 Here we specify the pump code directly in R. We can walk through some of details via the comments in the BUGS code.
 
+<center><img src="figures/pumpDAG.jpg"></center>
+
 ```{r model-code}
 library(nimble)
 pumpCode <- nimbleCode({ 

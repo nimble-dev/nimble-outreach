@@ -183,7 +183,7 @@ precModel &lt;- nimbleModel(precCode, inits = list(tau = 100),
 ## {
 ##     model$lifted_d1_over_sqrt_oPtau_cP[1] &lt;&lt;- 1/sqrt(model$tau[1])
 ## }
-## &lt;environment: 0x65cdbf8&gt;</code></pre>
+## &lt;environment: 0x57b8020&gt;</code></pre>
 </div>
 <div id="lifted-nodes-how-not-to-code-in-nimble" class="section level1">
 <h1>Lifted nodes: how not to code in NIMBLE</h1>
@@ -191,9 +191,9 @@ precModel &lt;- nimbleModel(precCode, inits = list(tau = 100),
 <pre class="r"><code>precModel$tau &lt;- 0.0001
 precModel$simulate('y')
 precModel$y</code></pre>
-<pre><code>##  [1] -0.09104884  0.02437801  0.13747601  0.06782162 -0.01948838
-##  [6] -0.18168863  0.02646470 -0.01485629 -0.06648071 -0.03114237</code></pre>
-<pre class="r"><code>precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
+<pre><code>##  [1] -0.0033509556  0.1784326557 -0.0299802693 -0.0876360348  0.0082912355
+##  [6]  0.0005822254  0.1957680333  0.1492282065 -0.0175150209  0.1151035439</code></pre>
+<pre class="r"><code>precModel$lifted_d1_over_sqrt_oPtau_cP # does not equal sqrt(1/precModel$tau)</code></pre>
 <pre><code>## [1] 0.1</code></pre>
 <p>Whoops, <em>y</em> was simulated based on the value of the lifted node, which was not updated based on the new value of <em>tau</em>. That’s why the <em>y</em> values are close to their mean of zero even though <em>tau</em> is very small.</p>
 </div>
@@ -206,8 +206,8 @@ precModel$calculate(precModel$getDependencies('tau'))</code></pre>
 <pre class="r"><code># precModel$calculate() # would also work but recalculates entire model
 precModel$simulate('y')
 precModel$y</code></pre>
-<pre><code>##  [1]  47.58593 -20.71498 -10.08837 -17.42865  40.84398 -19.95646  33.62343
-##  [8] 154.33725 -78.44779  56.27165</code></pre>
+<pre><code>##  [1]  132.70327  -36.95993  -13.14149 -168.28620  -84.50203   93.64038
+##  [7] -107.25986  -73.84919  -45.32299   24.39767</code></pre>
 <pre class="r"><code>precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
 <pre><code>## [1] 100</code></pre>
 <p>If one skips the calculate step and assumes the nodes are only those that appear in the BUGS code, one may not get correct results.</p>

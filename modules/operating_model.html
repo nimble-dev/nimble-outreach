@@ -203,7 +203,7 @@ pump$calculate(pump$getDependencies('alpha'))   # or calculate(pump, ...)</code>
 </div>
 <div id="operating-the-model-simulate" class="section level1">
 <h1>Operating the model: <em>simulate()</em></h1>
-<p>If we want to simulate (from the prior), we can do that too.</p>
+<p>If we want to simulate (from the prior), we can do that too. <em>simulate()</em> puts new values into the model; if you want to see those values, you need to look into the model.</p>
 <pre class="r"><code>set.seed(0)  # so the calculations are reproducible
 pump$simulate('theta')  # simulate from prior
 pump$theta</code></pre>

@@ -79,7 +79,7 @@ graph. For example, here's incorrect usage that results in a bug.
 precModel$tau <- 0.0001
 precModel$simulate('y')
 precModel$y
-precModel$lifted_d1_over_sqrt_oPtau_cP
+precModel$lifted_d1_over_sqrt_oPtau_cP # does not equal sqrt(1/precModel$tau)
 ```
 
 Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why the *y* values are  close to their mean of zero even though *tau* is very small. 

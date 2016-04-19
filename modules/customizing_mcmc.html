@@ -223,6 +223,7 @@ tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
 </div>
 <div id="customizing-samplers" class="section level1">
 <h1>Customizing samplers</h1>
+<p>As those who’ve worked with MCMC before know, MCMC is a family of algorithms and there are many ways to run an MCMC for any given model, including the choice of the kind of sampler used for each parameter in the model.</p>
 <p>One of NIMBLE’s most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with NIMBLE’s default MCMC and then make modifications.</p>
 <pre class="r"><code>pumpConf &lt;- configureMCMC(pump)
 pumpConf$addMonitors(c('alpha', 'beta', 'theta'))</code></pre>
@@ -263,6 +264,7 @@ set.seed(0)
 CpumpMCMC$run(niter)</code></pre>
 <pre><code>## NULL</code></pre>
 <p>We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between <span class="math">\(\alpha\)</span> and <span class="math">\(\beta\)</span>, a simple change just to the univariate sampler for <span class="math">\(\alpha\)</span> has had a real effect on MCMC performance.</p>
+<p>Caveat: the real question is the effective sample size per unit of computation time, but we don’t assess that here.</p>
 <pre class="r"><code>samples2 &lt;- as.matrix(CpumpMCMC$mvSamples)
 
 mcmc2 &lt;- as.mcmc(samples2[(burnin+1):nrow(samples2), ])

@@ -67,7 +67,7 @@ pump$getLogProb('theta')  # equivalent to pump$logProb_theta or getLogProb(pump,
 
 # Operating the model: *simulate()*
  
-If we want to simulate (from the prior), we can do that too.
+If we want to simulate (from the prior), we can do that too. *simulate()* puts new values into the model; if you want to see those values, you need to look into the model.
 
 ```{r, model-simulate}
 set.seed(0)  # so the calculations are reproducible
