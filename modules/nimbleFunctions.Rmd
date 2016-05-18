@@ -1,0 +1,110 @@
+---
+title: "Programming with models (3): Writing nimbleFunctions"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+*nimbleFunctions* are at the heart of NIMBLE. They are the way that algorithms are implemented. They can also be used for user-defined functions and samplers for use in BUGS code (see the [user_function](user_function.html) and [user_sampler](user_sampler.html) modules) and they can be used to compile parts of R (see the *compile_R* module), without reference to a model. But their main purpose is providing a way for developers to implement algorithms.
+
+# Components of a nimbleFunction
+
+NIMBLE uses the concept of *two-stage evaluation* from computer science to run a model-specific algorithm based on model-generic algorithm code. The first stage of evaluation specializes the algorithm to the model of interest via *setup* code. The second stage runs the algorithm via *run* code. 
+
+Thus, a nimbleFunction has two parts:
+
+ - setup code: used to tailor the algorithm to a particular model structure. Often this involves determining dependencies amongst nodes in the model and setting up storage using modelValues
+ - run code: the guts of the algorithm, written generically so it will apply to any (appropriate) model
+
+Setup code is written as a R function, using R code, usually including NIMBLE's special functions for querying the model structure (see the module *model_structure*). 
+
+Run code is written using the NIMBLE DSL. While this is formally a language distinct from R, you can just think of it as a subset of R, enhanced with some functions for operating on the model (see the module *operating_model*). 
+
+# Some syntax for nimbleFunctions
+
+Here are some of the functions you may use in the run function of a nimbleFunction:
+
+ - *returnType*, e.g. ```returnType(double(1))``` for a vector of reals
+ - *length*, e.g., ```length(x)``` to determine the length of a run-time argument *x*
+ - *declare*, e.g., ```declare(result, double(1))``` to create a vector of reals called *result*
+ - *setSize*, e.g., ```setSize(result, n)``` to set the size of the vector to be length *n*
+ - *calculate*, *simulate*, *getLogProb* to manipulate the model
+ - *values* and *nimCopy* to copy values
+ - *print*
+ - random number generation functions, e.g., ```rnorm(1, 100, 5)``` (these must always only generate a single random variable)
+
+Section 9 of the NIMBLE User Manual describes the syntax for *run* code in detail, including lots of neat functionality such as using nested nimbleFunctions and having multiple run-time functions (i.e., methods) as part of a nimbleFunction.
+
+
+# A basic example
+
+Let's consider how we would optimize the parameters in a model using a nimbleFunction. Basically, we'll just construct an objective function that we can then pass to R's *optim* function to do the actual numerical optimization.
+
+This amounts to setting things up to find the posterior mode of a model; this is generally a reasonable thing to do only for models with a small number of parameters and without hierarchical structure.
+
+Here's the generic nimbleFunction that could be used with any model.
+
+```{r, nf}
+objective <- nimbleFunction(
+    setup = function(model, target) {
+          calcNodes <- model$getDependencies(target)
+          },
+    run = function(par = double(1)) {
+        returnType(double(0))
+        values(model, target) <<- par
+        ans <- model$calculate(calcNodes)
+        return(ans)
+    }
+)
+```
+
+# Using the nimbleFunction on a model
+
+Let's try to optimize the parameters of GLM, in particular a basic logistic regression, for which the maximum likelihood estimates are not available in closed form.
+
+We'll build the model and then create a nimbleFunction specific to the actual model. And we'll create a compiled version of that nimbleFunction to use in the actual optimization.
+
+```{r, model}
+code <- nimbleCode({
+     for(i in 1:n) {
+           y[i] ~ dbern(p[i])
+           p[i] <- expit(b0 + b1*x[i])
+     }
+})
+n <- 300
+b0 <- -0.5
+b1 <- 4
+x <- runif(n, -1, 1)
+p <- expit(b0 + b1*x)
+y <- rbinom(n, 1, p)
+
+model <- nimbleModel(code, constants = list(n = n, x = x),
+      data = list(y = y), inits = list(b0 = 0, b1 =0))
+Cmodel <- compileNimble(model)
+logistic_obj <- objective(model, c('b0', 'b1'))
+Clogistic_obj <- compileNimble(logistic_obj, project = model)
+```
+
+Now let's run the optimization and compare to R's *glm* function. 
+
+```{r, optimizer}
+out <- optim(c(Cmodel$b0, Cmodel$b1), Clogistic_obj$run, 
+    control = list(fnscale = -1))
+out$par
+glm(y ~ x, family = 'binomial')
+```
+
+Looks like it works.

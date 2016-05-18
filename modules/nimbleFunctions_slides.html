@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
   <meta name="author" content="NIMBLE Development Team" />
-  <title>Indexing and model checking</title>
+  <title>Programming with models (3): Writing nimbleFunctions</title>
   <style type="text/css">code{white-space: pre;}</style>
   <style type="text/css">
 table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
@@ -32,103 +32,102 @@ code > span.er { color: #ff0000; font-weight: bold; }
 </head>
 <body>
 <div class="slide titlepage">
-  <h1 class="title">Indexing and model checking</h1>
+  <h1 class="title">Programming with models (3): Writing nimbleFunctions</h1>
   <h1 class="subtitle">NIMBLE training materials module</h1>
   <p class="author">
 NIMBLE Development Team
   </p>
 </div>
-<div id="indexing" class="slide section level1">
-<h1>Indexing</h1>
-<p>NIMBLE can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the <em>dimensions</em> argument to <em>nimbleModel()</em>. Here is <code>N=2</code> and <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAOCAIAAADbgmlrAAAABmJLR0QA/wD/AP+gvaeTAAACuUlEQVQ4ja1VTUgqURj95ikS/i3EjbiplgpKBZIhLiwIxUUwiwiE0iL3iS0rDGJWQrNJIghbBUGI5C5GpE0qjQQpQ60Mk9wEMmXjiHPfYt4btbR4z87qO4c73zkM585gCCEAAABBEBqNhjir1Wr4i1ar1Ww2xVkul4+MjMBPQy5NtVqNJEmGYcrl8sbGhs/nE3WKok5OThiGmZqastvtfr9/GD9BEEiSfH5+rlQqY2Nj4XBYq9UC6sXq6ur09PTi4mK3WCqVVlZW0NAQBIEgCJqmEUL1et3r9S4sLPA8/6s7JsdxGIbNzMzc398/Pj5KOkVRLpdrmBcgolQq0TStVCoBQKvVLi8vl8vlZDLZEyKTyZjN5kAgAADRaFTSC4XC7Ozs8CGKxeLDw8P29rZIbTYbAFxfX8u7D11dXeE4bjKZxsfHb25uWJbVaDQA8Pb2ZjAYhg/hdrtpmvZ6vSKt1WoIIb1e3xPi6enJarViGIbjOEEQZ2dngUCAYRidTodh2Oele3t7uVzua+NEIiHNGo2GIAiJJpNJmUyG43inmC8vL+vr6+LMcZzD4Zibm0MI7e/vHx8f9y0ax3HsdxhU0mKxaLPZxM2dEBcXFyRJSnR3d3dycvLy8nJtba1arf7/legHnueXlpZisZhIO8XMZrNOp1Oifr9fJpOdn5+zLPsjhZDQarXE71AwGBSVTicqlYrVapWo0Wg0mUz5fN5utw9aF4lEstns15apVOqDcnR0ND8/7/F4AKBarcbj8T8h7u7u2u32h9M+n29zc3NiYmKQwdbW1tcJPuPw8JBlWZVKlU6nAYCiKIvFgnEct7Ozk8/nm82mw+EIhUJ6vV56xu12HxwcjI6O/qtZX9ze3gaDQelPJOL09BRDCL2+vkqSSqXqvo08zysUih9JAADtdvv9/f2DqFarfwNZJ0c+TkIbDQAAAABJRU5ErkJggg==" alt="N=2" title="N=2" /> and <code>p</code> and <code>p</code> and <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAANCAIAAADwlwNsAAAABmJLR0QA/wD/AP+gvaeTAAABKUlEQVQYlWWPv8qCYBjFzytCgehUSOHYLYgkDl6BW3cQCO0t4h5BdEvSFg0qQVOL8KJLEIHwhpTv8w0KweeZnj8/zuEwIgIAoGkaAKPRCMD7/WaMjcdjAGr35pzHcfx8Ptfr9eVy+X6/nHPP8zabDYiIiKIo4pyvVivf96uqIqLT6WTbdlmWSuchpbQsq6oqx3FmsxkAXdc/n8/r9eqJ3W6XpqkQwnXd7nK73bqhJwAkSaKq6nK57Nbz+axpmmVZPyLLMtM0p9MpACFEmqZBEBiG0RNt2xZFIaVs21ZKGcfxfD7fbre/tnmeCyE8zwvDkDG2WCyOx2Nv3rU9HA6O4zweDxqoT7ler6ZpTiYTDKQ0TRNF0f1+F0Ls9/shwYioruseVxRN0/4Rf0PLpGKtJMPfAAAAAElFTkSuQmCC" alt="p" title="p" />.</p>
-<p>For simplicity, we'll just consider specifying dimensions explicitly in the BUGS code. Here's a normal-Wishart example; note that we have indices on all non-scalar objects.</p>
-<pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-     for(i in <span class="dv">1</span>:n) {
-           y[i, <span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu[<span class="dv">1</span>:K], C[<span class="dv">1</span>:K, <span class="dv">1</span>:K])
-     }
-     mu[<span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu0[<span class="dv">1</span>:K], Cmu[<span class="dv">1</span>:K, <span class="dv">1</span>:K])
-     C[<span class="dv">1</span>:K, <span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dwish</span>(C0[<span class="dv">1</span>:K, <span class="dv">1</span>:K], <span class="dt">df =</span> <span class="dv">1</span>)
-})</code></pre>
+<div id="introduction" class="slide section level1">
+<h1>Introduction</h1>
+<p><em>nimbleFunctions</em> are at the heart of NIMBLE. They are the way that algorithms are implemented. They can also be used for user-defined functions and samplers for use in BUGS code (see the <a href="user_function.html">user_function</a> and <a href="user_sampler.html">user_sampler</a> modules) and they can be used to compile parts of R (see the <em>compile_R</em> module), without reference to a model. But their main purpose is providing a way for developers to implement algorithms.</p>
 </div>
-<div id="model-checking" class="slide section level1">
-<h1>Model checking</h1>
+<div id="components-of-a-nimblefunction" class="slide section level1">
+<h1>Components of a nimbleFunction</h1>
+<p>A nimbleFunction has two parts:</p>
 <ul>
-<li>In part because of the possibility of omitting needed indices in BUGS code and of having dimension and size mismatches, NIMBLE does fairly aggressive model checking.</li>
-<li>This checking can take a bit of time.</li>
-<li>We report cases where models are created but values for nodes of the model are NA. It's perfectly fine to create a model and not provide values for nodes until later (e.g., letting an MCMC sample from the prior to set initial values), but we do warn you if that's the case, as seen here for <em>y</em>, <em>mu0</em> and <em>mu</em> (and therefore for the objects storing their probability density values also).</li>
+<li>setup code: used to tailor the algorithm to a particular model structure. Often this involves determining dependencies amongst nodes in the model and setting up storage using modelValues</li>
+<li>run code: the guts of the algorithm, written generically so it will apply to any (appropriate) model</li>
 </ul>
+<p>Setup code is written as a R function, using R code, usually including NIMBLE's special functions for querying the model structure (see the module <em>model_structure</em>).</p>
+<p>Run code is written using the NIMBLE DSL. While this is formally a language distinct from R, you can just think of it as a subset of R, enhanced with some functions for operating on the model (see the module <em>operating_model</em>).</p>
+</div>
+<div id="some-syntax-for-nimblefunctions" class="slide section level1">
+<h1>Some syntax for nimbleFunctions</h1>
+<p>Here are some of the functions you may use in the run function of a nimbleFunction:</p>
+<ul>
+<li><em>returnType</em>, e.g. <code>returnType(double(1))</code> for a vector of reals</li>
+<li><em>length</em>, e.g., <code>length(x)</code> to determine the length of a run-time argument <em>x</em></li>
+<li><em>declare</em>, e.g., <code>declare(result, double(1))</code> to create a vector of reals called <em>result</em></li>
+<li><em>setSize</em>, e.g., <code>setSize(result, n)</code> to set the size of the vector to be length <em>n</em></li>
+<li><em>calculate</em>, <em>simulate</em>, <em>getLogProb</em> to manipulate the model</li>
+<li><em>values</em> and <em>nimCopy</em> to copy values</li>
+<li><em>print</em></li>
+<li>random number generation functions, e.g., <code>rnorm(1, 100, 5)</code> (these must always only generate a single random variable)</li>
+</ul>
+<p>Section 9 of the NIMBLE User Manual describes the syntax for <em>run</em> code in detail, including lots of neat functionality such as using nested nimbleFunctions and having multiple run-time functions (i.e., methods) as part of a nimbleFunction.</p>
+</div>
+<div id="a-basic-example" class="slide section level1">
+<h1>A basic example</h1>
+<p>Let's consider how we would optimize the parameters in a model using a nimbleFunction. Basically, we'll just construct an objective function that we can then pass to R's <em>optim</em> function to do the actual numerical optimization.</p>
+<p>This amounts to setting things up to find the posterior mode of a model; this is generally a reasonable thing to do only for models with a small number of parameters and without hierarchical structure.</p>
+<p>Here's the generic nimbleFunction that could be used with any model.</p>
+<pre class="sourceCode r"><code class="sourceCode r">objective &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
+    <span class="dt">setup =</span> function(model, target) {
+          calcNodes &lt;-<span class="st"> </span>model$<span class="kw">getDependencies</span>(target)
+          },
+    <span class="dt">run =</span> function(<span class="dt">par =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {
+        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">0</span>))
+        <span class="kw">values</span>(model, target) &lt;&lt;-<span class="st"> </span>par
+        ans &lt;-<span class="st"> </span>model$<span class="kw">calculate</span>(calcNodes)
+        <span class="kw">return</span>(ans)
+    }
+)</code></pre>
+</div>
+<div id="using-the-nimblefunction-on-a-model" class="slide section level1">
+<h1>Using the nimbleFunction on a model</h1>
+<p>Let's try to optimize the parameters of GLM, in particular a basic logistic regression, for which the maximum likelihood estimates are not available in closed form.</p>
+<p>We'll build the model and then create a nimbleFunction specific to the actual model. And we'll create a compiled version of that nimbleFunction to use in the actual optimization.</p>
 <pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
      for(i in <span class="dv">1</span>:n) {
-           y[i, <span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu[<span class="dv">1</span>:K], C[<span class="dv">1</span>:K, <span class="dv">1</span>:K])
+           y[i] ~<span class="st"> </span><span class="kw">dbern</span>(p[i])
+           p[i] &lt;-<span class="st"> </span><span class="kw">expit</span>(b0 +<span class="st"> </span>b1*x[i])
      }
-     mu[<span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu0[<span class="dv">1</span>:K], Cmu[<span class="dv">1</span>:K, <span class="dv">1</span>:K])
-     C[<span class="dv">1</span>:K, <span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dwish</span>(C0[<span class="dv">1</span>:K, <span class="dv">1</span>:K], <span class="dt">df =</span> <span class="dv">5</span>)
 })
-K &lt;-<span class="st"> </span><span class="dv">4</span>; n &lt;-<span class="st"> </span><span class="dv">10</span>
-model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> n, <span class="dt">K =</span> K),
-      <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">C0 =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>,K)), <span class="dt">Cmu =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>, K)),
-      <span class="dt">C =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>, K))))</code></pre>
+n &lt;-<span class="st"> </span><span class="dv">300</span>
+b0 &lt;-<span class="st"> </span>-<span class="fl">0.5</span>
+b1 &lt;-<span class="st"> </span><span class="dv">4</span>
+x &lt;-<span class="st"> </span><span class="kw">runif</span>(n, -<span class="dv">1</span>, <span class="dv">1</span>)
+p &lt;-<span class="st"> </span><span class="kw">expit</span>(b0 +<span class="st"> </span>b1*x)
+y &lt;-<span class="st"> </span><span class="kw">rbinom</span>(n, <span class="dv">1</span>, p)
+
+model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> n, <span class="dt">x =</span> x),
+      <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> y), <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">b0 =</span> <span class="dv">0</span>, <span class="dt">b1 =</span><span class="dv">0</span>))</code></pre>
 <pre><code>## defining model...</code></pre>
 <pre><code>## building model...</code></pre>
 <pre><code>## setting data and initial values...</code></pre>
 <pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre><code>## NAs were detected in model variables: mu0, mu, logProb_mu, y, logProb_y.</code></pre>
 <pre><code>## model building finished</code></pre>
-</div>
-<div id="model-checking-part-2" class="slide section level1">
-<h1>Model checking, part 2</h1>
-<p>Now let's see what happens when there is a size mismatch in the BUGS code. Note the definition of <code>mu[1:3]</code>, whereas <code>K=4</code>.</p>
-<pre class="sourceCode r"><code class="sourceCode r"><span class="co"># now have a dimension mismatch - mu[1:3] has mean mu0[1:K]</span>
-code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-     for(i in <span class="dv">1</span>:n) {
-           y[i, <span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu[<span class="dv">1</span>:K], C[<span class="dv">1</span>:K, <span class="dv">1</span>:K])
-     }
-     mu[<span class="dv">1</span>:<span class="dv">3</span>] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu0[<span class="dv">1</span>:K], Cmu[<span class="dv">1</span>:K, <span class="dv">1</span>:K])
-     C[<span class="dv">1</span>:K, <span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dwish</span>(C0[<span class="dv">1</span>:K, <span class="dv">1</span>:K], <span class="dt">df =</span> <span class="dv">1</span>)
-})
-out &lt;-<span class="st"> </span><span class="kw">try</span>(
-    model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> n, <span class="dt">K =</span> K),
-       <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">C0 =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>,K)), <span class="dt">Cmu =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>, K)),
-       <span class="dt">C =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>, K))))
-)</code></pre>
-<pre><code>## defining model...</code></pre>
-<pre><code>## building model...</code></pre>
-<pre><code>## setting data and initial values...</code></pre>
-<pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(out)</code></pre>
-<pre><code>## [1] &quot;Error in model$check() : \n  Size/dimension mismatch amongst vectors and matrices in BUGS expression: mu[1:3] ~ dmnorm(mean = mu0[1:4], cholesky = lifted_chol_oPCmu_oB1to4_1to4_cB_cP[1:4,     1:4], prec_param = 1, .prec = Cmu[1:4, 1:4], .cov = calc_dmnormAltParams(lifted_chol_oPCmu_oB1to4_1to4_cB_cP[1:4,     1:4], 1, 0))\n&quot;
-## attr(,&quot;class&quot;)
-## [1] &quot;try-error&quot;
-## attr(,&quot;condition&quot;)
-## &lt;simpleError in model$check(): Size/dimension mismatch amongst vectors and matrices in BUGS expression: mu[1:3] ~ dmnorm(mean = mu0[1:4], cholesky = lifted_chol_oPCmu_oB1to4_1to4_cB_cP[1:4,     1:4], prec_param = 1, .prec = Cmu[1:4, 1:4], .cov = calc_dmnormAltParams(lifted_chol_oPCmu_oB1to4_1to4_cB_cP[1:4,     1:4], 1, 0))&gt;</code></pre>
-</div>
-<div id="model-checking-part-3" class="slide section level1">
-<h1>Model checking, part 3</h1>
-<p>And finally let's see an example where we forget to provide indexing.</p>
-<pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-     for(i in <span class="dv">1</span>:n) {
-           y[i, <span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu, C)
-     }
-     mu ~<span class="st"> </span><span class="kw">dmnorm</span>(mu0, Cmu)
-     C ~<span class="st"> </span><span class="kw">dwish</span>(C0, <span class="dt">df =</span> <span class="dv">1</span>)
-})
-out &lt;-<span class="st"> </span><span class="kw">try</span>(
-   model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> n, <span class="dt">K =</span> K),
-      <span class="dt">inits =</span> <span class="kw">list</span>(<span class="dt">C0 =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>,K)), <span class="dt">Cmu =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>, K)),
-      <span class="dt">C =</span> <span class="kw">diag</span>(<span class="kw">rep</span>(<span class="dv">1</span>, K))))
-)</code></pre>
-<pre><code>## defining model...</code></pre>
-<pre><code>## building model...</code></pre>
-<pre><code>## setting data and initial values...</code></pre>
-<pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(out)</code></pre>
-<pre><code>## [1] &quot;Error in model$check() : \n  Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: lifted_chol_oPC_cP &lt;- chol(C)\n&quot;
-## attr(,&quot;class&quot;)
-## [1] &quot;try-error&quot;
-## attr(,&quot;condition&quot;)
-## &lt;simpleError in model$check(): Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: lifted_chol_oPC_cP &lt;- chol(C)&gt;</code></pre>
-<p>As you can see, sometimes our error messages are less helpful than they could be.</p>
-<p>You can turn off the checking with <code>check=FALSE</code> in <em>nimbleModel()</em>.</p>
+<pre class="sourceCode r"><code class="sourceCode r">Cmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(model)
+logistic_obj &lt;-<span class="st"> </span><span class="kw">objective</span>(model, <span class="kw">c</span>(<span class="st">'b0'</span>, <span class="st">'b1'</span>))
+Clogistic_obj &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(logistic_obj, <span class="dt">project =</span> model)</code></pre>
+<p>Now let's run the optimization and compare to R's <em>glm</em> function.</p>
+<pre class="sourceCode r"><code class="sourceCode r">out &lt;-<span class="st"> </span><span class="kw">optim</span>(<span class="kw">c</span>(Cmodel$b0, Cmodel$b1), Clogistic_obj$run, 
+    <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">fnscale =</span> -<span class="dv">1</span>))
+out$par</code></pre>
+<pre><code>## [1] -0.6448499  3.9375668</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">glm</span>(y ~<span class="st"> </span>x, <span class="dt">family =</span> <span class="st">'binomial'</span>)</code></pre>
+<pre><code>## 
+## Call:  glm(formula = y ~ x, family = &quot;binomial&quot;)
+## 
+## Coefficients:
+## (Intercept)            x  
+##     -0.6446       3.9372  
+## 
+## Degrees of Freedom: 299 Total (i.e. Null);  298 Residual
+## Null Deviance:       398.4 
+## Residual Deviance: 226.5     AIC: 230.5</code></pre>
+<p>Looks like it works.</p>
 </div>
 </body>
 </html>

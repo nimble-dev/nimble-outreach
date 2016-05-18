@@ -6,15 +6,15 @@
 
 3) Calculate the full density of the model. Next calculate just the log-likelihood.
 
-4) Compile the model and compare the time of calculating the full density in the compiled C++ model to the original R version of the model. (It may not be much different here for such a small model). You could use *system.time()* or for this comparison of a very fast calculation, *microbenchmark()* in the  *microbenchmark* package is likely to be more helpful.
+4) Compile the model and compare the time of calculating the full density in the compiled model to the original uncompiled R version of the model. (It may not be much different here for such a small model). You could use *system.time()* or for this comparison of a very fast calculation, *microbenchmark()* in the  *microbenchmark* package is likely to be more helpful.
 
 
 
 # Using MCMC
 
-1) Compare the MCMC performance of using univariate slice samplers on $\alpha$ and $\beta$ to the default samplers and to the blocked Metropolis sampler for ${\alpha, \beta}$ for longer MCMC runs. 
+1) Compare the MCMC performance of using univariate slice samplers on ```alpha``` and ```beta``` to the default samplers and to the blocked Metropolis sampler for ```{alpha, beta}``` for longer MCMC runs. 
 
-2) Change the sampler for $\theta$ to be a single block Metropolis sampler. How does that affect MCMC performance? How much time does it take to run a set of 10 individual conjugate samplers on the elements of $\theta$ (from the default configuration) compared to a single block sampler on the vector $\theta$. 
+2) Change the sampler for ```theta``` to be a single block Metropolis sampler. How does that affect MCMC performance? How much time does it take to run a set of 10 individual conjugate samplers on the elements of ```theta``` (from the default configuration) compared to a single block sampler on the vector ```theta```. 
 
 3) Suppose you wanted to consider the predictive distribution for a new pump. 
     - Create a new version of the model that allows for this.  

@@ -78,7 +78,7 @@ If all you want to do is run an MCMC, NIMBLE's fine-grained control might not be
 
 In general, you'll want a version of the model that allows for fast computation (this can then be used by any algorithms you use on the model).
 
-To create a fast C++ version of the model, you simply do this.
+To create a fast compiled version of the model, you simply do this.
 
 ```{r, compile-model}
 Cpump <- compileNimble(pump)

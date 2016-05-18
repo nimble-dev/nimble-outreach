@@ -33,17 +33,17 @@ We first need to build the model.
 
 The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
 
- - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. $\alpha$ in the pump model
- - data: a known quantity in a model, also represented as a random variable, e.g., $x_1, x_2, \ldots$ in the pump model
- - constants: other fixed quantities involved in the model, e.g., $N$ in the pump model
- - node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., $\alpha$ or $x_3$ in the pump model
- - variable: a collection of one or more nodes with the same name, e.g., $\alpha$ or $x$ in the pump model 
+ - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. `alpha` in the pump model
+ - data: a known quantity in a model, also represented as a random variable, e.g., `x[1], x[2], ...` in the pump model
+ - constants: other fixed quantities involved in the model, e.g., `N` in the pump model
+ - node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., `alpha` or `x[3]` in the pump model
+ - variable: a collection of one or more nodes with the same name, e.g., `alpha` or `x` in the pump model 
 
-# Inspecting the model
+# Inspecting the model: nodes
 
 NIMBLE provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
 
-What are the variables in the model? What are the dependencies of a given node (this is information used in many algorithms)?
+What are the nodes in the model? What are the dependencies of a given node (this is information used in many algorithms)?
 
 ```{r, model-nodes}
 pump$getNodeNames()
@@ -52,3 +52,21 @@ hypers
 pump$getDependencies(hypers)
 ```
 
+There are a variety of options to `getNodeNames()` and `getDependencies` that allow you to fine-tune the information you get.
+
+```{r, get-info}
+args(pump$getDependencies)
+args(pump$getNodeNames)
+
+latents <- pump$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+latents
+pump$getDependencies(latents, determOnly = TRUE)
+pump$getNodeNames(dataOnly = TRUE)
+```
+
+What are the variables in the model? What information is available about them?
+
+```{r, model-nodes}
+pump$getVarNames()
+pump$getVarInfo('theta')
+```

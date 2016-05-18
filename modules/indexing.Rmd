@@ -18,7 +18,7 @@ library(nimble)
 
 # Indexing
 
-NIMBLE can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the *dimensions* argument to *nimbleModel()*.
+NIMBLE can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the *dimensions* argument to *nimbleModel()*. 
 
 For simplicity, we'll just consider specifying dimensions explicitly in the BUGS code. Here's a normal-Wishart example; note that we have indices on all non-scalar objects. 
 
@@ -54,7 +54,7 @@ model <- nimbleModel(code, constants = list(n = n, K = K),
 
 # Model checking, part 2
 
-Now let's see what happens when there is a size mismatch in the BUGS code. Note the definition of ```mu[1:3]```, whereas $K=4$. 
+Now let's see what happens when there is a size mismatch in the BUGS code. Note the definition of ```mu[1:3]```, whereas ```K=4```. 
 
 ```{r, indices3}
 # now have a dimension mismatch - mu[1:3] has mean mu0[1:K]

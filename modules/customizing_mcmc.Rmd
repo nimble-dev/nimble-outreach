@@ -86,7 +86,7 @@ set.seed(0)
 CpumpMCMC$run(niter)
 ```
 
-We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between $\alpha$ and $\beta$, a simple change just to the univariate sampler for $\alpha$ has had a real effect on MCMC performance.
+We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between ```alpha``` and ```beta```, a simple change just to the univariate sampler for ```alpha``` has had a real effect on MCMC performance.
 
 Caveat: the real question is the effective sample size per unit of computation time, but we don't assess that here.
 
@@ -112,7 +112,7 @@ plot(samples2[ , 'theta[1]'], type = 'l', xlab = 'iteration',
 
 Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, NIMBLE makes it easy for users to choose what parameters to sample in blocks.
 
-We'll try that here for $\alpha$ and $\beta$.
+We'll try that here for ```alpha``` and ```beta```.
 
 
 ```{r customize-mcmc2}

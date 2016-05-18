@@ -24,7 +24,7 @@ The example is the *litters* example from the original BUGS examples, available 
 
 # Litters model
 
-Here's the original litters model. There are $G=2$ groups of rat litters, with $N=16$  litters (i.e., mothers) in each group, and a variable number of pups in each litter. Survival of the pups in a litter is governed by a survival probability for each litter, $p_{i,j}, but the probabilities for the litters within a group are considered to come from a common distribution, thereby borrowing strength across the litters in a group.
+Here's the original litters model. There are ```G=2``` groups of rat litters, with ```N=16```  litters (i.e., mothers) in each group, and a variable number of pups in each litter. Survival of the pups in a litter is governed by a survival probability for each litter, ```p[i,j]```, but the probabilities for the litters within a group are considered to come from a common distribution, thereby borrowing strength across the litters in a group.
 
 <center><img src="figures/littersDAG.jpg"></center>
 
@@ -100,7 +100,7 @@ effectiveSize(as.mcmc(smp_basic[postBurn, ]))
 
 # Blocking the hyperparameters
 
-Given the posterior correlation between the hyperparameters for each group, an obvious first step is to try (separate) block samplers on $(a_1,b_1)$ and $(a_2, b_2)$.
+Given the posterior correlation between the hyperparameters for each group, an obvious first step is to try (separate) block samplers on ```a[1],b[1]}``` and ```{a[2],b[2]}```.
 
 ```{r, hyp-block, fig.height=5, fig.width=12}
 conf$removeSamplers(c('a', 'b'))
@@ -129,7 +129,7 @@ effectiveSize(as.mcmc(smp_hyp_block[postBurn, ]))
 
 # Blocking the random effects too
 
-But perhaps we should have blocked the hyperparameters with their dependent random effects. This is how one could do that, though $a$, $b$, and $p$ are on very different scales, which may cause problems, particularly at the start of an adaptive sampler. As we see in the trace plots, this strategy is not working at all.
+But perhaps we should have blocked the hyperparameters with their dependent random effects. This is how one could do that, though ```a```, ```b```, and ```p``` are on very different scales, which may cause problems, particularly at the start of an adaptive sampler. As we see in the trace plots, this strategy is not working at all.
 
 ```{r, effects-block, fig.height=5, fig.width=12}
 conf$removeSamplers(c('a', 'b', 'p'))
@@ -176,9 +176,9 @@ Given how similar the blocking is to simply blocking the hyperparameters, we won
 
 One common cause of poor MCMC performance is dependence across the levels of a model, such as between hyperparameters and the random effects that depend on those hyperparameters. Such dependence may not be effectively addressed using simple blocking.
 
-When one has conjugacy, as in this case for the $p$ parameters, one can always analytically integrate over those parameters in the model. By reducing dimensionality this can often improve MCMC efficiency though it removes conjugacy, which can also hurt. 
+When one has conjugacy, as in this case for the ```p``` parameters, one can always analytically integrate over those parameters in the model. By reducing dimensionality this can often improve MCMC efficiency though it removes conjugacy, which can also hurt. 
 
-Here's the graph for the model after integrating over the $p$ parameters.
+Here's the graph for the model after integrating over the ```p``` parameters.
 
 <center><img src="figures/littersDAGinteg.jpg"></center>
 
@@ -238,9 +238,9 @@ print(system.time(   # takes a while:
 out 
 ```
 
-The MCEM is converging quite slowly. In this case, since we can analytically integrate over $p$, we can directly maximize the marginal likelihood and see that the MLE for the first group is $\hat{a_1}=43.5$, $\hat{b_1}=4.94$. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
+The MCEM is converging quite slowly. In this case, since we can analytically integrate over ```p```, we can directly maximize the marginal likelihood and see that the MLE for the first group is $\hat{a_1}=43.5$, $\hat{b_1}=4.94$. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
 
-One option would be to reparameterize the model from the $a,b$ parameterization to the mean and standard deviation of the beta distribution. That's easy in NIMBLE, since we provide that parameterization as an alternative parameterization!
+One option would be to reparameterize the model from the ```a,b``` parameterization to the mean and standard deviation of the beta distribution. That's easy in NIMBLE, since we provide that parameterization as an alternative parameterization!
 
 # MCEM with reparameterization 
 

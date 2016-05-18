@@ -132,7 +132,7 @@ m <- nimbleModel(code, constants = const,
   inits = list(alpha = alphaInits))
 ```
 
-Note that with those $\alpha$ values, the third word is very common in topic 1, while in topic 2, the second and third words are equally common. 
+Note that with those `alpha` values, the third word is very common in topic 1, while in topic 2, the second and third words are equally common. 
 
 ```{r, multi-simulate}
 set.seed(0)
@@ -145,7 +145,7 @@ m$y
 
 # The Dirichlet-multinomial distribution
 
-Those of you familiar with Gibbs sampling may recognize that with a multinomial likelihood and Dirichlet prior, you can analytically integrate over $p[topic,]$ for all topics. This eliminates a layer in the model and should improve MCMC performance by reducing dependence amongst the model parameters and by simply reducing the number of parameters needing to be sampled.
+Those of you familiar with Gibbs sampling may recognize that with a multinomial likelihood and Dirichlet prior, you can analytically integrate over `p[topic, ]` for all topics. This eliminates a layer in the model and should improve MCMC performance by reducing dependence amongst the model parameters and by simply reducing the number of parameters needing to be sampled.
 
 Integrating over the proportions gives the Dirichlet-multinomial distribution, whose [density](https://en.wikipedia.org/wiki/Dirichlet-multinomial_distribution#For_a_multinomial_distribution_over_category_counts) involves a heap of gamma functions. 
 
@@ -219,7 +219,7 @@ m2$y
 
 # Final thoughts
 
-In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of $\alpha$ that indicate the unknown topic of each such document, but at the moment, NIMBLE does not allow for random indices. 
+In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of `alpha` that indicate the unknown topic of each such document, but at the moment, NIMBLE does not allow for random indices. 
 
 Also, a standard model for topic analysis, called *latent Dirichlet allocation*, allows each document to be a mixture of topics. One could expand the code here to allow for that. 
 

@@ -66,27 +66,12 @@ Here's the DAG for this simple model, illustrating the lifted node.
 
 <center><img src="figures/liftedNode.jpg"></center>
 
-```{r, precModel-details}
-precModel$nodeFunctions$lifted_d1_over_sqrt_oPtau_cP$simulate
-```
 
-# Lifted nodes: how not to code in NIMBLE
+# Lifted nodes: Best practices for model-generic programming
 
-Because of the possibility of lifted nodes, it is important that programs written to adapt to
-different model structures use NIMBLE’s systems for querying the model
-graph. For example, here's incorrect usage that results in a bug.
-```{r, lifted-bug}
-precModel$tau <- 0.0001
-precModel$simulate('y')
-precModel$y
-precModel$lifted_d1_over_sqrt_oPtau_cP # does not equal sqrt(1/precModel$tau)
-```
+Because of the possibility of lifted nodes, it is important that programs be written to adapt to different model structures use NIMBLE’s systems for querying the model
+graph. 
 
-Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why the *y* values are  close to their mean of zero even though *tau* is very small. 
-
-# Lifted nodes: how to code in NIMBLE
-
-And here's correct usage:
 
 ```{r, lifted-correct}
 precModel$tau <- 0.0001
@@ -98,4 +83,16 @@ precModel$lifted_d1_over_sqrt_oPtau_cP
 ```
 
 If one skips the calculate step and assumes the nodes are only those that appear in the BUGS code, one may not get correct results.
+
+
+For example, here's incorrect usage that results in a bug.
+```{r, lifted-bug}
+precModel$tau <- 0.0001
+precModel$simulate('y')
+precModel$y
+precModel$lifted_d1_over_sqrt_oPtau_cP # does not equal sqrt(1/precModel$tau)
+```
+
+Whoops, *y* was simulated based on the value of the lifted node, which was not updated based on the new value of *tau*. That's why the *y* values are  close to their mean of zero even though *tau* is very small. 
+
 

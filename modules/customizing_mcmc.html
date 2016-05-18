@@ -263,7 +263,7 @@ Cpump$setInits(pumpInits)
 set.seed(0)
 CpumpMCMC$run(niter)</code></pre>
 <pre><code>## NULL</code></pre>
-<p>We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between <span class="math">\(\alpha\)</span> and <span class="math">\(\beta\)</span>, a simple change just to the univariate sampler for <span class="math">\(\alpha\)</span> has had a real effect on MCMC performance.</p>
+<p>We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between <code>alpha</code> and <code>beta</code>, a simple change just to the univariate sampler for <code>alpha</code> has had a real effect on MCMC performance.</p>
 <p>Caveat: the real question is the effective sample size per unit of computation time, but we don’t assess that here.</p>
 <pre class="r"><code>samples2 &lt;- as.matrix(CpumpMCMC$mvSamples)
 
@@ -294,7 +294,7 @@ plot(samples2[ , 'theta[1]'], type = 'l', xlab = 'iteration',
 <div id="blocking-parameters" class="section level1">
 <h1>Blocking parameters</h1>
 <p>Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, NIMBLE makes it easy for users to choose what parameters to sample in blocks.</p>
-<p>We’ll try that here for <span class="math">\(\alpha\)</span> and <span class="math">\(\beta\)</span>.</p>
+<p>We’ll try that here for <code>alpha</code> and <code>beta</code>.</p>
 <pre class="r"><code>pumpConf$getSamplers()</code></pre>
 <pre><code>## [[1]]
 ## conjugate_dgamma_dgamma sampler acting on beta

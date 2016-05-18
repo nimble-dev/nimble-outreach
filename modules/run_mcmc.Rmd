@@ -23,7 +23,7 @@ The steps of running an MCMC are as follows:
 
  - configure the MCMC
  - build the MCMC
- - compile a C++ version of the MCMC
+ - create a compiled version of the MCMC
  - run the MCMC
  - assess and use the MCMC samples
 

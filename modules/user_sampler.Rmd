@@ -26,7 +26,7 @@ Let's start with a very basic example that slightly extends NIMBLE's built-in Me
 
 Suppose you have a parameter with a finite domain, in particular a fixed lower bound, such as a gamma distribution, a uniform distribution, or a lognormal distribution.
 
-A standard Metropolis sampler could propose a value that is below the lower bound. This would give a probability density for the proposed value that is $0$ so the proposal would be rejected. That's fine, but it wastes the computation involved in proposing the value and determining that it should be rejected. If the current value of the parameter under consideration is near the bound, this will happen nearly 50% of the time. 
+A standard Metropolis sampler could propose a value that is below the lower bound. This would give a probability density for the proposed value that is `0` so the proposal would be rejected. That's fine, but it wastes the computation involved in proposing the value and determining that it should be rejected. If the current value of the parameter under consideration is near the bound, this will happen nearly 50% of the time. 
 
 Instead, we can use *reflection*. If the proposed $\theta^\prime < b$ where $b$ is the bound, simply set $\theta^\prime$ to $b + (b-\theta^\prime)$
 
@@ -42,12 +42,13 @@ However, we first need to modify the *setup* function to check if the distributi
 ```{r, reflect-sampler}
 sampler_RW_reflect <- nimbleFunction(
     contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control, scale) {
+    setup = function(model, mvSaved, target, control) {
         dist <- model$getNodeDistribution(target)
-        scalar <- getDistribution(dist)$types$value$nDim == 0
-        if(scalar)
-                rg <- getDistribution(dist)$range
-        if(scalar && (rg[1] > -Inf || rg[2] < Inf))
+        targetComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        if(length(targetComponents) > 1)
+                stop("sampler_RW_reflect: cannot use univariate RW sampler on multivariate target, try RW_block sampler.")
+        rg <- getDistribution(dist)$range
+        if(rg[1] > -Inf || rg[2] < Inf)
                   reflect <- TRUE else reflect <- FALSE
 
         calcNodes  <- model$getDependencies(target)
@@ -188,10 +189,8 @@ sampler_RW_reflect <- nimbleFunction(
 
         ### ADDED code ############################################
         dist <- model$getNodeDistribution(target)
-        scalar <- getDistribution(dist)$types$value$nDim == 0
-        if(scalar)
-                rg <- getDistribution(dist)$range
-        if(scalar && (rg[1] > -Inf || rg[2] < Inf))
+        rg <- getDistribution(dist)$range
+        if(rg[1] > -Inf || rg[2] < Inf)
                   reflect <- TRUE else reflect <- FALSE
         ###########################################################
 
@@ -286,8 +285,8 @@ conf$removeSamplers('tau')
 # as baseline, use standard Metropolis for tau
 conf$addSampler('tau', type = 'RW')
 mcmc <- buildMCMC(conf)
-niter <- 10000
-cmodel <- compileNimble(model)
+niter <- 25000
+Cmodel <- compileNimble(model)
 cmcmc <- compileNimble(mcmc, project = model)
 set.seed(0)
 cmcmc$run(niter)
@@ -309,20 +308,22 @@ conf$addSampler('tau', type = 'RW_reflect')
 mcmc <- buildMCMC(conf)
 cmcmc <- compileNimble(mcmc, project = model, resetFunctions = TRUE)
 
-nimCopy(model, cmodel)
+nimCopy(model, Cmodel)
 set.seed(0)
 cmcmc$run(niter)
 smp2 <- as.matrix(cmcmc$mvSamples)
 
 nplot <- 300
-plot(seq_len(nplot), smp1[seq_len(nplot), 'tau'], type = 'l')
+burnin <- 1000
+plot(seq_len(nplot), smp1[seq_len(nplot), 'tau'], type = 'l', 
+                     xlab = 'iteration', ylab=expression(tau))
 lines(seq_len(nplot), smp2[seq_len(nplot), 'tau'], col = 'red')
 library(coda, quietly = TRUE)
-effectiveSize(smp1[ , 'tau'])
-effectiveSize(smp2[ , 'tau'])
+effectiveSize(log(smp1[(burnin+1):niter , 'tau']))
+effectiveSize(log(smp2[(burnin+1):niter , 'tau']))
 ```
 
-So we see that the sampler escaped from near zero more quickly, though given that the posterior is well away from zero, the new sampler didn't make much difference in the overall MCMC performance. 
+So we see that the sampler escaped from near zero more quickly. However, even with a run of 25000 iterations, the effective sample size is still small for both samplers.
 
 Side note: the random effects variance component in this model is given a gamma prior on the precision scale, but best practices for random effects variance components, including a strong argument against the gamma/inverse-gamma prior, can be found in Gelman (2006, Bayesian Analysis 1:515-534).
 
