@@ -246,7 +246,7 @@ m &lt;- nimbleModel(code, constants = const,
 <pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
 <pre><code>## NAs were detected in model variables: p, logProb_p, y, logProb_y.</code></pre>
 <pre><code>## model building finished</code></pre>
-<p>Note that with those <span class="math">\(\alpha\)</span> values, the third word is very common in topic 1, while in topic 2, the second and third words are equally common.</p>
+<p>Note that with those <code>alpha</code> values, the third word is very common in topic 1, while in topic 2, the second and third words are equally common.</p>
 <pre class="r"><code>set.seed(0)
 m$simulate(c('p', 'y'))
 m$p</code></pre>
@@ -266,7 +266,7 @@ m$p</code></pre>
 </div>
 <div id="the-dirichlet-multinomial-distribution" class="section level1">
 <h1>The Dirichlet-multinomial distribution</h1>
-<p>Those of you familiar with Gibbs sampling may recognize that with a multinomial likelihood and Dirichlet prior, you can analytically integrate over <span class="math">\(p[topic,]\)</span> for all topics. This eliminates a layer in the model and should improve MCMC performance by reducing dependence amongst the model parameters and by simply reducing the number of parameters needing to be sampled.</p>
+<p>Those of you familiar with Gibbs sampling may recognize that with a multinomial likelihood and Dirichlet prior, you can analytically integrate over <code>p[topic, ]</code> for all topics. This eliminates a layer in the model and should improve MCMC performance by reducing dependence amongst the model parameters and by simply reducing the number of parameters needing to be sampled.</p>
 <p>Integrating over the proportions gives the Dirichlet-multinomial distribution, whose <a href="https://en.wikipedia.org/wiki/Dirichlet-multinomial_distribution#For_a_multinomial_distribution_over_category_counts">density</a> involves a heap of gamma functions.</p>
 </div>
 <div id="dirichlet-multinomial-nimblefunctions" class="section level1">
@@ -334,7 +334,7 @@ m2$y</code></pre>
 </div>
 <div id="final-thoughts" class="section level1">
 <h1>Final thoughts</h1>
-<p>In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of <span class="math">\(\alpha\)</span> that indicate the unknown topic of each such document, but at the moment, NIMBLE does not allow for random indices.</p>
+<p>In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of <code>alpha</code> that indicate the unknown topic of each such document, but at the moment, NIMBLE does not allow for random indices.</p>
 <p>Also, a standard model for topic analysis, called <em>latent Dirichlet allocation</em>, allows each document to be a mixture of topics. One could expand the code here to allow for that.</p>
 </div>
 

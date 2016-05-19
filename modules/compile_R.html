@@ -178,9 +178,9 @@ benchmark(out0 &lt;- exp(x),
                columns = c('test','replications','elapsed'),
                replications = 10)</code></pre>
 <pre><code>##                  test replications elapsed
-## 1      out0 &lt;- exp(x)           10   0.238
-## 2  out1 &lt;- cnimExp(x)           10   0.295
-## 3 out2 &lt;- cnimExp2(x)           10   0.255</code></pre>
+## 1      out0 &lt;- exp(x)           10   0.240
+## 2  out1 &lt;- cnimExp(x)           10   0.289
+## 3 out2 &lt;- cnimExp2(x)           10   0.258</code></pre>
 <p>So that’s not all that impressive as all we’ve done is match (well, not quite) the speed of the native R compiled code.</p>
 </div>
 <div id="a-more-involved-example" class="section level1">
@@ -233,7 +233,7 @@ system.time({
         props[as.integer(names(tbl))] &lt;- tbl / M
 })</code></pre>
 <pre><code>##    user  system elapsed 
-##   2.816   0.000   2.815</code></pre>
+##   2.850   0.003   2.855</code></pre>
 <pre class="r"><code>mprobit &lt;- nimbleFunction(
          run = function(alphas = double(1), M = double(0)) {
              returnType(double(1))
@@ -269,7 +269,7 @@ system.time(
 props2 &lt;- cmprobit(alphas, M)
 )</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.522   0.000   0.521</code></pre>
+##   0.524   0.000   0.524</code></pre>
 <p>So we get a nice 5-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.</p>
 </div>
 

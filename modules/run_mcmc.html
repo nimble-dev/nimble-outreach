@@ -134,7 +134,7 @@ $(document).ready(function () {
 <ul>
 <li>configure the MCMC</li>
 <li>build the MCMC</li>
-<li>compile a C++ version of the MCMC</li>
+<li>create a compiled version of the MCMC</li>
 <li>run the MCMC</li>
 <li>assess and use the MCMC samples</li>
 </ul>
@@ -237,7 +237,7 @@ print(system.time(pumpMCMC$run(5)))  # R version</code></pre>
 ## Warning in dgamma(model$theta[i], shape = model$alpha[1], scale = model
 ## $lifted_d1_over_beta[1], : NaNs produced</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.430   0.004   0.434</code></pre>
+##   0.425   0.004   0.429</code></pre>
 <pre class="r"><code>set.seed(0)
 print(system.time(
 CpumpMCMC$run(niter)

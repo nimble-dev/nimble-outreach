@@ -130,7 +130,7 @@ $(document).ready(function () {
 
 <div id="indexing" class="section level1">
 <h1>Indexing</h1>
-<p>NIMBLE can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the <em>dimensions</em> argument to <em>nimbleModel()</em>. Here is <code>N=2</code> and <span class="math">\(N=2\)</span> and <code>p</code> and <code>p</code> and <span class="math">\(p\)</span>.</p>
+<p>NIMBLE can be a bit fussy in terms of requiring users to specify sizes of vectors, matrices, and arrays, either directly in the BUGS code or via the <em>dimensions</em> argument to <em>nimbleModel()</em>.</p>
 <p>For simplicity, we’ll just consider specifying dimensions explicitly in the BUGS code. Here’s a normal-Wishart example; note that we have indices on all non-scalar objects.</p>
 <pre class="r"><code>code &lt;- nimbleCode({
      for(i in 1:n) {

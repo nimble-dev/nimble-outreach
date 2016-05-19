@@ -177,40 +177,30 @@ precModel &lt;- nimbleModel(precCode, inits = list(tau = 100),
 </center>
 
 
-<pre class="r"><code>precModel$nodeFunctions$lifted_d1_over_sqrt_oPtau_cP$simulate</code></pre>
-<pre><code>## Class method definition for method simulate()
-## function () 
-## {
-##     model$lifted_d1_over_sqrt_oPtau_cP[1] &lt;&lt;- 1/sqrt(model$tau[1])
-## }
-## &lt;environment: 0x57b8020&gt;</code></pre>
 </div>
-<div id="lifted-nodes-how-not-to-code-in-nimble" class="section level1">
-<h1>Lifted nodes: how not to code in NIMBLE</h1>
-<p>Because of the possibility of lifted nodes, it is important that programs written to adapt to different model structures use NIMBLE’s systems for querying the model graph. For example, here’s incorrect usage that results in a bug.</p>
-<pre class="r"><code>precModel$tau &lt;- 0.0001
-precModel$simulate('y')
-precModel$y</code></pre>
-<pre><code>##  [1] -0.0033509556  0.1784326557 -0.0299802693 -0.0876360348  0.0082912355
-##  [6]  0.0005822254  0.1957680333  0.1492282065 -0.0175150209  0.1151035439</code></pre>
-<pre class="r"><code>precModel$lifted_d1_over_sqrt_oPtau_cP # does not equal sqrt(1/precModel$tau)</code></pre>
-<pre><code>## [1] 0.1</code></pre>
-<p>Whoops, <em>y</em> was simulated based on the value of the lifted node, which was not updated based on the new value of <em>tau</em>. That’s why the <em>y</em> values are close to their mean of zero even though <em>tau</em> is very small.</p>
-</div>
-<div id="lifted-nodes-how-to-code-in-nimble" class="section level1">
-<h1>Lifted nodes: how to code in NIMBLE</h1>
-<p>And here’s correct usage:</p>
+<div id="lifted-nodes-best-practices-for-model-generic-programming" class="section level1">
+<h1>Lifted nodes: Best practices for model-generic programming</h1>
+<p>Because of the possibility of lifted nodes, it is important that programs be written to adapt to different model structures use NIMBLE’s systems for querying the model graph.</p>
 <pre class="r"><code>precModel$tau &lt;- 0.0001
 precModel$calculate(precModel$getDependencies('tau'))</code></pre>
-<pre><code>## [1] -55.24119</code></pre>
+<pre><code>## [1] NA</code></pre>
 <pre class="r"><code># precModel$calculate() # would also work but recalculates entire model
 precModel$simulate('y')
 precModel$y</code></pre>
-<pre><code>##  [1]  132.70327  -36.95993  -13.14149 -168.28620  -84.50203   93.64038
-##  [7] -107.25986  -73.84919  -45.32299   24.39767</code></pre>
+<pre><code>##  [1] -160.28208  103.04558 -174.72163 -195.82558 -105.71142  100.68163
+##  [7] -127.71940  -94.31670   44.10748   20.61685</code></pre>
 <pre class="r"><code>precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
 <pre><code>## [1] 100</code></pre>
 <p>If one skips the calculate step and assumes the nodes are only those that appear in the BUGS code, one may not get correct results.</p>
+<p>For example, here’s incorrect usage that results in a bug.</p>
+<pre class="r"><code>precModel$tau &lt;- 0.0001
+precModel$simulate('y')
+precModel$y</code></pre>
+<pre><code>##  [1]  -29.088110  -39.612652   43.748885  -46.427707 -110.955408
+##  [6]   78.602299    9.531799  -35.984197   26.265845   45.175600</code></pre>
+<pre class="r"><code>precModel$lifted_d1_over_sqrt_oPtau_cP # does not equal sqrt(1/precModel$tau)</code></pre>
+<pre><code>## [1] 100</code></pre>
+<p>Whoops, <em>y</em> was simulated based on the value of the lifted node, which was not updated based on the new value of <em>tau</em>. That’s why the <em>y</em> values are close to their mean of zero even though <em>tau</em> is very small.</p>
 </div>
 
 

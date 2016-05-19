@@ -44,7 +44,7 @@ NIMBLE Development Team
 <ul>
 <li>configure the MCMC</li>
 <li>build the MCMC</li>
-<li>compile a C++ version of the MCMC</li>
+<li>create a compiled version of the MCMC</li>
 <li>run the MCMC</li>
 <li>assess and use the MCMC samples</li>
 </ul>
@@ -147,13 +147,13 @@ CpumpMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pu
 ## Warning in dgamma(model$theta[i], shape = model$alpha[1], scale = model
 ## $lifted_d1_over_beta[1], : NaNs produced</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.412   0.000   0.412</code></pre>
+##   0.419   0.000   0.418</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>)
 <span class="kw">print</span>(<span class="kw">system.time</span>(
 CpumpMCMC$<span class="kw">run</span>(niter)
 ))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.024   0.000   0.024</code></pre>
+##   0.025   0.000   0.025</code></pre>
 </div>
 <div id="working-with-mcmc-output" class="slide section level1">
 <h1>Working with MCMC output</h1>

@@ -167,11 +167,11 @@ pump &lt;- nimbleModel(pumpCode,
 <h1>Nodes and variables</h1>
 <p>The parameters and data in a model are represented as nodes in a graph. Here we define some terms:</p>
 <ul>
-<li>parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. <span class="math">\(\alpha\)</span> in the pump model</li>
-<li>data: a known quantity in a model, also represented as a random variable, e.g., <span class="math">\(x_1, x_2, \ldots\)</span> in the pump model</li>
-<li>constants: other fixed quantities involved in the model, e.g., <span class="math">\(N\)</span> in the pump model</li>
-<li>node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., <span class="math">\(\alpha\)</span> or <span class="math">\(x_3\)</span> in the pump model</li>
-<li>variable: a collection of one or more nodes with the same name, e.g., <span class="math">\(\alpha\)</span> or <span class="math">\(x\)</span> in the pump model</li>
+<li>parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. <code>alpha</code> in the pump model</li>
+<li>data: a known quantity in a model, also represented as a random variable, e.g., <code>x[1], x[2], ...</code> in the pump model</li>
+<li>constants: other fixed quantities involved in the model, e.g., <code>N</code> in the pump model</li>
+<li>node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., <code>alpha</code> or<code>x[3]</code> in the pump model</li>
+<li>variable: a collection of one or more nodes with the same name, e.g., <code>alpha</code> or <code>x</code> in the pump model</li>
 </ul>
 </div>
 <div id="values-in-the-model" class="section level1">

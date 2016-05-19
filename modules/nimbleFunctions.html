@@ -134,7 +134,8 @@ $(document).ready(function () {
 </div>
 <div id="components-of-a-nimblefunction" class="section level1">
 <h1>Components of a nimbleFunction</h1>
-<p>A nimbleFunction has two parts:</p>
+<p>NIMBLE uses the concept of <em>two-stage evaluation</em> from computer science to run a model-specific algorithm based on model-generic algorithm code. The first stage of evaluation specializes the algorithm to the model of interest via <em>setup</em> code. The second stage runs the algorithm via <em>run</em> code.</p>
+<p>Thus, a nimbleFunction has two parts:</p>
 <ul>
 <li>setup code: used to tailor the algorithm to a particular model structure. Often this involves determining dependencies amongst nodes in the model and setting up storage using modelValues</li>
 <li>run code: the guts of the algorithm, written generically so it will apply to any (appropriate) model</li>
@@ -205,18 +206,18 @@ Clogistic_obj &lt;- compileNimble(logistic_obj, project = model)</code></pre>
 <pre class="r"><code>out &lt;- optim(c(Cmodel$b0, Cmodel$b1), Clogistic_obj$run, 
     control = list(fnscale = -1))
 out$par</code></pre>
-<pre><code>## [1] -0.642670  3.712628</code></pre>
+<pre><code>## [1] -0.4122619  3.7665487</code></pre>
 <pre class="r"><code>glm(y ~ x, family = 'binomial')</code></pre>
 <pre><code>## 
 ## Call:  glm(formula = y ~ x, family = &quot;binomial&quot;)
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##     -0.6428       3.7127  
+##     -0.4122       3.7662  
 ## 
 ## Degrees of Freedom: 299 Total (i.e. Null);  298 Residual
-## Null Deviance:       405.4 
-## Residual Deviance: 250.8     AIC: 254.8</code></pre>
+## Null Deviance:       414 
+## Residual Deviance: 235.7     AIC: 239.7</code></pre>
 <p>Looks like it works.</p>
 </div>
 

@@ -167,17 +167,17 @@ pump &lt;- nimbleModel(pumpCode,
 <h1>Nodes and variables</h1>
 <p>The parameters and data in a model are represented as nodes in a graph. Here we define some terms:</p>
 <ul>
-<li>parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. <span class="math">\(\alpha\)</span> in the pump model</li>
-<li>data: a known quantity in a model, also represented as a random variable, e.g., <span class="math">\(x_1, x_2, \ldots\)</span> in the pump model</li>
-<li>constants: other fixed quantities involved in the model, e.g., <span class="math">\(N\)</span> in the pump model</li>
-<li>node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., <span class="math">\(\alpha\)</span> or <span class="math">\(x_3\)</span> in the pump model</li>
-<li>variable: a collection of one or more nodes with the same name, e.g., <span class="math">\(\alpha\)</span> or <span class="math">\(x\)</span> in the pump model</li>
+<li>parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. <code>alpha</code> in the pump model</li>
+<li>data: a known quantity in a model, also represented as a random variable, e.g., <code>x[1], x[2], ...</code> in the pump model</li>
+<li>constants: other fixed quantities involved in the model, e.g., <code>N</code> in the pump model</li>
+<li>node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., <code>alpha</code> or <code>x[3]</code> in the pump model</li>
+<li>variable: a collection of one or more nodes with the same name, e.g., <code>alpha</code> or <code>x</code> in the pump model</li>
 </ul>
 </div>
-<div id="inspecting-the-model" class="section level1">
-<h1>Inspecting the model</h1>
+<div id="inspecting-the-model-nodes" class="section level1">
+<h1>Inspecting the model: nodes</h1>
 <p>NIMBLE provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.</p>
-<p>What are the variables in the model? What are the dependencies of a given node (this is information used in many algorithms)?</p>
+<p>What are the nodes in the model? What are the dependencies of a given node (this is information used in many algorithms)?</p>
 <pre class="r"><code>pump$getNodeNames()</code></pre>
 <pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
 ##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
@@ -199,6 +199,45 @@ hypers</code></pre>
 ##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
 ## [10] &quot;theta[7]&quot;            &quot;theta[8]&quot;            &quot;theta[9]&quot;           
 ## [13] &quot;theta[10]&quot;</code></pre>
+<p>There are a variety of options to <code>getNodeNames()</code> and <code>getDependencies</code> that allow you to fine-tune the information you get.</p>
+<pre class="r"><code>args(pump$getDependencies)</code></pre>
+<pre><code>## function (nodes, omit = character(), self = TRUE, determOnly = FALSE, 
+##     stochOnly = FALSE, includeData = TRUE, dataOnly = FALSE, 
+##     includeRHSonly = FALSE, downstream = FALSE, returnType = &quot;names&quot;, 
+##     returnScalarComponents = FALSE) 
+## NULL</code></pre>
+<pre class="r"><code>args(pump$getNodeNames)</code></pre>
+<pre><code>## function (determOnly = FALSE, stochOnly = FALSE, includeData = TRUE, 
+##     dataOnly = FALSE, includeRHSonly = FALSE, topOnly = FALSE, 
+##     latentOnly = FALSE, endOnly = FALSE, returnType = &quot;names&quot;, 
+##     returnScalarComponents = FALSE) 
+## NULL</code></pre>
+<pre class="r"><code>latents &lt;- pump$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+latents</code></pre>
+<pre><code>##  [1] &quot;theta[1]&quot;  &quot;theta[2]&quot;  &quot;theta[3]&quot;  &quot;theta[4]&quot;  &quot;theta[5]&quot; 
+##  [6] &quot;theta[6]&quot;  &quot;theta[7]&quot;  &quot;theta[8]&quot;  &quot;theta[9]&quot;  &quot;theta[10]&quot;</code></pre>
+<pre class="r"><code>pump$getDependencies(latents, determOnly = TRUE)</code></pre>
+<pre><code>##  [1] &quot;lambda[1]&quot;  &quot;lambda[2]&quot;  &quot;lambda[3]&quot;  &quot;lambda[4]&quot;  &quot;lambda[5]&quot; 
+##  [6] &quot;lambda[6]&quot;  &quot;lambda[7]&quot;  &quot;lambda[8]&quot;  &quot;lambda[9]&quot;  &quot;lambda[10]&quot;</code></pre>
+<pre class="r"><code>pump$getNodeNames(dataOnly = TRUE)</code></pre>
+<pre><code>##  [1] &quot;x[1]&quot;  &quot;x[2]&quot;  &quot;x[3]&quot;  &quot;x[4]&quot;  &quot;x[5]&quot;  &quot;x[6]&quot;  &quot;x[7]&quot;  &quot;x[8]&quot; 
+##  [9] &quot;x[9]&quot;  &quot;x[10]&quot;</code></pre>
+<p>What are the variables in the model? What information is available about them?</p>
+<pre class="r"><code>pump$getVarNames()</code></pre>
+<pre><code>## [1] &quot;x&quot;                   &quot;lambda&quot;              &quot;lifted_d1_over_beta&quot;
+## [4] &quot;theta&quot;               &quot;alpha&quot;               &quot;beta&quot;</code></pre>
+<pre class="r"><code>pump$getVarInfo('theta')</code></pre>
+<pre><code>## Reference class object of class &quot;varInfoClass&quot;
+## Field &quot;varName&quot;:
+## [1] &quot;theta&quot;
+## Field &quot;mins&quot;:
+## [1] 1
+## Field &quot;maxs&quot;:
+## [1] 10
+## Field &quot;nDim&quot;:
+## [1] 1
+## Field &quot;anyStoch&quot;:
+## [1] TRUE</code></pre>
 </div>
 
 

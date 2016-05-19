@@ -138,7 +138,7 @@ $(document).ready(function () {
            y[i] ~ dnorm(logmu[i], sd = sigma)
      }
 })</code></pre>
-<p>In this example, for each <span class="math">\(i\)</span>, <code>y[i]</code> and <code>logmu[i]</code> are scalar nodes. There are separate simulate and calculate functions for each. A disadvantage of this is that for very large <span class="math">\(n\)</span>, it can take some time to create and compile the model and associated algorithms. An advantage in this case is that presuming the calculations for each <span class="math">\(i\)</span> can be done independently in a given algorithm, unnecessary calculations don’t need to be done. For example in doing MCMC sampling for <code>mu[i]</code> one needs only calculate <code>log(mu[i])</code> and the density for <code>y[i]</code>.</p>
+<p>In this example, for each <code>i</code>, <code>y[i]</code> and <code>logmu[i]</code> are scalar nodes. There are separate simulate and calculate functions for each. A disadvantage of this is that for very large <code>n</code>, it can take some time to create and compile the model and associated algorithms. An advantage in this case is that presuming the calculations for each <code>n</code> can be done independently in a given algorithm, unnecessary calculations don’t need to be done. For example in doing MCMC sampling for <code>mu[i]</code> one needs only calculate <code>log(mu[i])</code> and the density for <code>y[i]</code>.</p>
 <p>Now suppose that one had done this:</p>
 <pre class="r"><code>code &lt;- nimbleCode({
      logmu[1:n] &lt;- log(mu[1:n])
