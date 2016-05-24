@@ -71,7 +71,7 @@ mcmc <- buildMCMC(conf)
 Cmodel <- compileNimble(model)
 Cmcmc <- compileNimble(mcmc, project = model)
 M <- 1000
-set.seed(1)
+set.seed(2)
 Cmcmc$run(M)
 smp <- as.matrix(Cmcmc$mvSamples)
 par(mfrow = c(1,3), cex = 1.4, mai = c(1.2, 1.2, .1, .1),
@@ -94,7 +94,7 @@ mcmc <- buildMCMC(conf)
 Cmodel <- compileNimble(model)
 Cmcmc <- compileNimble(mcmc, project = model)
 Cmodel$setInits(inits)
-set.seed(1)
+set.seed(2)
 Cmcmc$run(M)
 smpBlocked <- as.matrix(Cmcmc$mvSamples)
 par(mfrow = c(1,3), cex = 1.4, mai = c(1.2, 1.2, .1, .1),
@@ -132,7 +132,7 @@ Cmodel <- compileNimble(model)
 Cmcmc <- compileNimble(mcmc, project = model)
 M <- 1000
 Cmodel$setInits(list(b0 = 40, b1 = -12))
-set.seed(1)
+set.seed(0)
 Cmcmc$run(M)
 smp <- as.matrix(Cmcmc$mvSamples)
 par(mfrow = c(1,3), cex = 1.4, mai = c(1.2, 1.2, .1, .1),
