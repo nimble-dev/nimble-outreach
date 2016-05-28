@@ -1,0 +1,14 @@
+model {
+for (i in 1:N){
+      # likelihood (data model)
+      x[i] ~ dpois(lambda[i])
+      # latent process (random effects)
+      # linear predictor      
+      lambda[i] <- theta[i]*t[i]
+      # random effects distribution
+      theta[i] ~ dgamma(alpha,beta)
+  }
+  # priors on hyperparameters
+  alpha ~ dexp(1.0)
+  beta ~ dgamma(0.1,1.0)
+}
