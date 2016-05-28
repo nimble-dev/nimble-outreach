@@ -1,0 +1,33 @@
+#### Problem 1
+
+Here's a basic generalized linear mixed model (a regression style model with random effects and non-normal likelihood). Your task is to write down the BUGS code corresponding to the following verbal description of the model.
+
+Consider an experiment with 16 litters of rats in one group and 16 litters in another group. Let $i$ index the groups and $j$ index the litters. Now suppose that there are $n_{i,j}$ pups born in each litter and there is a survival probability specific to each litter. In each litter you observe the number of pups that survive at least one month. Use this information to define the likelihood component of the model.
+
+Now let's consider 'borrowing strength' across the litters in each group. Basically this supposes that there are litter-specific influences on survival, but that all the litters in the group come from a common context. Let the survival probabilities for the litters in one group come from a beta distribution with unknown hyperparameters. Do the same for the second group (with different hyperparameters from the first group). This defines the latent process (random effects) component of the model.
+
+Now put a non-informative prior distribution on the hyperparameters in the model.
+
+
+#### Problem 2
+
+Define a model in NIMBLE using the BUGS code from (1). Then run a basic MCMC for the model. How does the MCMC look?
+
+Here are data you can use.
+```
+consts <- list(G = 2,N = 16, n = matrix(c(13, 12, 12, 11, 9, 10, 
+       9, 9, 8, 11, 8, 10, 13, 10, 12, 9, 10, 9, 10, 5, 9, 9, 13, 
+       7, 5, 10, 7, 6, 10, 10, 10, 7), nrow = 2))
+data = list(r = matrix(c(13, 12, 12, 11, 9, 10, 9, 9, 8, 10, 8, 9, 
+     12, 9, 11, 8, 9, 8, 9, 4, 8, 7, 11, 4, 4, 5, 5, 3, 7, 3, 7, 0), 
+     nrow = 2))
+```
+
+#### Problem 3
+
+Now try other samplers for some of the parameters in the model.
+
+  - Try slice samplers on each of the hyperparameters, `a[1],a[2],b[1],b[2]`. 
+  - Try block samplers on `{a[1],b[1]}` and `{a[2],b[2]}`.
+
+Do either of those seem to have improved the MCMC performance?

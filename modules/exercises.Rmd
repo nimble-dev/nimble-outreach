@@ -8,8 +8,6 @@
 
 4) Compile the model and compare the time of calculating the full density in the compiled model to the original uncompiled R version of the model. (It may not be much different here for such a small model). You could use *system.time()* or for this comparison of a very fast calculation, *microbenchmark()* in the  *microbenchmark* package is likely to be more helpful.
 
-
-
 # Using MCMC
 
 1) Compare the MCMC performance of using univariate slice samplers on ```alpha``` and ```beta``` to the default samplers and to the blocked Metropolis sampler for ```{alpha, beta}``` for longer MCMC runs. 
@@ -21,10 +19,7 @@
     - Set the data for the new model such that the new pump's number of failures is missing and not treated as a data node (see the data_nodes module for information on working with data).
     - Set up an MCMC for the new model. What kind of sampling should happen for the new pump failures? 
 
-
-
 # Compiling R code
-
 
 1) Let's consider using a nimbleFunction to replace a for loop that can't be avoided in R. Write a second order random walk using a nimbleFunction. Here's the code for the R version. 
 

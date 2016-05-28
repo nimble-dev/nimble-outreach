@@ -1,0 +1,100 @@
+---
+title: "Using JAGS"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+read_chunk("chunks.R")
+```
+
+
+# Using JAGS for MCMC
+
+[JAGS](http://mcmc-jags.sourceforge.net/) is a software package that allows you to run MCMC on models specified using the BUGS language. JAGS builds an MCMC algorithm for your model on the fly and runs that MCMC. It determines what samplers to use on each parameter based on its own set of rules as well as determination of which parameters can be sampled by Gibbs (i.e., conjugate) sampling. It can run multiple chains as well automatically. 
+
+To use JAGS you need to install the [JAGS software](https://sourceforge.net/projects/mcmc-jags/files/) on your computer and then (to run from within R) you need either the `rjags` or `R2jags` R package. We'll use `rjags`.
+
+# Specifying your model and running an MCMC
+
+```{r, jags-code}
+library(rjags)
+N <- 10
+t <- c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)
+x <- c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22)
+pumpData <- list(x = x, t = t, N = N)
+pumpInits <- list(alpha = 1, beta = 1,
+         theta = rep(0.1, N))
+
+model <- jags.model('pump.txt', data = pumpData, inits = pumpInits)
+```
+
+
+# Working with MCMC output
+
+Now let's look at the MCMC performance. 
+
+```{r output-mcmc, fig.height=5, fig.width=12}
+
+nIts <- 1000
+samples <- jags.samples(model, c('alpha', 'beta', 'theta'), n.iter = nIts)
+tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
+
+par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
+tsplot(samples[['alpha']], xlab = 'iteration',
+     ylab = expression(alpha), main = expression(alpha))
+tsplot(samples[['beta']], xlab = 'iteration',
+     ylab = expression(beta), main = expression(beta))
+plot(samples[['alpha']], samples[['beta']], xlab = expression(alpha),
+     ylab = expression(beta), 
+     main = paste(expression(alpha), expression(beta), "dependence"))
+tsplot(samples[['theta']][1, ,1], xlab = 'iteration',
+     ylab = expression(theta[1]), main = expression(theta[1]))
+```
+
+# Using CODA
+
+One can use CODA to apply MCMC diagnostics to the chain to assess convergence and mixing.
+
+```{r coda}
+library(coda)
+burnin <- 0  # adaptation phase has taken care of burn-in in this case
+samples <- coda.samples(model, c('alpha', 'beta', 'theta'), n.iter = nIts)
+crosscorr(samples)
+effectiveSize(samples)
+```
+
+One could apply the commonly used Gelman-Rubin potential scale reduction factor diagnostic, but one needs to run multiple chains.
+
+# Running multiple chains
+
+```{r, multi-chain}
+nChains <- 3
+pumpInits <- list(list(alpha = 1, beta = 1), list(alpha = 0.1, beta =30), 
+          list(alpha = 30, beta = 0.1))
+model <- jags.model('pump.txt', data = pumpData, inits = pumpInits, n.chains = nChains)
+samples <- coda.samples(model, c('alpha', 'beta', 'theta'), n.iter = nIts)
+```
+
+Considerations: you'll want to think about how to set up the over-dispersed starting points and the number of iterations to use for burn-in (once again, here we rely on the burn-in being taken care of as part of the adaptation phase).
+
+# Assessing MCMC performance from multiple chains
+
+```{r, gelman-rubin}
+gelman.diag(samples)
+```
+```{r, full-plot, eval=FALSE}
+# and here's how we would get a graphical representation of the information (output not shown here)
+plot(samples, ask = TRUE)
+```
+
+
+
+
