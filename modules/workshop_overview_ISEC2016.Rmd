@@ -1,0 +1,13 @@
+
+bugs_language_state_space_example
+build_model_state_space_example
+run_mcmc_state_space_example
+customizing_mcmc_state_space_example (finicky and may depend on newNodeFxns for performance)
+
+to do:
+Understanding graphical models
+running MCEM
+how nimble goes beyond other packages
+how you could build on nimble
+
+

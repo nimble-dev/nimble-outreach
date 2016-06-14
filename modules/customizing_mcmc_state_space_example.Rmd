@@ -1,0 +1,157 @@
+---
+title: "Customizing and comparing MCMCs (state-space example)"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)
+```
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+
+# Outline
+
+In this module we will:
+
+   - Use the house martin state-space model from K&egrave;ry and Schaub (2012).
+   - Try block samplers for the `r[t]`s.  Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. 
+   - Try Metropolis-Hastings samplers on a log scale for `sigma.obs` and `sigma.proc`
+   - Automatically compare the customized MCMC to the default MCMC using `compareMCMCs`.
+
+# Build the model and default MCMC
+
+We first need to build the model.
+
+```{r, ssm-code}
+```
+
+```{r, ssm-model}
+```
+
+```{r, ssm-compile}
+```
+
+```{r, ssm-mcmc}
+mcmcConf <- buildMCMC(ssm) # can skip mcmcConf
+CssmMCMC <- compileNimble(ssmMCMC, project = ssm)
+CssmMCMC$run(10000)
+samples <- as.matrix(CssmMCMC$mvSamples)
+tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
+
+par(mfrow = c(1, 3), mai = c(.6, .5, .1, .2))
+tsplot(samples[ , 'mean.r'], xlab = 'iteration',
+     ylab = 'mean.r', main = 'mean.r')
+tsplot(samples[ , 'sigma.proc'], xlab = 'iteration',
+     ylab = 'sigma.proc', main = 'sigma.proc')
+tsplot(samples[ , 'sigma.obs'], xlab = 'iteration',
+     ylab = 'sigma.obs', main = 'sigma.obs')
+```
+
+# Customizing and MCMC configuration
+
+MCMC is a family of algorithms and there are many ways to create an MCMC for any given model by choosing different samplers (or "updaters").  Different choices can have vastly different efficiencies for different models and data sets.
+
+There are several ways we can customize an MCMC configuration in NIMBLE.
+
+Here we will start from a default configuration and then remove and add samplers.
+
+```{r, ssm-mcmc2}
+mcmcConf2 <- configureMCMC(ssm) # can skip mcmcConf
+mcmcConf2$removeSamplers('sigma.obs')
+mcmcConf2$removeSamplers('sigma.proc')
+mcmcConf2$removeSamplers('r')
+mcmcConf2$addSampler(target = 'sigma.obs', type = 'RW', control = list(log=TRUE))
+mcmcConf2$addSampler(target = 'sigma.proc', type = 'RW', control = list(log=TRUE))
+## illustrate how we can access all r[t] nodes:
+ssm$expandNodeNames('r')
+mcmcConf2$addSampler(target = ssm$expandNodeNames('r'), type = 'RW_block')
+mcmcConf2$printSamplers()
+```
+
+# Build, compile and run the customized MCMC
+
+```{r, run-ssm-mcmc2}
+ssmMCMC2 <- buildMCMC(mcmcConf2)
+Cssm <- compileNimble(ssm)
+CssmMCMC2 <- compileNimble(ssmMCMC2, project = ssm)
+CssmMCMC2$run(10000)
+```
+
+```{r}
+samples2 <- as.matrix(CssmMCMC2$mvSamples)
+tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
+
+par(mfrow = c(1, 3), mai = c(.6, .5, .1, .2))
+tsplot(samples[ , 'mean.r'], xlab = 'iteration',
+     ylab = 'mean.r', main = 'mean.r')
+tsplot(samples[ , 'sigma.proc'], xlab = 'iteration',
+     ylab = 'sigma.proc', main = 'sigma.proc')
+tsplot(samples[ , 'sigma.obs'], xlab = 'iteration',
+     ylab = 'sigma.obs', main = 'sigma.obs')
+
+```
+
+# Comparing MCMC configurations
+
+We've made two kinds of MCMCs for the same model.  How can we compare
+them?
+
+We must consider two factors:
+
+   - How well the MCMC mixes.  This is measured by the *effective
+      sample size* (ESS) for each parameter.
+
+   - How quicly the MCMC runs.  This is measured by its computation
+   time.
+
+We define *MCMC efficiency* for one parameter as
+
+   - MCMC efficiency (of a parameter) = ESS / time (in seconds)
+
+That gives a measure of performance for each parameter, but how we do
+summarize those across parameters to get a single number?
+
+Often the trustworthiness of results is limited by the worst-mixing
+parameter.  Therefore we define
+
+   - MCMC efficiency (of an algorithm) = minimum MCMC efficiency of
+     all 
+
+# Comparing MCMC configurations using `compareMCMCs`
+
+```{r, compare-mcmcs}
+set.seed(1)
+modelInfo <- list(ssm = list(code = ssmCode, data = bugs.data['y'], constants = bugs.data['T'], inits = inits()))
+MCMCdefs <- list(custom = quote({
+    mcmcConf2 <- configureMCMC(Rmodel) # can skip mcmcConf
+    mcmcConf2$removeSamplers('sigma.obs')
+    mcmcConf2$removeSamplers('sigma.proc')
+    mcmcConf2$removeSamplers('r')
+    mcmcConf2$addSampler(target = 'sigma.obs', type = 'RW', control = list(log=TRUE))
+    mcmcConf2$addSampler(target = 'sigma.proc', type = 'RW', control = list(log=TRUE))
+    mcmcConf2$addSampler(target = Rmodel$expandNodeNames('r'), type = 'RW_block')
+    mcmcConf2
+}))
+comparisonResults <- compareMCMCs(modelInfo = modelInfo,
+                                  MCMCs = c('nimble', 'custom'),
+                                  MCMCdefs = MCMCdefs,
+                                  niter = 20000,
+                                  burnin = 1000, summary = FALSE)
+```
+
+Make comparison figures
+
+```{r, make-comparison-figures}
+make_MCMC_comparison_pages(comparisonResults)
+## open ssm.html in a browser to see results
+## The name ssm is taken from the name in the modelInfo list
+```
+
+See ssm.index for results.
