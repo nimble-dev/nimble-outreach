@@ -1,0 +1,154 @@
+---
+title: "Programming with models (2): Inspecting model structure (state-space model example)"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)
+read_chunk('chunks_ssm.R')
+```
+# Outline
+
+In this module, we'll learn how to query a model about its graph.
+
+*operating a model + querying the model's graph = model-generic programming*
+
+Specifically, we'll learn:
+
+   - about topological ordering of nodes and why it matters.
+   - how to determine the dependencies (or children) of one or more nodes, and
+       + what different kinds of dependencies mean.
+   - how to expand node names.
+   - how to determine node categories such as *top-level nodes, latent-state nodes, and data nodes*.
+   - how NIMBLE sometimes inserts *lifted nodes* into a model and what that means for you.
+   - how to determine the variables in a model.
+
+We first need to build the model.  For this module we will use the smaller version of the state-space model, with only the first four time points.  The only purpose is to simplify the examples and the graph figures for clarity.
+
+```{r, ssmSmall-code}
+```
+
+```{r, ssmSmall-model}
+```
+
+# Topological ordering of nodes and why it matters.
+
+
+```{r}
+library(nimble)
+library(igraph)
+ssmSmallCode <- nimbleCode({
+# Priors and constraints
+logN.est[1] ~ dnorm(5.6, 0.01)       # Prior for initial population size
+mean.r ~ dnorm(1, 0.001)             # Prior for mean growth rate
+sigma.proc ~ dunif(0, 1)             # Prior for sd of state process
+sigma.obs ~ dunif(0, 1)              # Prior for sd of observation process
+
+# Likelihood
+# State process
+for (t in 1:(T-1)){
+   r[t] ~ dnorm(mean.r, sd = sigma.proc)
+   logN.est[t+1] <- logN.est[t] + r[t]
+   }
+# Observation process
+for (t in 1:T) y[t] ~ dnorm(logN.est[t], sd = sigma.obs)
+
+})
+
+## @knitr ssmSmall-model
+pyears <- 6 # Number of future years with predictions
+hm <- c(271, 261, 309, 318, 231, 216, 208, 226, 195, 226, 233, 209, 226, 192, 191, 225,
+        245, 205, 191, 174, rep(NA, pyears))
+year <- 1990:(2009 + pyears)
+
+# Bundle data
+bugs.data <- list(y = log(hm), T = length(year))
+## NIMBLE will handle y as data, T as a constant
+
+ssmSmall <- nimbleModel(ssmSmallCode, constants = list(T = 5),
+                        data = list(y = bugs.data$y[1:5]))
+
+drawGraph <- function(model, colorBy = "none") {
+    graph <- model$getGraph()
+    numNodes <- length(ssmSmall$getNodeNames())
+    vertex.color <- rep('black', numNodes)
+    if(identical(colorBy, "none")) {}
+    else if(length(colorBy) > 1) {
+        if(is.character(colorBy))
+            colorBy <- model$expandNodeNames(colorBy, returnType = "ids")
+        vertex.color[colorBy] <- 'red'
+    } else if(colorBy == "stochDetermData") {
+        stochIDs <- ssmSmall$getNodeNames(stochOnly = TRUE, returnType = "ids")
+        determIDs <- ssmSmall$getNodeNames(determOnly = TRUE, returnType = "ids")
+        dataIDs <- ssmSmall$getNodeNames(dataOnly = TRUE, returnType = "ids")
+        vertex.color[stochIDs] <- 'green'
+        vertex.color[dataIDs] <- 'orange'
+        vertex.color[determIDs] <- 'cyan'
+    } else if(colorBy == "topLatentEnd") {
+        topIDs <- ssmSmall$getNodeNames(topOnly=TRUE, returnType = "ids")
+        latentIDs <- ssmSmall$getNodeNames(latentOnly=TRUE, returnType = "ids")
+        endIDs <- ssmSmall$getNodeNames(endOnly=TRUE, returnType = "ids")
+        vertex.color[topIDs] <- 'magenta'
+        vertex.color[latentIDs] <- 'cyan'
+        vertex.color[endIDs] <- 'purple'
+    }
+    plot(graph, layout = layout_(graph, with_kk()),
+         vertex.color = vertex.color ) ## uses plot.igraph
+}
+```
+
+Suppose we want to change the value of `r[3]` and update all relevant
+parts of the graph.  The nodes that need to be updated are shown in red.
+
+
+```{r}
+drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
+```
+
+Note that **order matters**.  If we calculated the log probability
+density of `y[4]` before calculating `logN.est[4]`, then `y[4]` would
+use the *old* value of `logN.est[4]`.
+
+A valid order for calculations is called *topologically sorted*.  Most
+model-querying functions will return nodes in tologically sorted order.
+
+# Inspecting the model: nodes
+
+NIMBLE provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
+
+What are the nodes in the model? What are the dependencies of a given node (this is information used in many algorithms)?
+
+```{r, model-nodes}
+pump$getNodeNames()
+hypers <- pump$getNodeNames(topOnly = TRUE)
+hypers
+pump$getDependencies(hypers)
+```
+
+There are a variety of options to `getNodeNames()` and `getDependencies` that allow you to fine-tune the information you get.
+
+```{r, get-info}
+args(pump$getDependencies)
+args(pump$getNodeNames)
+
+latents <- pump$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+latents
+pump$getDependencies(latents, determOnly = TRUE)
+pump$getNodeNames(dataOnly = TRUE)
+```
+
+What are the variables in the model? What information is available about them?
+
+```{r, model-vars}
+pump$getVarNames()
+pump$getVarInfo('theta')
+```

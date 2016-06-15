@@ -7,8 +7,11 @@ customizing_mcmc_state_space_example (finicky and may depend on newNodeFxns for 
 How nimble goes beyond other packages
 how you could build on nimble
 
+Programming with models (I): Operating a model
 
 to do:
+
+
 Understanding graphical models
  - inspect state-space model and make more efficient version
 
@@ -26,6 +29,14 @@ Writing new MCMC samplers
 Understanding graphical models
 running MCEM
 add slice sampler on mean.r to the customization case
+
+add includeData = TRUE to simulate example
+
+add exercises at the end of operating_model module
+
+try to add a link to code file on each first slide
+
+check on title slide creation and see if there is a way to put a content description
 
 smc
 mcem
