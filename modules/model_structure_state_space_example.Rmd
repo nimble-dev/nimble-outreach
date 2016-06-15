@@ -20,7 +20,7 @@ read_chunk('chunks_ssm.R')
 
 In this module, we'll learn how to query a model about its graph.
 
-*operating a model + querying the model's graph = model-generic programming*
+*model-generic programming = querying a model's graph + operating a model*
 
 Specifically, we'll learn:
 
@@ -77,29 +77,29 @@ bugs.data <- list(y = log(hm), T = length(year))
 ssmSmall <- nimbleModel(ssmSmallCode, constants = list(T = 5),
                         data = list(y = bugs.data$y[1:5]))
 
-drawGraph <- function(model, colorBy = "none") {
+drawGraph <- function(model, colorBy = "none", colors = c('salmon','cyan','plum')) {
     graph <- model$getGraph()
     numNodes <- length(ssmSmall$getNodeNames())
-    vertex.color <- rep('black', numNodes)
+    vertex.color <- rep('grey', numNodes)
     if(identical(colorBy, "none")) {}
     else if(length(colorBy) > 1) {
         if(is.character(colorBy))
             colorBy <- model$expandNodeNames(colorBy, returnType = "ids")
-        vertex.color[colorBy] <- 'red'
+        vertex.color[colorBy] <- colors[1]
     } else if(colorBy == "stochDetermData") {
         stochIDs <- ssmSmall$getNodeNames(stochOnly = TRUE, returnType = "ids")
         determIDs <- ssmSmall$getNodeNames(determOnly = TRUE, returnType = "ids")
         dataIDs <- ssmSmall$getNodeNames(dataOnly = TRUE, returnType = "ids")
-        vertex.color[stochIDs] <- 'green'
-        vertex.color[dataIDs] <- 'orange'
-        vertex.color[determIDs] <- 'cyan'
+        vertex.color[stochIDs] <- colors[1]
+        vertex.color[dataIDs] <- colors[2]
+        vertex.color[determIDs] <- colors[3]
     } else if(colorBy == "topLatentEnd") {
         topIDs <- ssmSmall$getNodeNames(topOnly=TRUE, returnType = "ids")
         latentIDs <- ssmSmall$getNodeNames(latentOnly=TRUE, returnType = "ids")
         endIDs <- ssmSmall$getNodeNames(endOnly=TRUE, returnType = "ids")
-        vertex.color[topIDs] <- 'magenta'
-        vertex.color[latentIDs] <- 'cyan'
-        vertex.color[endIDs] <- 'purple'
+        vertex.color[topIDs] <- colors[1]
+        vertex.color[latentIDs] <- colors[2]
+        vertex.color[endIDs] <- colors[3]
     }
     plot(graph, layout = layout_(graph, with_kk()),
          vertex.color = vertex.color ) ## uses plot.igraph
@@ -115,40 +115,165 @@ drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
 ```
 
 Note that **order matters**.  If we calculated the log probability
-density of `y[4]` before calculating `logN.est[4]`, then `y[4]` would
-use the *old* value of `logN.est[4]`.
+density of `y[4]` *before* calculating `logN.est[4]`, then `y[4]` would
+use the *old* value of `logN.est[4]`.  That would be a mistake.
 
 A valid order for calculations is called *topologically sorted*.  Most
-model-querying functions will return nodes in tologically sorted order.
+of NIMBLE's model-querying functions will return nodes in tologically sorted order.
 
-# Inspecting the model: nodes
+# Inspecting the model: Querying graph dependencies
 
-NIMBLE provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
+There are several kinds of dependencies that may be needed by different algorithms.
 
-What are the nodes in the model? What are the dependencies of a given node (this is information used in many algorithms)?
+   - *Stochastic dependencies* (called *Markov blanket* in computer science) terminate at stochastic nodes (inclusive)
 
-```{r, model-nodes}
-pump$getNodeNames()
-hypers <- pump$getNodeNames(topOnly = TRUE)
-hypers
-pump$getDependencies(hypers)
+```{r}
+ssmSmall$getDependencies('r[3]')
+```
+```{r, echo=FALSE}
+drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
+```
+       + These are the dependencies needed for a Metropolis-Hastings
+       MCMC sampler.
+
+   - *Deterministic dependencies* terminate at stochastic nodes but
+omit the stochastic nodes
+```{r}
+ssmSmall$getDependencies('r[3]', determOnly = TRUE)
+```
+```{r, echo=FALSE}
+drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]', determOnly = TRUE))
 ```
 
-There are a variety of options to `getNodeNames()` and `getDependencies` that allow you to fine-tune the information you get.
-
-```{r, get-info}
-args(pump$getDependencies)
-args(pump$getNodeNames)
-
-latents <- pump$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
-latents
-pump$getDependencies(latents, determOnly = TRUE)
-pump$getNodeNames(dataOnly = TRUE)
+   - Other kinds of control can be found by
+```{r}
+args(ssmSmall$getDependencies)
+## or help(modelBaseClass)
 ```
 
-What are the variables in the model? What information is available about them?
 
-```{r, model-vars}
-pump$getVarNames()
-pump$getVarInfo('theta')
+# Finding out about nodes
+
+The functions `model$getNodeNames`, `model$expandNodeNames`,
+`model$topologicallySortNodes` will query the model about nodes and
+their roles in the model.
+
+Examples include:
+
+   - All nodes in topologically-sorted order
+```{r}
+ssmSmall$getNodeNames()
+```
+
+   - Stochastic, deterministic, and data nodes (which are also
+   stochastic).
+
+```{r}
+ssmSmall$getNodeNames(stochOnly = TRUE)   #salmon
+ssmSmall$getNodeNames(determOnly = TRUE)  #cyan
+ssmSmall$getNodeNames(dataOnly = TRUE)    #plum
+```
+```{r}
+drawGraph(ssmSmall, 'stochDetermData')
+```
+
+   - Top nodes, latent nodes, and end nodes
+
+```{r}
+ssmSmall$getNodeNames(topOnly = TRUE)   #salmon
+ssmSmall$getNodeNames(latentOnly = TRUE)  #cyan
+ssmSmall$getNodeNames(endOnly = TRUE)    #plum
+```
+```{r}
+drawGraph(ssmSmall, 'topLatentEnd')
+```
+
+Another kind of node is called *RHSonly* if it only appears on the
+right-hand side of a BUGS declaration and never on the left-hand side.
+
+You can get the nodes present in some arbitrary range of a
+variable like this:
+```{r}
+ssmSmall$expandNodeNames('logN.est[2:5]')
+```
+
+Finally, if for some reason you did not obtain a vector of node names
+from the model in the first place and need it topologically sorted,
+you can do that:
+
+```{r}
+ssmSmall$topologicallySortNodes(c('logN.est[5]', 'r[4]', 'logN.est[3]', 'y[2]'))
+```
+
+Often there is more than one valid topological sorting, but NIMBLE
+chooses one and uses it for your model.
+
+# The importance of querying a model: lifted nodes.
+
+*You should never assume you know what nodes are in a model simply
+because you wrote the BUGS code.*
+
+NIMBLE implements some features by inserting its own nodes.
+
+Let's look at the two main ways this happens:
+
+```{r}
+m1 <- nimbleModel(
+    nimbleCode({
+        tau ~ dunif(0, 100)
+        x ~ dnorm(0, tau) #by default, tau is a precision
+    }))
+plot(m1$getGraph())
+m1$getNodeNames()
+```
+The node `lifted_d1_over_sqrt_oPtau_cP` has been inserted between
+`tau` and `x`.   The resulting model would equivalently have been
+created by this BUGS code:
+
+```{r, eval = FALSE}
+nimbleCode({
+    tau ~ dunif(0, 100)
+    lifted_d1_over_sqrt_oPtau_cP <- 1/sqrt(tau)
+    x ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP) #by default, tau is a precision
+}))
+```
+
+NIMBLE has *lifted* the calculation of standard deviation from
+precision so that it is part of the model's graph.  Therefore *you
+will make a mistake if you assume that the dependencies of `tau`
+include only `x`*:
+
+```{r, eval = FALSE}
+m1$calculate(c('tau','x'))
+```
+
+The correct way to do this is with model-generic programming:
+```{r, eval = FALSE}
+m1$calculate( m1$getDependencies('tau') )
+```
+
+The second common situation that creates lifted this is:
+```{r}
+m2 <- nimbleModel(
+    nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dnorm(a + 1, 1)
+    }))
+plot(m2$getGraph())
+m2$getNodeNames()
+```
+
+In this case, NIMBLE lifted the expression `a+1` and created a node
+for it.   Again the correct way to program is to query a model to
+learn about its nodes.  Do not assume you know what the nodes are.
+
+# Querying the sizes and types of model variables
+
+Sometimes it is useful to ask a model about its *variables*  and their
+sizes.  This information is not competely nicely arranged, but it is
+available:
+
+```{r}
+ssmSmall$getVarNames()
+ssmSmall$getVarInfo('r')
 ```

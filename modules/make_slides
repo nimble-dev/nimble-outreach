@@ -1,4 +1,4 @@
-#! /usr/local/bin/Rscript
+#! /usr/bin/Rscript
 # usage:
 # ./make_slides example
 # ./make_slides bugs
