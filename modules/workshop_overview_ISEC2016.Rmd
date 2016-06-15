@@ -4,10 +4,28 @@ build_model_state_space_example
 run_mcmc_state_space_example
 customizing_mcmc_state_space_example (finicky and may depend on newNodeFxns for performance)
 
-to do:
-Understanding graphical models
-running MCEM
-how nimble goes beyond other packages
+How nimble goes beyond other packages
 how you could build on nimble
 
 
+to do:
+Understanding graphical models
+ - inspect state-space model and make more efficient version
+
+compiling from R to C++ with nimbleFunctions
+ - no setup code
+
+User-defined distributions and functions
+ - multi-state capture-recapture example
+
+Model-generic programming
+ - making a general simulator
+
+Writing new MCMC samplers
+ - spatial capture-recapture example
+Understanding graphical models
+running MCEM
+add slice sampler on mean.r to the customization case
+
+smc
+mcem
