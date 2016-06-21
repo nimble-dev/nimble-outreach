@@ -55,16 +55,15 @@ NIMBLE Development Team
 </div>
 <div id="some-syntax-for-nimblefunctions" class="slide section level1">
 <h1>Some syntax for nimbleFunctions</h1>
-<p>Here are some of the functions you may use in the run function of a nimbleFunction:</p>
+<p>Here are some of the functions you may use in the <em>run</em> function of a nimbleFunction:</p>
 <ul>
-<li><em>returnType</em>, e.g. <code>returnType(double(1))</code> for a vector of reals</li>
-<li><em>length</em>, e.g., <code>length(x)</code> to determine the length of a run-time argument <em>x</em></li>
-<li><em>declare</em>, e.g., <code>declare(result, double(1))</code> to create a vector of reals called <em>result</em></li>
-<li><em>setSize</em>, e.g., <code>setSize(result, n)</code> to set the size of the vector to be length <em>n</em></li>
-<li><em>calculate</em>, <em>simulate</em>, <em>getLogProb</em> to manipulate the model</li>
-<li><em>values</em> and <em>nimCopy</em> to copy values</li>
-<li><em>print</em></li>
-<li>random number generation functions, e.g., <code>rnorm(1, 100, 5)</code> (these must always only generate a single random variable)</li>
+<li><em>returnType</em>, e.g. <code>returnType(double(1))</code> for a vector of reals;</li>
+<li><em>length</em>, e.g., <code>length(x)</code> to determine the length of a run-time argument <em>x</em>;</li>
+<li><em>calculate</em>, <em>simulate</em>, <em>getLogProb</em> to manipulate the model;</li>
+<li><em>values</em> and <em>nimCopy</em> to copy values;</li>
+<li><em>print</em>;</li>
+<li>functions to declare multivariate variables such as <em>numeric</em>, <em>matrix</em>, and <em>array</em>; and</li>
+<li>random number generation functions, e.g., <code>rnorm(1, 100, 5)</code> (these must always only generate a single random variable).</li>
 </ul>
 <p>Section 9 of the NIMBLE User Manual describes the syntax for <em>run</em> code in detail, including lots of neat functionality such as using nested nimbleFunctions and having multiple run-time functions (i.e., methods) as part of a nimbleFunction.</p>
 </div>
@@ -116,18 +115,18 @@ Clogistic_obj &lt;-<span class="st"> </span><span class="kw">compileNimble</span
 <pre class="sourceCode r"><code class="sourceCode r">out &lt;-<span class="st"> </span><span class="kw">optim</span>(<span class="kw">c</span>(Cmodel$b0, Cmodel$b1), Clogistic_obj$run, 
     <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">fnscale =</span> -<span class="dv">1</span>))
 out$par</code></pre>
-<pre><code>## [1] -0.458346  3.371679</code></pre>
+<pre><code>## [1] -0.5605351  3.8865625</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">glm</span>(y ~<span class="st"> </span>x, <span class="dt">family =</span> <span class="st">'binomial'</span>)</code></pre>
 <pre><code>## 
 ## Call:  glm(formula = y ~ x, family = &quot;binomial&quot;)
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##     -0.4584       3.3722  
+##     -0.5607       3.8874  
 ## 
 ## Degrees of Freedom: 299 Total (i.e. Null);  298 Residual
-## Null Deviance:       414 
-## Residual Deviance: 263.5     AIC: 267.5</code></pre>
+## Null Deviance:       412.9 
+## Residual Deviance: 229.5     AIC: 233.5</code></pre>
 <p>Looks like it works.</p>
 </div>
 </body>

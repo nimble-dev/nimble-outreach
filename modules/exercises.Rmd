@@ -75,7 +75,7 @@ tsplot(path[1:5000])
 mc <- nimbleFunction(
    run = function(n = double(0), rho1 = double(0), rho2 = double(0)) {
        returnType(double(1))
-       declare(path, double(1, n))
+       path <- numeric(n, init = FALSE)
        path[1] <- rnorm(1)
        path[2] <- rnorm(1)
        for(i in 3:n) 

@@ -41,17 +41,14 @@ nimExp <- nimbleFunction(
        run = function(x = double(1)) {
            returnType(double(1))
            n <- length(x)
-           # NIMBLE needs help in determining the dimension and size of out
-           declare(out, double(1))
-           setSize(out, n)
+           # need to declare output variable in advance
+           out <- numeric(n, init = FALSE)
            # core computation
            for( i in 1:n) 
                 out[i] <- exp(x[i])
            return(out)
 })
 ```
-
-We need the *declare()* and *setSize()* in this case (but not the next one) because it's hard for the NIMBLE compiler to figure out the dimension/size of *out*.
 
 Actually nimbleFunctions can handle vectorized code using the Eigen linear algebra package, so let's consider a different implementation.
 
@@ -79,7 +76,7 @@ benchmark(out0 <- exp(x),
                replications = 10)
 ```
                
-So that's not all that impressive as all we've done is match (well, not quite) the speed of the native R compiled code. 
+So that's not all that impressive as all we've done is match (well, not quite) the speed of the native R compiled code. The real benefit comes from code that one can't directly vectorize in R. 
 
 
 # A more involved example
@@ -147,12 +144,8 @@ mprobit <- nimbleFunction(
          run = function(alphas = double(1), M = double(0)) {
              returnType(double(1))
              K <- length(alphas)
-             declare(props, double(1))
-             setSize(props, K)
-             declare(w, double(1))
-             setSize(w, K)
-             for(k in 1:K) 
-                   props[k] <- 0.0
+             props <- numeric(K, value = 0)
+             w <- numeric(K)
              for(m in 1:M) {
                    for(k in 1:K) 
                         w[k] <- alphas[k] + rnorm(1) 
@@ -179,5 +172,5 @@ props2 <- cmprobit(alphas, M)
 )
 ```
 
-So we get a nice 5-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.
+So we get a nice six-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.
 

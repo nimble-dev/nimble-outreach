@@ -7,7 +7,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
 
 <meta name="author" content="NIMBLE Development Team" />
 
@@ -39,25 +39,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 
 
-
-</head>
-
-<body>
-
 <style type="text/css">
-.main-container {
-  max-width: 940px;
-  margin-left: auto;
-  margin-right: auto;
-}
-code {
-  color: inherit;
-  background-color: rgba(0, 0, 0, 0.04);
-}
-img {
-  max-width:100%;
-  height: auto;
-}
 h1 {
   font-size: 34px;
 }
@@ -79,6 +61,30 @@ h5 {
 h6 {
   font-size: 12px;
 }
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type="text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
 .tabbed-pane {
   padding-top: 12px;
 }
@@ -99,7 +105,7 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
-<script src="data:application/x-javascript,%0A%0Awindow%2EinitializeCodeFolding%20%3D%20function%28show%29%20%7B%0A%0A%20%20%2F%2F%20handlers%20for%20show%2Dall%20and%20hide%20all%0A%20%20%24%28%22%23rmd%2Dshow%2Dall%2Dcode%22%29%2Eclick%28function%28%29%20%7B%0A%20%20%20%20%24%28%27div%2Er%2Dcode%2Dcollapse%27%29%2Eeach%28function%28%29%20%7B%0A%20%20%20%20%20%20%24%28this%29%2Ecollapse%28%27show%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%7D%29%3B%0A%20%20%24%28%22%23rmd%2Dhide%2Dall%2Dcode%22%29%2Eclick%28function%28%29%20%7B%0A%20%20%20%20%24%28%27div%2Er%2Dcode%2Dcollapse%27%29%2Eeach%28function%28%29%20%7B%0A%20%20%20%20%20%20%24%28this%29%2Ecollapse%28%27hide%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%7D%29%3B%0A%0A%20%20%2F%2F%20index%20for%20unique%20code%20element%20ids%0A%20%20var%20currentIndex%20%3D%201%3B%0A%0A%20%20%2F%2F%20select%20all%20R%20code%20blocks%0A%20%20var%20rCodeBlocks%20%3D%20%24%28%27pre%2Er%27%29%3B%0A%20%20rCodeBlocks%2Eeach%28function%28%29%20%7B%0A%0A%20%20%20%20%2F%2F%20create%20a%20collapsable%20div%20to%20wrap%20the%20code%20in%0A%20%20%20%20var%20div%20%3D%20%24%28%27%3Cdiv%20class%3D%22collapse%20r%2Dcode%2Dcollapse%22%3E%3C%2Fdiv%3E%27%29%3B%0A%20%20%20%20if%20%28show%29%0A%20%20%20%20%20%20div%2EaddClass%28%27in%27%29%3B%0A%20%20%20%20var%20id%20%3D%20%27rcode%2D643E0F36%27%20%2B%20currentIndex%2B%2B%3B%0A%20%20%20%20div%2Eattr%28%27id%27%2C%20id%29%3B%0A%20%20%20%20%24%28this%29%2Ebefore%28div%29%3B%0A%20%20%20%20%24%28this%29%2Edetach%28%29%2EappendTo%28div%29%3B%0A%0A%20%20%20%20%2F%2F%20add%20a%20show%20code%20button%20right%20above%0A%20%20%20%20var%20showCodeText%20%3D%20%24%28%27%3Cspan%20class%3D%22text%2Dmuted%22%3E%27%20%2B%20%28show%20%3F%20%27Hide%27%20%3A%20%27Code%27%29%20%2B%20%27%3C%2Fspan%3E%27%29%3B%0A%20%20%20%20var%20showCodeButton%20%3D%20%24%28%27%3Cbutton%20type%3D%22button%22%20class%3D%22btn%20btn%2Ddefault%20btn%2Dxs%20code%2Dfolding%2Dbtn%20pull%2Dright%22%3E%3C%2Fbutton%3E%27%29%3B%0A%20%20%20%20showCodeButton%2Eappend%28showCodeText%29%3B%0A%20%20%20%20showCodeButton%0A%20%20%20%20%20%20%20%20%2Eattr%28%27data%2Dtoggle%27%2C%20%27collapse%27%29%0A%20%20%20%20%20%20%20%20%2Eattr%28%27data%2Dtarget%27%2C%20%27%23%27%20%2B%20id%29%0A%20%20%20%20%20%20%20%20%2Eattr%28%27aria%2Dexpanded%27%2C%20true%29%0A%20%20%20%20%20%20%20%20%2Eattr%28%27aria%2Dcontrols%27%2C%20id%29%0A%20%20%20%20%20%20%20%20%2Ecss%28%27margin%2Dbottom%27%2C%20%274px%27%29%3B%0A%0A%20%20%20%20var%20buttonRow%20%3D%20%24%28%27%3Cdiv%20class%3D%22row%22%3E%3C%2Fdiv%3E%27%29%3B%0A%20%20%20%20var%20buttonCol%20%3D%20%24%28%27%3Cdiv%20class%3D%22col%2Dmd%2D12%22%3E%3C%2Fdiv%3E%27%29%3B%0A%0A%20%20%20%20buttonCol%2Eappend%28showCodeButton%29%3B%0A%20%20%20%20buttonRow%2Eappend%28buttonCol%29%3B%0A%0A%20%20%20%20div%2Ebefore%28buttonRow%29%3B%0A%0A%20%20%20%20%2F%2F%20update%20state%20of%20button%20on%20show%2Fhide%0A%20%20%20%20div%2Eon%28%27hidden%2Ebs%2Ecollapse%27%2C%20function%20%28%29%20%7B%0A%20%20%20%20%20%20showCodeText%2Etext%28%27Code%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%20%20div%2Eon%28%27show%2Ebs%2Ecollapse%27%2C%20function%20%28%29%20%7B%0A%20%20%20%20%20%20showCodeText%2Etext%28%27Hide%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%7D%29%3B%0A%0A%7D%0A"></script>
+<script src="data:application/x-javascript,%0A%0Awindow%2EinitializeCodeFolding%20%3D%20function%28show%29%20%7B%0A%0A%20%20%2F%2F%20handlers%20for%20show%2Dall%20and%20hide%20all%0A%20%20%24%28%22%23rmd%2Dshow%2Dall%2Dcode%22%29%2Eclick%28function%28%29%20%7B%0A%20%20%20%20%24%28%27div%2Er%2Dcode%2Dcollapse%27%29%2Eeach%28function%28%29%20%7B%0A%20%20%20%20%20%20%24%28this%29%2Ecollapse%28%27show%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%7D%29%3B%0A%20%20%24%28%22%23rmd%2Dhide%2Dall%2Dcode%22%29%2Eclick%28function%28%29%20%7B%0A%20%20%20%20%24%28%27div%2Er%2Dcode%2Dcollapse%27%29%2Eeach%28function%28%29%20%7B%0A%20%20%20%20%20%20%24%28this%29%2Ecollapse%28%27hide%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%7D%29%3B%0A%0A%20%20%2F%2F%20index%20for%20unique%20code%20element%20ids%0A%20%20var%20currentIndex%20%3D%201%3B%0A%0A%20%20%2F%2F%20select%20all%20R%20code%20blocks%0A%20%20var%20rCodeBlocks%20%3D%20%24%28%27pre%2Er%27%29%3B%0A%20%20rCodeBlocks%2Eeach%28function%28%29%20%7B%0A%0A%20%20%20%20%2F%2F%20create%20a%20collapsable%20div%20to%20wrap%20the%20code%20in%0A%20%20%20%20var%20div%20%3D%20%24%28%27%3Cdiv%20class%3D%22collapse%20r%2Dcode%2Dcollapse%22%3E%3C%2Fdiv%3E%27%29%3B%0A%20%20%20%20if%20%28show%29%0A%20%20%20%20%20%20div%2EaddClass%28%27in%27%29%3B%0A%20%20%20%20var%20id%20%3D%20%27rcode%2D643E0F36%27%20%2B%20currentIndex%2B%2B%3B%0A%20%20%20%20div%2Eattr%28%27id%27%2C%20id%29%3B%0A%20%20%20%20%24%28this%29%2Ebefore%28div%29%3B%0A%20%20%20%20%24%28this%29%2Edetach%28%29%2EappendTo%28div%29%3B%0A%0A%20%20%20%20%2F%2F%20add%20a%20show%20code%20button%20right%20above%0A%20%20%20%20var%20showCodeText%20%3D%20%24%28%27%3Cspan%3E%27%20%2B%20%28show%20%3F%20%27Hide%27%20%3A%20%27Code%27%29%20%2B%20%27%3C%2Fspan%3E%27%29%3B%0A%20%20%20%20var%20showCodeButton%20%3D%20%24%28%27%3Cbutton%20type%3D%22button%22%20class%3D%22btn%20btn%2Ddefault%20btn%2Dxs%20code%2Dfolding%2Dbtn%20pull%2Dright%22%3E%3C%2Fbutton%3E%27%29%3B%0A%20%20%20%20showCodeButton%2Eappend%28showCodeText%29%3B%0A%20%20%20%20showCodeButton%0A%20%20%20%20%20%20%20%20%2Eattr%28%27data%2Dtoggle%27%2C%20%27collapse%27%29%0A%20%20%20%20%20%20%20%20%2Eattr%28%27data%2Dtarget%27%2C%20%27%23%27%20%2B%20id%29%0A%20%20%20%20%20%20%20%20%2Eattr%28%27aria%2Dexpanded%27%2C%20true%29%0A%20%20%20%20%20%20%20%20%2Eattr%28%27aria%2Dcontrols%27%2C%20id%29%0A%20%20%20%20%20%20%20%20%2Ecss%28%27margin%2Dbottom%27%2C%20%274px%27%29%3B%0A%0A%20%20%20%20var%20buttonRow%20%3D%20%24%28%27%3Cdiv%20class%3D%22row%22%3E%3C%2Fdiv%3E%27%29%3B%0A%20%20%20%20var%20buttonCol%20%3D%20%24%28%27%3Cdiv%20class%3D%22col%2Dmd%2D12%22%3E%3C%2Fdiv%3E%27%29%3B%0A%0A%20%20%20%20buttonCol%2Eappend%28showCodeButton%29%3B%0A%20%20%20%20buttonRow%2Eappend%28buttonCol%29%3B%0A%0A%20%20%20%20div%2Ebefore%28buttonRow%29%3B%0A%0A%20%20%20%20%2F%2F%20update%20state%20of%20button%20on%20show%2Fhide%0A%20%20%20%20div%2Eon%28%27hidden%2Ebs%2Ecollapse%27%2C%20function%20%28%29%20%7B%0A%20%20%20%20%20%20showCodeText%2Etext%28%27Code%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%20%20div%2Eon%28%27show%2Ebs%2Ecollapse%27%2C%20function%20%28%29%20%7B%0A%20%20%20%20%20%20showCodeText%2Etext%28%27Hide%27%29%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%7D%29%3B%0A%0A%7D%0A"></script>
 <script>
 $(document).ready(function () {
   window.initializeCodeFolding("show" === "show");
@@ -114,14 +120,15 @@ $(document).ready(function () {
 <div class="fluid-row" id="header">
 
 <div class="btn-group pull-right">
-<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="text-muted">Code</span> <span class="text-muted caret"></span></button>
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
 <ul class="dropdown-menu" style="min-width: 50px;">
 <li><a id="rmd-show-all-code" href="#">Show All</a></li>
 <li><a id="rmd-hide-all-code" href="#">Hide All</a></li>
 </ul>
 </div>
 
-<h1 class="title">Programming with models (3): Writing nimbleFunctions</h1>
+
+<h1 class="title toc-ignore">Programming with models (3): Writing nimbleFunctions</h1>
 <h3 class="subtitle"><em>NIMBLE training materials module</em></h3>
 <h4 class="author"><em>NIMBLE Development Team</em></h4>
 
@@ -145,16 +152,15 @@ $(document).ready(function () {
 </div>
 <div id="some-syntax-for-nimblefunctions" class="section level1">
 <h1>Some syntax for nimbleFunctions</h1>
-<p>Here are some of the functions you may use in the run function of a nimbleFunction:</p>
+<p>Here are some of the functions you may use in the <em>run</em> function of a nimbleFunction:</p>
 <ul>
-<li><em>returnType</em>, e.g. <code>returnType(double(1))</code> for a vector of reals</li>
-<li><em>length</em>, e.g., <code>length(x)</code> to determine the length of a run-time argument <em>x</em></li>
-<li><em>declare</em>, e.g., <code>declare(result, double(1))</code> to create a vector of reals called <em>result</em></li>
-<li><em>setSize</em>, e.g., <code>setSize(result, n)</code> to set the size of the vector to be length <em>n</em></li>
-<li><em>calculate</em>, <em>simulate</em>, <em>getLogProb</em> to manipulate the model</li>
-<li><em>values</em> and <em>nimCopy</em> to copy values</li>
-<li><em>print</em></li>
-<li>random number generation functions, e.g., <code>rnorm(1, 100, 5)</code> (these must always only generate a single random variable)</li>
+<li><em>returnType</em>, e.g. <code>returnType(double(1))</code> for a vector of reals;</li>
+<li><em>length</em>, e.g., <code>length(x)</code> to determine the length of a run-time argument <em>x</em>;</li>
+<li><em>calculate</em>, <em>simulate</em>, <em>getLogProb</em> to manipulate the model;</li>
+<li><em>values</em> and <em>nimCopy</em> to copy values;</li>
+<li><em>print</em>;</li>
+<li>functions to declare multivariate variables such as <em>numeric</em>, <em>matrix</em>, and <em>array</em>; and</li>
+<li>random number generation functions, e.g., <code>rnorm(1, 100, 5)</code> (these must always only generate a single random variable).</li>
 </ul>
 <p>Section 9 of the NIMBLE User Manual describes the syntax for <em>run</em> code in detail, including lots of neat functionality such as using nested nimbleFunctions and having multiple run-time functions (i.e., methods) as part of a nimbleFunction.</p>
 </div>
@@ -206,18 +212,18 @@ Clogistic_obj &lt;- compileNimble(logistic_obj, project = model)</code></pre>
 <pre class="r"><code>out &lt;- optim(c(Cmodel$b0, Cmodel$b1), Clogistic_obj$run, 
     control = list(fnscale = -1))
 out$par</code></pre>
-<pre><code>## [1] -0.4122619  3.7665487</code></pre>
+<pre><code>## [1] -0.5771973  3.7057811</code></pre>
 <pre class="r"><code>glm(y ~ x, family = 'binomial')</code></pre>
 <pre><code>## 
 ## Call:  glm(formula = y ~ x, family = &quot;binomial&quot;)
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##     -0.4122       3.7662  
+##     -0.5772       3.7062  
 ## 
 ## Degrees of Freedom: 299 Total (i.e. Null);  298 Residual
-## Null Deviance:       414 
-## Residual Deviance: 235.7     AIC: 239.7</code></pre>
+## Null Deviance:       411.1 
+## Residual Deviance: 236.9     AIC: 240.9</code></pre>
 <p>Looks like it works.</p>
 </div>
 

@@ -60,15 +60,13 @@ NIMBLE Development Team
        <span class="dt">run =</span> function(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {
            <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))
            n &lt;-<span class="st"> </span><span class="kw">length</span>(x)
-           <span class="co"># NIMBLE needs help in determining the dimension and size of out</span>
-           <span class="kw">declare</span>(out, <span class="kw">double</span>(<span class="dv">1</span>))
-           <span class="kw">setSize</span>(out, n)
+           <span class="co"># need to declare output variable in advance</span>
+           out &lt;-<span class="st"> </span><span class="kw">numeric</span>(n, <span class="dt">init =</span> <span class="ot">FALSE</span>)
            <span class="co"># core computation</span>
            for( i in <span class="dv">1</span>:n) 
                 out[i] &lt;-<span class="st"> </span><span class="kw">exp</span>(x[i])
            <span class="kw">return</span>(out)
 })</code></pre>
-<p>We need the <em>declare()</em> and <em>setSize()</em> in this case (but not the next one) because it's hard for the NIMBLE compiler to figure out the dimension/size of <em>out</em>.</p>
 <p>Actually nimbleFunctions can handle vectorized code using the Eigen linear algebra package, so let's consider a different implementation.</p>
 <pre class="sourceCode r"><code class="sourceCode r">nimExp2 &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
        <span class="dt">run =</span> function(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {
@@ -81,17 +79,18 @@ NIMBLE Development Team
 cnimExp2 &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(nimExp2)
 
 x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="fl">1e6</span>)
-<span class="kw">library</span>(rbenchmark)
-<span class="kw">benchmark</span>(out0 &lt;-<span class="st"> </span><span class="kw">exp</span>(x),
+<span class="kw">library</span>(rbenchmark)</code></pre>
+<pre><code>## Warning: package 'rbenchmark' was built under R version 3.3.0</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">benchmark</span>(out0 &lt;-<span class="st"> </span><span class="kw">exp</span>(x),
                out1 &lt;-<span class="st"> </span><span class="kw">cnimExp</span>(x),
                out2 &lt;-<span class="st"> </span><span class="kw">cnimExp2</span>(x),
                <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">'test'</span>,<span class="st">'replications'</span>,<span class="st">'elapsed'</span>),
                <span class="dt">replications =</span> <span class="dv">10</span>)</code></pre>
 <pre><code>##                  test replications elapsed
-## 1      out0 &lt;- exp(x)           10   0.343
-## 2  out1 &lt;- cnimExp(x)           10   0.345
-## 3 out2 &lt;- cnimExp2(x)           10   0.266</code></pre>
-<p>So that's not all that impressive as all we've done is match (well, not quite) the speed of the native R compiled code.</p>
+## 1      out0 &lt;- exp(x)           10   0.299
+## 2  out1 &lt;- cnimExp(x)           10   0.410
+## 3 out2 &lt;- cnimExp2(x)           10   0.316</code></pre>
+<p>So that's not all that impressive as all we've done is match (well, not quite) the speed of the native R compiled code. The real benefit comes from code that one can't directly vectorize in R.</p>
 </div>
 <div id="a-more-involved-example" class="slide section level1">
 <h1>A more involved example</h1>
@@ -152,17 +151,13 @@ M &lt;-<span class="st"> </span><span class="dv">1000000</span>
         props[<span class="kw">as.integer</span>(<span class="kw">names</span>(tbl))] &lt;-<span class="st"> </span>tbl /<span class="st"> </span>M
 })</code></pre>
 <pre><code>##    user  system elapsed 
-##   2.988   0.093   3.081</code></pre>
+##   2.917   0.024   2.940</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">mprobit &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
          <span class="dt">run =</span> function(<span class="dt">alphas =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">M =</span> <span class="kw">double</span>(<span class="dv">0</span>)) {
              <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))
              K &lt;-<span class="st"> </span><span class="kw">length</span>(alphas)
-             <span class="kw">declare</span>(props, <span class="kw">double</span>(<span class="dv">1</span>))
-             <span class="kw">setSize</span>(props, K)
-             <span class="kw">declare</span>(w, <span class="kw">double</span>(<span class="dv">1</span>))
-             <span class="kw">setSize</span>(w, K)
-             for(k in <span class="dv">1</span>:K) 
-                   props[k] &lt;-<span class="st"> </span><span class="fl">0.0</span>
+             props &lt;-<span class="st"> </span><span class="kw">numeric</span>(K, <span class="dt">value =</span> <span class="dv">0</span>)
+             w &lt;-<span class="st"> </span><span class="kw">numeric</span>(K)
              for(m in <span class="dv">1</span>:M) {
                    for(k in <span class="dv">1</span>:K) 
                         w[k] &lt;-<span class="st"> </span>alphas[k] +<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>) 
@@ -188,8 +183,8 @@ cmprobit =<span class="st"> </span><span class="kw">compileNimble</span>(mprobit
 props2 &lt;-<span class="st"> </span><span class="kw">cmprobit</span>(alphas, M)
 )</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.537   0.000   0.538</code></pre>
-<p>So we get a nice 5-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.</p>
+##   0.527   0.001   0.527</code></pre>
+<p>So we get a nice six-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.</p>
 </div>
 </body>
 </html>
