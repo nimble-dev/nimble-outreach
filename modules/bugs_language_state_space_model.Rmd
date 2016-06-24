@@ -44,7 +44,7 @@ The BUGS language is described in detail in the [relevant section of the BUGS ma
 
 # A basic example: population state-space model
 
-We'll use an example from Chapter 5 of K&egrave;ry and Schaub (2012)\footnote{Marc K&egrave;ry and Michael Schaub. 2012. Bayesian Population Analysis Using WinBUGS: A hierarchical perspective.  Elsevier / Academic Press.}
+We'll use an example from Chapter 5 of K&eacute;ry and Schaub (2012)[^1]
 
 Code and data are available from the [BPA web site](http://www.vogelwarte.ch/de/projekte/publikationen/bpa/complete-code-and-data-files-of-the-book.html), in bpa-code.txt.
 
@@ -92,6 +92,9 @@ for (t in 1:T) {
 
 Argument to `nimbleCode` was copied and pasted from the book's code.
 
+[^1]: 
+Marc K&eacute;ry and Michael Schaub. 2012. Bayesian Population Analysis Using WinBUGS: A hierarchical perspective.  Elsevier / Academic Press.
+
 # Reading BUGS code from a file
 
 A typical idiom for users of the R2WinBUGS and rjags packages is to use `sink` and `cat` to write BUGS code to a file from R:
@@ -135,3 +138,4 @@ This can be read into NIMBLE using `readBUGSmodel`:
 ssmCode <- readBUGSmodel('ssm.bug', dir ="", returnModelComponentsOnly = TRUE)$model
 file.remove('ssm.bug')
 ```
+

@@ -28,14 +28,15 @@ include:
    - Ability to do two core operations:
       + *calculate()* 
       + *simulate()* 
-	  +  *getParam()* 
-   - Ability to do two other helpful operations
+   - Ability to do three other helpful operations
       + *getLobProb()* 
       + *calculateDiff()*
+      +  *getParam()* 
    - More general getting and setting of values
-   + *values()*
+      + *values()*
    - Equivalent operation of uncompiled and compiled models
-# Running example: state-space model example
+
+#Running example: state-space model example
 
 We first need to build the model.
 
@@ -58,7 +59,7 @@ An important distinction is between *nodes* and *variables*.
     + nodes represent a graph "vertex" (or simply "node").
     + a deterministic node is calculated by updating its value
     + a stochastic node is calculated by updating the log probability density of its value.
- - variable: a collection of one or more nodes with the same name, e.g., `r` or `y` in the pump model 
+ - variable: a collection of one or more nodes with the same name, e.g., `r` or `y` in the state-space model 
 
 # NIMBLE's node naming convention
 
@@ -73,8 +74,8 @@ would have names like `x[2, 3]` or `z[3, 2, 5]`.
 In a model with multivariate nodes we would have names like
 `a[1:5, 2]` or `b[2:5, 3:6]`.
 
-*The spaces after the commas are important*, but you will usually be
- obtaining node names from a model object, so they will be correct.
+*The spaces after the commas are important*, but you will usually 
+ obtain node names from a model object, so they will be correct. (You can use `model$expandNodeNames` to ensure they are correctly formatted.)
 
 We will see more about querying the model about its nodes and
 variables later.
@@ -99,11 +100,13 @@ correctly.  NIMBLE's programming system provides tools to help you do
 so, but it does not try to read your mind.
 
 *Calculate* means:
-   - For a stochastic node, calculating the log probability (density)
-   and storing it as the "logProb" value.
-   - For a deterministic node, calculating the nodes value
+
+    - For a stochastic node, calculating the log probability (density)
+    and storing it as the "logProb" value.
+    - For a deterministic node, calculating the nodes value
 
 Calling `model$calculate(nodes)` will
+
    - Calculate each element of `nodes` **in order**.
    - Return the sum of the log probabilities
    - The log probability contribution from a deterministic node is 0.
@@ -113,7 +116,7 @@ Let's see an example:
 ```{r, model-operate}
 ssm$r[1:3] <- c(.1, .2, .3)
 ssm$calculate(c('r[1]','r[2]','r[3]'))
-## The following is equivalet:
+## The following is equivalent:
 ## ssm$calculate('r[1:3]')
 ## If we wanted to calculate all of r, we could do:
 ## ssm$calculate('r')
@@ -123,17 +126,21 @@ sum(ssm$logProb_r[1:3])
 
 Note that values of `logN.est` are *out of date* with the new values
 of `r[1:3]`.  We would need to call `calculate` for `logN.est` to
-update them.
+update them.  The model will not read your mind about whether you want
+to update those values or not; you are responsible for using the model
+correctly.
 
 # Operating a model: *simulate()*
  
  *Simulate* means
+ 
     - for a stochastic node: drawing a random number and storing it as
     the node's value
-	- for a deterministic node: calculating and storing the value (the
+    - for a deterministic node: calculating and storing the value (the
     same as calculate).
 
 Calling `simulate$model(nodes)` will:
+
     - Simulate each element of `nodes` **in order**. 
     - return nothing.
 
@@ -144,6 +151,7 @@ set.seed(0)  # so the calculations are reproducible
 ssm$simulate('r[1:3]')  # simulate from prior
 ssm$r[1:3]
 ```
+You must call `ssm$calculate('r[1:3]')` if you want the log probability values updated to correspond to the new values of `r[1:3]`.
 
 # Operating a model: getParam()
 
@@ -167,6 +175,7 @@ ssm$getParam('r[1]', 'tau') # label for precision
 # Operating a model: getLogProb and calculateDiff
 
 `model$getLogProb(nodes)`
+
    - returns the sum of stored log probability (densities) for
    elements of `nodes`
    - does **not** calculate the log probabilities.
@@ -177,6 +186,7 @@ ssm$getLogProb('r[1:3]')
 ```
 
 `model$calculateDiff(nodes)` is just like `model$calculate(nodes)` except:
+
     - it returns the sum of the differences between the new log probabilities and the previously stored ones.
     - this is often useful in Monte Carlo algorithms.
 

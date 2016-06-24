@@ -46,10 +46,16 @@ We first need to build the model.
  each node or group of nodes, which nodes will be recorded and any
  thinning.
 
+You can modify the configuration before you build the actual MCMC algorithm for compiling and running.
+
 A NIMBLE MCMC allows two separate sets of nodes to be recorded, each
 with its own thinning interval.
 
 NIMBLE provides a default configuration, but we'll see shortly how you can modify that. 
+
+The entire MCMC system is written using nimbleFunctions, so you can read and modify the source code in R or write your own MCMC system if you want.
+
+It is easy to write new samplers as nimbleFunctions and include them in an MCMC configuration.
 
 ```{r, conf}
 mcmcConf <- configureMCMC(ssm)

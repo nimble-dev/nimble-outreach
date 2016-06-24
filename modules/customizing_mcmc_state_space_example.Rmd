@@ -20,7 +20,7 @@ library(nimble)
 
 In this module we will:
 
-   - Use the house martin state-space model from K&egrave;ry and Schaub (2012).
+   - Use the house martin state-space model from K&eacute;ry and Schaub (2012).
    - Try block samplers for the `r[t]`s.  Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. 
    - Try Metropolis-Hastings samplers on a log scale for `sigma.obs` and `sigma.proc`
    - Automatically compare the customized MCMC to the default MCMC using `compareMCMCs`.

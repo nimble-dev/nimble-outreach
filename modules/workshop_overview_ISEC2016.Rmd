@@ -1,42 +1,234 @@
+---
+title: "ISEC NIMBLE workshop"
+subtitle: "June 2016"
+author: "Perry de Valpine, UC Berkeley"
+output:
+  html_document:
+    code_folding: show
+---
 
-bugs_language_state_space_example
-build_model_state_space_example
-run_mcmc_state_space_example
-customizing_mcmc_state_space_example (finicky and may depend on newNodeFxns for performance)
+[//]: # (Using this as a markdown comment field.  It generates a pandoc message but seems to work.)
 
-How nimble goes beyond other packages
-how you could build on nimble
+# A few administrative things
 
-Programming with models (I): Operating a model
+## Where to find stuff.
 
-to do:
+TBD
+
+[//]: # (For ISEC I was planning to make a zip file of just what is needed rather than the entire repo, but that's a minor issue.)
+
+[//]: # (Also I have added a call to purl() to make_slides so that a set of .R files will accompany each set of slides, since not all users will necessarily work easily with .Rmd source.)
+
+## Asking questions and making comments
+
+Please ask questions and make comments as we go through the material. You can also share ideas, code snippets, and error messages, as well as ask questions through an online shared document at [https://v.etherpad.org/p/nimble_isec_2016](https://v.etherpad.org/p/nimble_isec_2016).
+
+# How we'll operate
+
+The workshop will be organized in modules, each of which will be a combination of lecture/demo presentation concluded by a breakout session in which you'll work on a variety of problems of different levels of difficulty. The idea is for each person to find problems that challenge them but are not too hard. Solutions to the breakout problems will be presented before the start of the next module. 
+
+# Suggestions on how to get the most out of the workshop
+
+I encourage you to:
+
+- try out the code as we walk through it
+-  keep your eyes open! -- We'll illustrate a lot of syntax and concepts by example
+- try to guess what the syntax means in cases we haven't yet seen that syntax
+- play with it and try variations and try to break it and see what happens
+- speak up if something interesting happens as you experiment, or post a comment in online 
+- ask questions directly or through the Etherpad
 
 
-Understanding graphical models
- - inspect state-space model and make more efficient version
+A few additional thoughts on my pedagogical philosophy here:
 
-compiling from R to C++ with nimbleFunctions
- - no setup code
+- I want to expose you to a lot of tools and ideas that you can come back to when you need them and when you have time for more depth.
+- My aim is not to show you how to use specific statistical methods or analysis techniques. My goal is to get you up to speed generally in NIMBLE.
+- It can be hard to absorb everything in such a concentrated situation. Hopefully the material presented will be useful to you over the longer-term as you do more work with NIMBLE.
 
-User-defined distributions and functions
- - multi-state capture-recapture example
+# RStudio and R Markdown
 
-Model-generic programming
- - making a general simulator
+We'll present most of the material from within RStudio, using R Markdown documents with embedded R code. R Markdown is an extension to the Markdown markup language that makes it easy to write HTML in a simple plain text format.  This allows us to both run the R/NIMBLE code directly as well as compile on-the-fly to an HTML file that can be used for presentation. All files will be available on [Github](https://github.com/nimble-dev/nimble-outreach).  
 
-Writing new MCMC samplers
- - spatial capture-recapture example
-Understanding graphical models
-running MCEM
-add slice sampler on mean.r to the customization case
+Note: The files named *moduleX_blah_slides.html* have individual slides, while the files named *moduleX_blah.html* have the same content but all on one page.
 
-add includeData = TRUE to simulate example
+If you want to access the R code shown in each HTML module separately, you can find that in *moduleX_blah.R*. 
 
-add exercises at the end of operating_model module
+Warning: in some cases the processing of the R code in the R Markdown is screwy and the slides have error messages that do not occur if you just run the code directly in R or RStudio. 
 
-try to add a link to code file on each first slide
+# Using Github to get the documents
 
-check on title slide creation and see if there is a way to put a content description
+You do not need to download the files from Github, but if you do want to, you can do the following. 
 
-smc
-mcem
+## Within RStudio
+
+Within RStudio go to File->New Project->Version Control->Git and enter:
+
+- "Repository URL": https://github.com/nimble-dev/nimble-outreach
+- "Project Directory Name": nimble-outreach (or something else of your choosing)
+- "Directory": ~/Desktop (or somewhere of your choosing)
+
+Then to update from the repository to get any changes we've made, you can select (from within RStudio):
+Tools->Version Control->Pull Branches
+
+or from the Environment/History/Git window, click on the Git tab and then on the blue down arrow.
+
+
+Be warned that you probably do not want to make your own notes or changes to the files we are providing. Because if you do, and you then do a "Git Pull" to update the materials, you'll have to deal with the conflict between your local version and our version. You probably will want to make a personal copy of such files in another directory or by making copies of files with new names.
+
+## From a terminal window
+
+Run the following commands:
+
+- `cd /directory/where/you/want/repository/located`
+- `git clone https://github.com/nimble-dev/nimble-outreach`
+
+Then to update from the repository to get any changes we've made:
+
+- `cd /directory/where/you/put/the/repository/nimble-outreach`
+- `git pull`
+
+# Installing NIMBLE
+
+NIMBLE is on CRAN and can be installed in the usual way for an R package, or can be downloaded directly from [http://r-nimble.org/download](http://r-nimble.org/download). More details can also be found in Section 4 of the [NIMBLE manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
+
+# What is NIMBLE?
+
+- A system for using algorithms on hierarchical statistical models
+- A system for programming algorithms to be used on hierarchical models
+- A partial compiler for math in R
+- A flexible extension of the BUGS and JAGS systems
+
+
+# Why NIMBLE?
+
+Here are some of the features you can do in NIMBLE that we are most excited about and that distinguish NIMBLE from other software:
+
+- customize your MCMCs, including choosing what parameters to block
+- define your own distributions and functions for use in BUGS code
+- use a variety of algorithms on your model, including MCMC, sequential Monte Carlo (particle filtering), and MCEM
+- write models more flexibly by providing your own functions and distributions
+- write an algorithm in our system for easy dissemination to others, including your own MCMC sampler
+- compile mathematical operations in R without needing to know or write C or C++
+
+# Why Not NIMBLE?
+
+* For MCMCs that rely heavily on Gibbs sampling (used for conjugate prior-posterior distribution pairings), JAGS may be faster because of more efficient internal implementation of the calculations.
+* For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in NIMBLE (but in many examples we've tried we've been able to achieve comparable or better performance with some relatively simple modifications to the model or the MCMC samplers).
+* NIMBLE does not (yet) allow for stochastic indexing; JAGS is your best bet for that.
+* NIMBLE can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good). We anticipate big improvements in future versions of NIMBLE (in the late 2016 into 2017 timeframe).
+
+# What are my other options? 
+
+* For MCMC:
+  1. [JAGS](http://mcmc-jags.sourceforge.net)
+  2. [Stan](http://mc-stan.org)
+  3. [PyMC](https://pymcmc.readthedocs.org/en/latest/)
+* various sequential Monte Carlo packages
+  1. [POMP](http://kingaa.github.io/pomp)
+  2. [LibBI](http://libbi.org)
+  3. [BIIPS](https://alea.bordeaux.inria.fr/biips/doku.php?id=home)
+  4. [SMC](https://cran.r-project.org/web/packages/SMC/index.html)
+* various tools for a variety of algorithms in R, Python, Matlab, etc.
+
+# Getting help with NIMBLE
+
+* Post to the [NIMBLE user group](https://groups.google.com/forum/#!forum/nimble-users)
+* Email [nimble.stats@gmail.com](the NIMBLE development team)
+* Follow announcements via the [NIMBLE announcements list](https://groups.google.com/forum/#!forum/nimble-announce)
+
+# Participating in NIMBLE
+
+* File bug reports or feature requests as [Github issues](https://github.com/nimble-dev).
+* Email [nimble.stats@gmail.com](the NIMBLE development team) if you're interested in participating in the development of NIMBLE.
+* Develop an algorithm using NIMBLE and either share it with us (e.g., by a Git pull request or more informally) or develop an R package that depends on NIMBLE.
+* We have funding to bring selected users to Berkeley for intensive collaboration; contact us if you have an interesting use for NIMBLE in mind and want to explore possibilities with us.
+
+
+# The Legal Stuff
+
+- This material was created by the NIMBLE development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution.
+
+# Modules
+
+Here are the modules we'll work through for this workshop, though we probably won't get to all of them.
+
+ - Introduction to NIMBLE (using a population state-space model)
+    1. [The BUGS language](bugs_language_state_space_model_slides.html)
+    2. [Building a model in NIMBLE](build_model_state_space_model_slides.html)
+    3. [Running an MCMC](run_mcmc_state_space_example_slides.html)
+    4. [Customizing an MCMC](customizing_mcmc_state_space_example_slides.html) BROKEN (This example is a bit finicky and illustrates issues about how the model is written that we may explore later.)
+    5. [How NIMBLE goes beyond other packages](how_nimble_extends_bugs_slides.html)
+    6. [Great things you could build with NIMBLE](how_you_could_use_nimble_slides.html)
+ - NIMBLE programming: models and algorithms
+    7. [Programming with models (I): Operating a model](operating_model_state_space_example_slides.html)
+    8. [Programming with models (II): Understanding and querying model structure](model_structure_state_space_example_slides.html) CLEAN UP DRAWING CODE 
+    9. If time: how to re-write this state-space example to allow more efficient MCMC (by NIMBLE or JAGS). TO-DO.
+    10. nimbleFunction programming (I): Compiling simple math from R to C++.
+        [Providing new distributions for use in BUGS](user_dist_slides.html)
+    11. [Capture-recapture example: a user-defined distribution for multi-state capture histories](user_dist_DHMM_slides.html)
+    12. nimbleFunction programming (II): model-generic two-stage programming.
+    13. Spatial capture-recapture example: Writing new MCMC samplers
+ - Writing and using other algorithms:
+    14. A general model simulator
+    15. Maximum likelihood by ascent-based Monte Carlo Expectation Maximization
+    16. Sequential Monte Carlo (aka particle filtering).
+    17. Comparing MCMCs
+
+[//]: # (Notes in progress
+[//]: # Understanding graphical models
+[//]: #  - inspect state-space model and make more efficient version
+
+[//]: # compiling from R to C++ with nimbleFunctions
+[//]: #  - no setup code
+
+[//]: # User-defined distributions and functions
+[//]: #  - multi-state capture-recapture example
+
+[//]: # Model-generic programming
+[//]: #  - making a general simulator
+
+[//]: # Writing new MCMC samplers
+[//]: #  - spatial capture-recapture example
+[//]: # Understanding graphical models
+[//]: # running MCEM
+[//]: # add slice sampler on mean.r to the customization case
+
+[//]: # add includeData = TRUE to simulate example
+
+[//]: # add exercises at the end of operating_model module
+
+[//]: # try to add a link to code file on each first slide
+
+[//]: # check on title slide creation and see if there is a way to put a content description
+
+[//]: # smc
+[//]: # mcem
+
+
+[//]: # (Old list for reference
+[//]: #  - Introduction to NIMBLE
+[//]: #     1. [The BUGS language](bugs_language_slides.html)
+[//]: #     2. [Building a model in NIMBLE](build_model_slides.html)
+[//]: #     3. [Running an MCMC](run_mcmc.html)
+[//]: #     4. [Specifying data](data_nodes_slides.html)
+[//]: #  - Advanced MCMC
+[//]: #     1. [Customizing an MCMC](customizing_mcmc_slides.html)
+[//]: #     2. [An extended example](litters_exapmle_slides.html)
+[//]: #  - More on specifying BUGS models
+[//]: #     2. [Alternative parameterizations](alt_param_slides.html)
+[//]: #     3. [Indexing](indexing.html)
+[//]: #     4. [User-defined distributions](user_dist_slides.html)
+[//]: #  - Programming in NIMBLE
+[//]: #     1. [Operating a NIMBLE model](operating_model_slides.html)
+[//]: #     2. [Inspecting model structure](model_structure_slides.html)
+[//]: #     3. [Writing an algorithm using nimbleFunctions](nimbleFunctions_slides.html)
+
+[//]: # Exercises can be found [here](exercises.html).
+    
+[//]: # Other topics
+
+[//]: # 1. [Vectorizing BUGS code](vectorizing_slides.html)
+[//]: # 2. [Constants in BUGS code](constants_slides.html)
+[//]: # 3. [User-defined functions in BUGS code](user_function.Rmd)
+[//]: # 4. [Compiling R code](compiling_R_slides.html)
+[//]: # 5. [Writing your own MCMC sampler](user_sampler_slides.html)

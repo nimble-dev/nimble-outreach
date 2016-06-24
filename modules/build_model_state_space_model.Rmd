@@ -18,8 +18,8 @@ library(nimble)
 
 # A basic example: population state-space model
 
-We'll use an example from Chapter 5 of K&egrave;ry and Schaub
-(2012)\footnote{Marc K&egrave;ry  and Michael Schaub. 2012. Bayesian Population Analysis Using WinBUGS: A hierarchical perspective.  Elsevier / Academic Press.}
+We'll use an example from Chapter 5 of K&eacute;ry and Schaub
+(2012)\footnote{Marc K&eacute;ry  and Michael Schaub. 2012. Bayesian Population Analysis Using WinBUGS: A hierarchical perspective.  Elsevier / Academic Press.}
 
 Code and data are available from the [BPA web site](http://www.vogelwarte.ch/de/projekte/publikationen/bpa/complete-code-and-data-files-of-the-book.html), in bpa-code.txt.
 

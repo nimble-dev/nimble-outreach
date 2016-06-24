@@ -1,8 +1,10 @@
-#! /usr/bin/Rscript
+#! /usr/local/bin/Rscript
 # usage:
 # ./make_slides example
 # ./make_slides bugs
 # etc.
+
+## Note I've had to swap from /usr/local/bin/Rscript and /usr/bin/Rscript for different machines. Not sure why they'd be different but they are.
 
 library(knitr)
 library(rmarkdown)

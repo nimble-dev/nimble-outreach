@@ -27,7 +27,7 @@ ssm$logProb_r # not calculated yet!
 ## ---- model-operate------------------------------------------------------
 ssm$r[1:3] <- c(.1, .2, .3)
 ssm$calculate(c('r[1]','r[2]','r[3]'))
-## The following is equivalet:
+## The following is equivalent:
 ## ssm$calculate('r[1:3]')
 ## If we wanted to calculate all of r, we could do:
 ## ssm$calculate('r')

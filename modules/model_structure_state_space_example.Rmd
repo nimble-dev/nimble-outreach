@@ -133,6 +133,7 @@ ssmSmall$getDependencies('r[3]')
 ```{r, echo=FALSE}
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
 ```
+
        + These are the dependencies needed for a Metropolis-Hastings
        MCMC sampler.
 
@@ -145,7 +146,7 @@ ssmSmall$getDependencies('r[3]', determOnly = TRUE)
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]', determOnly = TRUE))
 ```
 
-   - Other kinds of control can be found by
+   - Other ways to control the dependency query can be found by
 ```{r}
 args(ssmSmall$getDependencies)
 ## or help(modelBaseClass)
@@ -154,7 +155,7 @@ args(ssmSmall$getDependencies)
 
 # Finding out about nodes
 
-The functions `model$getNodeNames`, `model$expandNodeNames`,
+The functions `model$getNodeNames`, `model$expandNodeNames`, and
 `model$topologicallySortNodes` will query the model about nodes and
 their roles in the model.
 
@@ -244,7 +245,7 @@ will make a mistake if you assume that the dependencies of `tau`
 include only `x`*:
 
 ```{r, eval = FALSE}
-m1$calculate(c('tau','x'))
+m1$calculate(c('tau','x')) ## Wrong: the lifted node is being neglected
 ```
 
 The correct way to do this is with model-generic programming:
@@ -269,9 +270,10 @@ learn about its nodes.  Do not assume you know what the nodes are.
 
 # Querying the sizes and types of model variables
 
-Sometimes it is useful to ask a model about its *variables*  and their
-sizes.  This information is not competely nicely arranged, but it is
-available:
+Sometimes it is useful to ask a model about its *variables* and their
+sizes.  As of the current version of NIMBLE, information about
+variables is not competely nicely arranged for a user (there aren't as
+many query functions), but it is available:
 
 ```{r}
 ssmSmall$getVarNames()

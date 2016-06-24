@@ -134,7 +134,7 @@ m1$getNodeNames()
 ## }))
 
 ## ---- eval = FALSE-------------------------------------------------------
-## m1$calculate(c('tau','x'))
+## m1$calculate(c('tau','x')) ## Wrong: the lifted node is being neglected
 
 ## ---- eval = FALSE-------------------------------------------------------
 ## m1$calculate( m1$getDependencies('tau') )
