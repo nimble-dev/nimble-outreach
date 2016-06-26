@@ -194,7 +194,7 @@ m &lt;- nimbleModel(code, data = list(y = 1.2))</code></pre>
 <pre class="r"><code>mcmcConf &lt;- configureMCMC(m)
 mcmcConf$getSamplers()</code></pre>
 <pre><code>## [[1]]
-## RW sampler acting on mu</code></pre>
+## RW sampler: mu</code></pre>
 <pre class="r"><code>mcmc &lt;- buildMCMC(mcmcConf)
 niter &lt;- 100
 mcmc$run(niter)</code></pre>
@@ -213,6 +213,7 @@ mcmc$run(niter)</code></pre>
 <p>While educational, the exponential example is not particularly interesting given NIMBLE already provides that distribution. Let’s consider an example where using a user-defined distribution can improve MCMC performance (run time and sampling efficiency).</p>
 <p>When working with multinomial data, the Dirichlet distribution can be used to relate the probability vector in the multinomial to covariates and to induce over-dispersion.</p>
 <p>One context in which this comes up is topic modeling. You might have textual data from multiple documents, with each document being about a topic. The probabilities of words in each document in a topic can be represented as being a sample from a Dirichlet distribution for that topic.</p>
+<p>Another context is modeling of use of discrete resources by organisms.</p>
 </div>
 <div id="basic-topic-model" class="section level1">
 <h1>Basic topic model</h1>
@@ -336,6 +337,7 @@ m2$y</code></pre>
 <h1>Final thoughts</h1>
 <p>In real document analysis, you would want to infer topics for unlabelled documents. This would require having discrete variables be the random (unknown) indices of <code>alpha</code> that indicate the unknown topic of each such document, but at the moment, NIMBLE does not allow for random indices.</p>
 <p>Also, a standard model for topic analysis, called <em>latent Dirichlet allocation</em>, allows each document to be a mixture of topics. One could expand the code here to allow for that.</p>
+<p>Another kind of useful distribution to define is a zero-inflated distribution, for which there is an example on our <a href="r-nimble.org/examples">web site</a>.</p>
 </div>
 
 
