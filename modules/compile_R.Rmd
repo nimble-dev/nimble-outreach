@@ -26,8 +26,8 @@ How might you use this functionality?  Basically, this is useful for math-focuse
 
 Caveats:
 
-  - the NIMBLE compiler can't compile arbitrary R code, only code that is part of the NIMBLE DSL
-  - you need to give a bit of information about variable types and dimensions
+  - the NIMBLE compiler can't compile arbitrary R code, only code that is part of the NIMBLE *domain-specific language* (DSL)
+  - you need to give a bit of information about types and dimensions of arguments (input) and return value (output)
 
 # A basic demonstration
 
@@ -41,7 +41,8 @@ nimExp <- nimbleFunction(
        run = function(x = double(1)) {
            returnType(double(1))
            n <- length(x)
-           # need to declare output variable in advance
+           # some functions, like numeric, mimic R
+	   # but also may have additional/different features
            out <- numeric(n, init = FALSE)
            # core computation
            for( i in 1:n) 
@@ -145,7 +146,7 @@ mprobit <- nimbleFunction(
              returnType(double(1))
              K <- length(alphas)
              props <- numeric(K, value = 0)
-             w <- numeric(K)
+             w <- numeric(K, init = FALSE)
              for(m in 1:M) {
                    for(k in 1:K) 
                         w[k] <- alphas[k] + rnorm(1) 
@@ -159,8 +160,7 @@ mprobit <- nimbleFunction(
                    }
                    props[maxind] <- props[maxind] + 1
              }
-             for(k in 1:K) 
-                   props[k] <- props[k]/M
+             props <- props/M
              return(props)
          }
 )
