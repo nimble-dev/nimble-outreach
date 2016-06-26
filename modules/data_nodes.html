@@ -195,7 +195,7 @@ pump$isData('x')</code></pre>
 <pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22</code></pre>
 <pre class="r"><code>pump$simulate('x')
 pump$x</code></pre>
-<pre><code>##  [1]  7  2  6 12  2  3  0  0  0  0</code></pre>
+<pre><code>##  [1]  7  2 11 14  0  2  0  0  0  2</code></pre>
 <p>For compatibility with BUGS and JAGS, NIMBLE allows both to be provided in the the constants argument to <em>nimbleModel()</em>, in which case NIMBLE determines which are which, based on which variables appear on the left-hand side of BUGS declarations.</p>
 </div>
 <div id="setting-data-with-setdata" class="section level1">
@@ -237,7 +237,7 @@ pump$isData('x')</code></pre>
 <pre class="r"><code>conf &lt;- configureMCMC(pump)
 conf$getSamplers()[13]</code></pre>
 <pre><code>## [[1]]
-## end sampler acting on x[3]</code></pre>
+## posterior_predictive sampler: x[3]</code></pre>
 </div>
 
 
