@@ -72,7 +72,6 @@ year <- 1990:(2009 + pyears)
 # Bundle data
 bugs.data <- list(y = log(hm), T = length(year))
 ## NIMBLE will handle y as data, T as a constant
-
 ```
 
 # Compare MCMCs

@@ -155,7 +155,7 @@ Here are the modules we'll work through for this workshop, though we probably wo
  - Introduction to NIMBLE (using a population state-space model)
     1. [The BUGS language](bugs_language_state_space_model_slides.html)
     2. [Building a model in NIMBLE](build_model_state_space_model_slides.html)
-    3. [Running an MCMC](run_mcmc_state_space_example_slides.html)
+    3. [Running an MCMC](run_mcmc_state_space_model_slides.html)
     4. [Customizing an MCMC](customizing_mcmc_state_space_example_slides.html) 
     5. [How NIMBLE goes beyond other packages](how_nimble_extends_bugs_slides.html)
     6. [Great things you could build with NIMBLE](how_you_could_use_nimble_slides.html)
@@ -169,66 +169,7 @@ Here are the modules we'll work through for this workshop, though we probably wo
     13. [nimbleFunction programming (II): model-generic two-stage programming](nimbleFunctions_slides.html)
     14. [Spatial capture-recapture example: Writing new MCMC samplers](user_sampler_spatial_capture_recapture_slides.html)
  - Writing and using other algorithms:
-    15. A general model simulator
-    16. Maximum likelihood by ascent-based Monte Carlo Expectation Maximization
-    17. Sequential Monte Carlo (aka particle filtering).
+    15. Maximum likelihood by ascent-based Monte Carlo Expectation Maximization
+    16. [Sequential Monte Carlo (aka particle filtering)](PF_state_space_example.html)
 
 
-[//]: # (Notes in progress
-[//]: # Understanding graphical models
-[//]: #  - inspect state-space model and make more efficient version
-
-[//]: # compiling from R to C++ with nimbleFunctions
-[//]: #  - no setup code
-
-[//]: # User-defined distributions and functions
-[//]: #  - multi-state capture-recapture example
-
-[//]: # Model-generic programming
-[//]: #  - making a general simulator
-
-[//]: # Writing new MCMC samplers
-[//]: #  - spatial capture-recapture example
-[//]: # Understanding graphical models
-[//]: # running MCEM
-[//]: # add slice sampler on mean.r to the customization case
-
-[//]: # add includeData = TRUE to simulate example
-
-[//]: # add exercises at the end of operating_model module
-
-[//]: # try to add a link to code file on each first slide
-
-[//]: # check on title slide creation and see if there is a way to put a content description
-
-[//]: # smc
-[//]: # mcem
-
-
-[//]: # (Old list for reference
-[//]: #  - Introduction to NIMBLE
-[//]: #     1. [The BUGS language](bugs_language_slides.html)
-[//]: #     2. [Building a model in NIMBLE](build_model_slides.html)
-[//]: #     3. [Running an MCMC](run_mcmc.html)
-[//]: #     4. [Specifying data](data_nodes_slides.html)
-[//]: #  - Advanced MCMC
-[//]: #     1. [Customizing an MCMC](customizing_mcmc_slides.html)
-[//]: #     2. [An extended example](litters_exapmle_slides.html)
-[//]: #  - More on specifying BUGS models
-[//]: #     2. [Alternative parameterizations](alt_param_slides.html)
-[//]: #     3. [Indexing](indexing.html)
-[//]: #     4. [User-defined distributions](user_dist_slides.html)
-[//]: #  - Programming in NIMBLE
-[//]: #     1. [Operating a NIMBLE model](operating_model_slides.html)
-[//]: #     2. [Inspecting model structure](model_structure_slides.html)
-[//]: #     3. [Writing an algorithm using nimbleFunctions](nimbleFunctions_slides.html)
-
-[//]: # Exercises can be found [here](exercises.html).
-    
-[//]: # Other topics
-
-[//]: # 1. [Vectorizing BUGS code](vectorizing_slides.html)
-[//]: # 2. [Constants in BUGS code](constants_slides.html)
-[//]: # 3. [User-defined functions in BUGS code](user_function.Rmd)
-[//]: # 4. [Compiling R code](compiling_R_slides.html)
-[//]: # 5. [Writing your own MCMC sampler](user_sampler_slides.html)

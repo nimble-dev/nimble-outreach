@@ -1,0 +1,210 @@
+---
+title: "Setting up a particle filter and Particle MCMC"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)
+```
+
+# Overview
+
+Particle filters (or Sequential Monte Carlo) are a method for simulated approximation of the likelihood of a state-space model.
+
+NIMBLE provides a basic ("bootstrap") PF, an Auxiliary PF, and a Liu-West filter.  The last one attempts to filter parameters as well and is not an algorithm that always works well.  Of course these are written as nimbleFunctions so you can look at the R code and then create your own new idea.
+
+In NIMBLE one has the flexibility to compose a Particle MCMC (PMCMC).  This method uses MCMC for parameters and a particle filter to evaluate the state-space likelihood needed by the MCMC. Andrieu et al. proved this is valid.
+
+When MCMC of parameters and states works well, it will typically be more efficient that PMCMC.  But there is a lot of current research on PMCMC for models with it is not simple to set up MCMC for latent states.
+
+We will show two ways to set up a PMCMC:
+
+   1.  NIMBLE provides an MCMC sampler already set up to use random-walk Metropolis-Hastings for one or more parameters and evaluate the state-space likelihood using a PF (bootstrap or auxiliary).
+   2. (Optional) NIMBLE provides an MCMC sampler that allows you to provide *any* other nimbleFunction as the likelihood evaluator.  We illustrate this by showing how it can be used to construct a PMCMC at a more fine-grained level than item 1. 
+
+# Set up state-space model example
+
+```{r}
+ssmCodeAlt <- nimbleCode({
+# Priors and constraints
+logN.est[1] ~ dnorm(5.6, 0.01)       # Prior for initial population size
+mean.r ~ dnorm(1, 0.001)             # Prior for mean growth rate
+sigma.proc ~ dunif(0, 1)             # Prior for sd of state process
+sigma.obs ~ dunif(0, 1)              # Prior for sd of observation process
+
+# Likelihood
+# State process
+for (t in 1:(T-1)){
+   logN.est[t+1] ~ dnorm(logN.est[t] + mean.r, sd = sigma.proc)
+   }
+# Observation process
+for (t in 1:T) {
+   y[t] ~ dnorm(logN.est[t], sd = sigma.obs)
+   }
+
+# Population sizes on real scale
+for (t in 1:T) {
+   N.est[t] <- exp(logN.est[t])
+   }
+})
+
+pyears <- 6 # Number of future years with predictions
+hm <- c(271, 261, 309, 318, 231, 216, 208, 226, 195, 226, 233, 209, 226, 192, 191, 225,
+        245, 205, 191, 174, rep(NA, pyears))
+year <- 1990:(2009 + pyears)
+
+# Bundle data
+bugs.data <- list(y = log(hm), T = length(year))
+## NIMBLE will handle y as data, T as a constant
+
+set.seed(1)
+inits <- function(){list(sigma.proc = runif(1, 0, 1), mean.r = rnorm(1),
+                         sigma.obs = runif(1, 0, 1), logN.est = c(rnorm(1, 5.6, 0.1),
+                                                         rep(NA, (length(year)-1))))}
+ssm <- nimbleModel(ssmCodeAlt, constants = bugs.data, inits = inits()) 
+```
+
+# Setting up auxiliary particle filter
+
+First we show how a particle filter can be created on its own
+
+```{r}
+## buildAuxiliaryFilter is "just" a nimbleFunction
+auxFilterSSM <- buildAuxiliaryFilter(ssm, nodes = 'logN.est')
+compiled <- compileNimble(ssm, auxFilterSSM)
+compiled$auxFilterSSM$run(10000) ## 10000 is the number of samples
+```
+
+# Using a particle filter in PMCMC: the easy way
+
+First we show how to use the random-walk PF sampler.  We create an empty configuration and then add a sampler for each parameter.
+
+```{r, fig.cap = ""}
+pmcmcConf <- configureMCMC(ssm, nodes = NULL,     # an empty configuration
+                           monitors = c('mean.r','sigma.obs','sigma.proc')) 
+pmcmcConf$addSampler(target = 'mean.r', type = 'RW_PF',
+                      control = list(filterType = 'bootstrap', latents = 'logN.est'))
+pmcmcConf$addSampler(target = 'sigma.proc', type = 'RW_PF',
+                      control = list(filterType = 'bootstrap', latents = 'logN.est'))
+pmcmcConf$addSampler(target = 'sigma.obs', type = 'RW_PF',
+                      control = list(filterType = 'bootstrap', latents = 'logN.est'))
+pmcmc <- buildMCMC(pmcmcConf)
+Cpmcmc <- compileNimble(pmcmc, project = ssm, resetFunctions = TRUE)
+Cpmcmc$run(1000)
+plot(as.matrix(Cpmcmc$mvSamples)[,'mean.r'],
+               xlab = 'iteration', ylab = 'mean.r')
+plot(as.matrix(Cpmcmc$mvSamples)[,'sigma.obs'],
+               xlab = 'iteration', ylab = 'sigma.obs')
+```
+
+It is notable how the mixing is slow until the RW samplers have had some iterations to adapt their proposal scales.
+
+# Building a PMCMC more granularly (optional)
+
+Next we show more of the underlying system.  We need two steps:
+
+   1. We will add `sampler_RW_llFunction` samplers to the MCMC configuration. These will use whatever arbitrary function we provide for likelihood calculations.  NIMBLE currently has univariate and multivariate (block) random-walk Metropolis-Hastings samplers that can use arbitrary likelihood functions.  
+   2. The format required by `sampler_RW_llFunction` is a nimbleFunction whose `run` function takes no arguments.  Since the auxiliary particle filter takes one argument (number of Monte Carlo samples at each time step), we will wrap it in another nimbleFunction.
+
+# A wrapper for the PF
+
+The purpose of this function is simply to wrap an auxiliary particle filter and provide a run function that takes no arguments.
+
+Only for curiousity, we're wrapping an APF instead of a bootstrap (basic) PF.
+
+```{r}
+wrapAPF <- nimbleFunction(
+   setup = function(model, ..., m = 10000) {
+     APF <- buildAuxiliaryFilter(model, ...)
+   },
+   run = function() {
+      returnType(double())
+      return(APF$run(m))
+   })
+
+## example use:
+wrapAPFssm <- wrapAPF(ssm, nodes = 'logN.est', m = 10000)
+## this object won't be used further and was just shown to illustrate.
+```
+
+# RW sampler for arbitrary likelihood function
+
+Oops, while setting up this example, we realized that our `sampler_RW_llFunction` fell out of step with another change in `sampler_RW` (which it uses) in the latest version of NIMBLe, so it is broken in the current release.  No problem: we'll just define a fixed version locally here, and you can see it:
+
+```{r}
+RW_llFunction_new <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ###  control list extraction  ###
+        adaptive       <- control$adaptive
+        adaptInterval  <- control$adaptInterval
+        scale          <- control$scale
+        llFunction     <- control$llFunction
+        includesTarget <- control$includesTarget
+        ###  node list generation  ###
+        calcNodes <- model$getDependencies(target)
+        ###  nested function and function list definitions  ###
+        mvInternal <- modelValues(model)
+        RWControl <- list(adaptive = adaptive, adaptInterval = adaptInterval, scale = scale, logScale = FALSE, reflective = FALSE)
+        targetRWSamplerFunction <- sampler_RW(model, mvInternal, target, RWControl)
+        my_setAndCalculateOne <- setAndCalculateOne(model, target)
+        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+    },
+
+    run = function() {
+        modelLP0 <- llFunction$run()
+        if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+        my_setAndCalculateOne$run(propValue)
+        modelLP1 <- llFunction$run()
+        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
+        jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
+        if(adaptive) {
+            targetRWSamplerFunction$adaptiveProcedure(jump)
+            scale <<- targetRWSamplerFunction$scale
+        }
+    },
+
+    methods = list(
+        reset = function() {
+            targetRWSamplerFunction$reset()
+        }
+    )
+)
+```
+
+# Make the second version of a PMCMC
+
+```{r}
+pmcmcConf2 <- configureMCMC(ssm, nodes = NULL, # an empty configuration
+                            monitors = c('mean.r','sigma.obs','sigma.proc')) 
+pmcmcConf2$addSampler(target = 'mean.r', type = RW_llFunction_new,
+                      control = list(llFunction = wrapAPFssm, includesTarget = FALSE))
+pmcmcConf2$addSampler(target = 'sigma.proc', type = RW_llFunction_new,
+                      control = list(llFunction = wrapAPFssm, includesTarget = FALSE))
+pmcmcConf2$addSampler(target = 'sigma.obs', type = RW_llFunction_new,
+                      control = list(llFunction = wrapAPFssm, includesTarget = FALSE))
+```
+
+Compile it:
+
+```{r}
+pmcmc2 <- buildMCMC(pmcmcConf2)
+Cpmcmc2 <- compileNimble(pmcmc2, project = ssm, resetFunctions = TRUE)
+```
+
+```{r, fig.cap=TRUE}
+Cpmcmc2$run(1000)
+plot(as.matrix(Cpmcmc2$mvSamples)[,'mean.r'],
+      xlab = 'iteration', ylab = 'mean.r')
+plot(as.matrix(Cpmcmc2$mvSamples)[,'sigma.obs'],
+      xlab = 'iteration', ylab = 'sigma.obs')
+```
