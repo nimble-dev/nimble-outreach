@@ -1,0 +1,655 @@
+---
+title: "User-defined MCMC samplers (Spatial capture-recapture example)"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)
+```
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+
+# Introduction
+
+(Currently this example was not completed but may still allow useful discussion.)
+
+NIMBLE's MCMC system was designed to be extensible - it's easy for users to add samplers and use them right away for their models.
+
+We'll use a spatial capture-recapture example to illustrate this.
+
+The example is from Chapter 7 of Royle and Dorazio (2009)[^1], which uses Royle and Gardner.  The example simulates and then fits simple camera trap data.
+
+[^1]:
+J. Andrew Royle and Robert M. Dorazio. 2009. Hierarchical Modeling and Inference in Ecology: The Analysis of Data from Populations, Metapopulations and Communities. Academic Press.
+
+# Example setup
+
+    - N=28 animals in an arena of size 19 x 19.
+    - 100 cameras on a grid at locations 4:13 x 4:13
+    - 0:3 and 14:18 are buffers (not sure why they're asymmetric, but that's what the example states).
+    - Detection probability decreases exponentially with distance
+    - For animal i at trap j:
+        + detection rate = Eo = lam0 * exp(-Distance / sigma)
+        + Probability of at least one detection in a sampling period = pmean = 1-exp(-Eo)
+        + Number of detections y is binomial from J sampling periods.
+
+# BUGS code from Royle & Dorazio
+
+```{r}
+
+scrCode <- nimbleCode({
+    sigma~dunif(0, 15)
+    lam0~dgamma(.1,.1)
+    psi~dunif(0, 1)
+
+    for (i in 1:M){	
+        z[i]~dbern(psi)
+	SX[i]~dunif(xl, xu)
+	SY[i]~dunif(yl, yu)
+
+        for(j in 1:ntraps) {
+            D2[i,j] <- pow(SX[i]-trapmat[j,1], 2) + pow(SY[i]-trapmat[j,2],2)
+            Eo[i,j] <- lam0*exp(-D2[i,j]/sigma)
+            pmean[i,j]<-1-(exp(-Eo[i,j]))
+            tmp[i,j]<-pmean[i,j]*z[i]
+            y[i,j]~dbin(tmp[i,j],J)
+        }
+    }
+    N<-sum(z[1:M])
+})	
+
+	
+```
+
+# Simulate using NIMBLE
+
+Often for a simulation study people re-write their model for simulation in R.
+
+We can use NIMBLE's `simulate` function instead.
+
+```{r}
+## From Royle & Dorazio:
+sigma=3
+## beta=1 ## beta is never used so must have been a typo in book code
+lam0=.6
+J=10          # number of capture periods
+llx=0
+upx=18
+xl=llx
+yl=llx
+yu=upx
+xu=upx
+trapmat = as.matrix(locs)
+
+#Create a 10x10 grid of traps
+
+x=4:13
+y=4:13
+locs=expand.grid(x,y)
+ntraps=dim(locs)[1] ## thats 10x10 = 100 cameras
+trapmat=as.matrix(locs)
+
+## Use NIMBLE:
+M <- 128
+scrModel <- nimbleModel(scrCode, constants = list(M = M, ntraps = ntraps, J = J,
+                                                  xl = xl, yl = yl,
+                                                  xu = xu, yu = yu),
+                                 data = list(trapmat = trapmat), check = FALSE) 
+scrModel$sigma <- sigma
+scrModel$lam0 <- lam0
+scrModel$z <- c(rep(1, 28), rep(0, 100)) ## R&D simulate 28 animals.
+set.seed(321)
+scrModel$simulate( scrModel$getDependencies(c('SX','SY'), downstream = TRUE))
+dim(scrModel$y)
+scrModel$y[1:3,] ## real animals
+scrModel$y[29:31,] ## zeros in augmentation range
+```
+
+# Look at data
+
+Use plot concepts from R&D code.
+```{r fig.cap = NULL}
+plot(c(llx,upx), c(llx, upx), typ='n')
+points(locs)
+points(scrModel$SX[1:28], scrModel$SY[1:28], col = 'red')
+```
+
+# Think like a graph to re-write the model
+
+Notice that every time `SX[i]` or `SY[i]` are modified, all of the following will always need recalculation:
+
+    - All distances to animal i: `D2[i, 1:ntraps]` 
+    - All downstream quantities for animal i: `Eo[i, 1:ntraps]`, `pmean[i, 1:ntraps]`, and `tmp[i, 1:ntraps]`
+
+We can rewrite the model to take advantage of that:
+
+*In the current NIMBLE release, this model should build faster, but in an upcoming release all models should build even more faster.*
+
+```{r}
+scrCode2 <- nimbleCode({
+    sigma~dunif(0, 15)
+    lam0~dgamma(.1,.1)
+    psi~dunif(0, 1)
+
+    for (i in 1:M){	
+        z[i]~dbern(psi)
+	SX[i]~dunif(xl, xu)
+	SY[i]~dunif(yl, yu)
+        D2[i,1:ntraps] <- pow(SX[i]-trapmat[1:ntraps,1], 2) + pow(SY[i]-trapmat[1:ntraps,2],2)
+        Eo[i,1:ntraps] <- lam0*exp(-D2[i,1:ntraps]/sigma)
+        pmean[i,1:ntraps]<-1-(exp(-Eo[i,1:ntraps]))
+        tmp[i,1:ntraps]<-pmean[i,1:ntraps]*z[i]
+        for(j in 1:ntraps) {
+            y[i,j]~dbin(tmp[i,j],J)
+        }
+    }
+    N<-sum(z[1:M])
+})	
+
+scrModel2 <- nimbleModel(scrCode2, constants = list(M = M, ntraps = ntraps, J = J,
+                                                  xl = xl, yl = yl,
+                                                  xu = xu, yu = yu),
+                                 data = list(trapmat = trapmat), check = FALSE) 
+scrModel2$sigma <- sigma
+scrModel2$lam0 <- lam0
+scrModel2$z <- c(rep(1, 28), rep(0, 100)) ## R&D simulate 28 animals.
+scrModel2$setData(list(y = scrModel$y))
+## We could also set animals with known observations to have z[i]=1 as data
+```
+
+# Default MCMC
+
+```{r}
+defaultMCMCconf <- configureMCMC(scrModel2, monitors = c('sigma','lam0','psi','N'))
+## look at some of each type
+defaultMCMCconf$printSamplers(c('sigma', 'lam0','psi','SX[1:3]', 'SY[1:3]', 'z[1:3]'))
+```
+
+# Observations about MCMC sampling for this model
+
+These points require some familiarity with how MCMC, and particularly Metropolis-Hastings, works.
+
+    - SX[i] and SY[i] are related and have the same dependencies.
+    - When z[i]=0, SX[i] and SY[i] follow their prior, and other calculations aren't needed.
+        + Sampling SX[i] and SY[i] is wasted computation.
+        + Would be better to propose new values jointly when proposing z[i]=1
+    - It *might* be better to sample lam0, sigma, and psi more often than all the z[i]s.
+        + This would be similar to reversible jump, which could also be written directly.
+
+We'll show two samplers that jointly handles a trio of z[i], SX[i] ans SY[i] as follows:
+
+    1. If z[i]==1, jointly sample SX[i] and SY[i].
+    2. Sampler z[i] as follows: If z[i]==
+
+# Sampling location only if indicator is 1
+
+A new sampler has the following format:
+
+```{r}
+sampler_scr_locations <- nimbleFunction(
+    contains = sampler_BASE, ## Class inheritance system
+    setup = function(model, mvSaved, target, control) { ## required args
+        ## target will be a vector like c('SX[3]','SY[3]')
+        indicatorNode <- control$indicatorNode ## like 'z[3]'
+        calcNodes <- model$getDependencies(target)
+        scaleOriginal <- 1
+        scale <- 1
+        adaptive <- TRUE
+        timesRan <- 0
+        timesAccepted <- 0
+        timesAdapted <- 0
+        optimalAR <- 0.44
+        gamma1    <- 0
+        adaptInterval <- 100
+    },    
+    run = function() {
+        if(model[[indicatorNode]]==0) return() ## Locations will be sampled elsewhere
+        location <- values(model, target)
+ 
+        location[1] <- rnorm(1, mean = location[1], sd = scale)
+        location[2] <- rnorm(1, mean = location[2], sd = scale)
+
+        values(model, target) <<- location
+
+        logMHR <- calculateDiff(model, calcNodes)
+        accept <- decide(logMHR)
+        if(accept)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        if(adaptive) adaptiveProcedure(accept)
+    },
+    methods = list(
+        ## from adaptive MCMC theory, copied from our RW sampler source code
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            gamma1 <<- 0
+        })
+)
+```
+
+# Put the new samplers in an MCMC configuration
+
+```{r}
+customMCMCconf <- configureMCMC(scrModel2, nodes = c('lam0','sigma','psi'), monitors = c('lam0','sigma','psi','N'))
+customMCMCconf$printSamplers()
+zNodes <- scrModel2$expandNodeNames('z')
+SXnodes <- scrModel2$expandNodeNames('SX')
+SYnodes <- scrModel2$expandNodeNames('SY')
+zNodes[1:3]
+SXnodes[1:3]
+SYnodes[1:3]
+for(i in 1:length(zNodes))
+    customMCMCconf$addSampler(sampler_scr_locations,
+                              target = c(SXnodes[i], SYnodes[i]),
+                              control = list(indicatorNode = zNodes[i]))
+customMCMCconf$printSamplers('SX[1:3]')
+```
+
+# Sampling
+
+```{r}
+sampler_scr_inclusion <- nimbleFunction(
+    contains = sampler_BASE, ## Class inheritance system
+    setup = function(model, mvSaved, target, control) { ## required args
+        ## target will be a vector like c('SX[3]','SY[3]')
+        indicatorNode <- control$indicatorNode ## like 'z[3]'
+        calcNodes <- model$getDependencies(c(target, indicatorNode))
+        indicatorZeroCalcs <- model$getDependencies(indicatorNode)
+        probDoSampler <- 0.2
+    },    
+    run = function() {
+        if(runif(1,0,1) > probDoSampler) return()
+        if(model[[indicatorNode]]==0) { ## proposed putting in model
+            currentLogProb <- model$getLogProb(indicatorZeroCalcs)
+            model[[indicatorNode]] <<- 1
+            model$simulate( target )
+            proposalLogProb <- model$calculate(calcNodes)
+            logProbForwardProposal <- model$getLogProb(target) ## proposal prob
+            log_accept_prob <- proposalLogProb - currentLogProb - logProbForwardProposal
+        } else { ## propose removing from model
+            currentLogProb <- model$getLogProb(calcNodes)
+            model[[indicatorNode]] <<- 0
+            proposalLogProb <- model$calculate(indicatorZeroCalcs)
+            logProbReverseProposal <- model$calculate(target)
+            log_accept_prob <- proposalLogProb - currentLogProb + logProbReverseProposal
+        }
+
+        accept <- decide(log_accept_prob)
+        ## There is a bit of excess copying here that could be reduced
+        if(accept)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+    },
+    methods = list(
+            reset = function () {}
+            )
+)
+
+```
+
+# Put the second new samplers in an MCMC configuration
+
+```{r}
+for(i in 1:length(zNodes))
+    customMCMCconf$addSampler(sampler_scr_inclusion,
+                              target = c(SXnodes[i], SYnodes[i]),
+                              control = list(indicatorNode = zNodes[i]))
+customMCMCconf$printSamplers('SX[1:3]')
+```
+
+
+# Compiling and running model and both samplers
+
+Compile:
+
+```{r}
+defaultMCMC <- buildMCMC(defaultMCMCconf)
+customMCMC <- buildMCMC(customMCMCconf)
+options(error = recover)
+compiled <- compileNimble(scrModel2, defaultMCMC, customMCMC)
+```
+
+Run:
+```{r}
+## In this case it is beneficial to run a bit
+compiled$defaultMCMC$run(1000)
+compiled$customMCMC$run(1000)
+## Then again to reset adaptive samplers
+timeDefaultMCMC <- system.time(compiled$defaultMCMC$run(10000))
+timeCustomMCMC <- system.time(compiled$customMCMC$run(10000))
+```
+
+Look:
+```{r}
+i <- 1000:10000
+plot(as.matrix(compiled$defaultMCMC$mvSamples)[i,'lam0']) ##lam0 and sigma not sampled?
+plot(as.matrix(compiled$customMCMC$mvSamples)[i,'lam0']) 
+
+```
+
+# Writing a nimbleFunction for the reflection sampler
+
+The *run* function for the reflection sampler needs to check the proposed value against the distribution bounds and modify the proposal as needed.
+
+However, we first need to modify the *setup* function to check if the distribution has finite lower or upper bounds and only consider scalar parameters, thereby avoiding some computation at run-time. 
+
+```{r, reflect-sampler}
+sampler_RW_reflect <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        dist <- model$getNodeDistribution(target)
+        targetComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        if(length(targetComponents) > 1)
+                stop("sampler_RW_reflect: cannot use univariate RW sampler on multivariate target, try RW_block sampler.")
+        rg <- getDistribution(dist)$range
+        if(rg[1] > -Inf || rg[2] < Inf)
+                  reflect <- TRUE else reflect <- FALSE
+
+        calcNodes  <- model$getDependencies(target)
+    },
+    
+    run = function() {
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+
+        if(reflect) {
+             if(propValue < rg[1]) propValue <- 2*rg[1] - propValue
+             if(propValue > rg[2]) propValue <- 2*rg[2] - propValue
+        }
+ 
+        model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+    },
+    methods = list(
+            reset = function () {}
+            )
+)
+```
+
+
+# Comments
+
+1) This implementation doesn't account for bounds induced by user-defined truncation of a node in a model nor the bounds defined by the parameters of a uniform distribution. That would require more diving into NIMBLE's internal plumbing, though in the future more information on the bounds of a node at run-time should be available.
+
+2) We used some functionality that may not be fully explained in NIMBLE's documentation. For this sort of thing, you can always ask a question in the NIMBLE user Google group. 
+
+# NIMBLE's Metropolis sampler
+
+Often it's easiest when writing a new sampler that is similar to an existing NIMBLE sampler to just modify the code for the existing sampler. In this case, NIMBLE's exisiting random walk sampler has some nice additional functionality that we can include in our reflection sampler, specifically the ability to adapt the proposal variance. 
+
+Let's look at the code for the Metropolis sampler. You can find this in the file *R/MCMC_samplers.R* in the source code for the NIMBLE package (note that ```nimble:::sampler_RW``` is not useful to look at, as it shows a modified version of this -- the nimbleFunction after it has been built).
+
+```{r, Metr}
+sampler_RW <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ###  control list extraction  ###
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
+        ###  node list generation  ###
+        targetAsScalar <- model$expandNodeNames(target, 
+                       returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     
+                        stop('more than one target; cannot use RW sampler, try RW_block sampler')
+        calcNodes  <- model$getDependencies(target)
+        ###  numeric value generation  ###
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        scaleHistory          <- c(0, 0)
+        acceptanceRateHistory <- c(0, 0)
+        ## variables previously inside of nested functions:
+        optimalAR <- 0.44
+        gamma1    <- 0
+    },
+    
+    run = function() {
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+     	model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    
+    methods = list(
+        
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                setSize(scaleHistory,          timesAdapted)
+                setSize(acceptanceRateHistory, timesAdapted)
+                scaleHistory[timesAdapted] <<- scale
+                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            scaleHistory          <<- scaleHistory          * 0
+            acceptanceRateHistory <<- acceptanceRateHistory * 0
+            gamma1 <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+```
+
+Much of that code has to do with making the sampler adaptive, so that the proposal scale adapts so that a good acceptance rate is achieved.
+
+# The full reflection sampler function
+
+Below is the full new reflection sampler, building on NIMBLE's baseline random walk sampler to include adaptation.
+
+
+```{r, newSampler}
+sampler_RW_reflect <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ###  control list extraction  ###
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
+        ###  node list generation  ###
+        targetAsScalar <- model$expandNodeNames(target, 
+                       returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     
+                       stop('more than one target; cannot use RW sampler, try RW_block sampler')
+
+        ### ADDED code ############################################
+        dist <- model$getNodeDistribution(target)
+        rg <- getDistribution(dist)$range
+        if(rg[1] > -Inf || rg[2] < Inf)
+                  reflect <- TRUE else reflect <- FALSE
+        ###########################################################
+
+        calcNodes  <- model$getDependencies(target)
+        ###  numeric value generation  ###
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        scaleHistory          <- c(0, 0)
+        acceptanceRateHistory <- c(0, 0)
+        ## variables previously inside of nested functions:
+        optimalAR <- 0.44
+        gamma1    <- 0
+    },
+    
+    run = function() {
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+
+        ### ADDED code ############################################
+        if(reflect) {
+             while(propValue < rg[1] | propValue > rg[2]) {
+                   if(propValue < rg[1]) propValue <- 2*rg[1] - propValue
+                   if(propValue > rg[2]) propValue <- 2*rg[2] - propValue
+             }
+        }
+        ###########################################################
+
+        model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    
+    methods = list(
+        
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                setSize(scaleHistory,          timesAdapted)
+                setSize(acceptanceRateHistory, timesAdapted)
+                scaleHistory[timesAdapted] <<- scale
+                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            scaleHistory          <<- scaleHistory          * 0
+            acceptanceRateHistory <<- acceptanceRateHistory * 0
+            gamma1 <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+```
+
+# Using the sampler
+
+Using the sampler is simple. Just modify the default MCMC configuration for a model to use the new sampler on a node of interest.
+
+Let's try this with the *blocker* model, which is a random effects meta-analysis of clinical trial data. 
+
+
+In this case, we could use a conjugate sampler, which would automatically respect the lower bound of zero, but for illustration let's compare a standard Metropolis sampler with the new reflection sampler. 
+
+```{r, blocker}
+model <- readBUGSmodel('blocker', dir = system.file('classic-bugs',
+      'vol1','blocker', package = 'nimble'))
+model$tau
+model$tau <- 0.01
+conf <- configureMCMC(model)
+conf$removeSamplers('tau')
+# as baseline, use standard Metropolis for tau
+conf$addSampler('tau', type = 'RW')
+mcmc <- buildMCMC(conf)
+niter <- 25000
+Cmodel <- compileNimble(model)
+cmcmc <- compileNimble(mcmc, project = model)
+set.seed(0)
+cmcmc$run(niter)
+smp1 <- as.matrix(cmcmc$mvSamples)
+```
+
+```{r, scopefix, echo=FALSE}
+# not clear why sampler_RW_reflect() not being put into global
+# if this isn't done, configureMCMC fails to find sampler_RW_reflect in knitr
+assign('sampler_RW_reflect', sampler_RW_reflect, .GlobalEnv)
+```
+
+Now we'll try the reflection sampler instead.
+
+```{r, add-reflect}
+conf$removeSamplers('tau')
+# for comparison, consider the reflection sampler
+conf$addSampler('tau', type = 'RW_reflect')
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = model, resetFunctions = TRUE)
+
+nimCopy(model, Cmodel)
+set.seed(0)
+cmcmc$run(niter)
+smp2 <- as.matrix(cmcmc$mvSamples)
+
+nplot <- 300
+burnin <- 1000
+plot(seq_len(nplot), smp1[seq_len(nplot), 'tau'], type = 'l', 
+                     xlab = 'iteration', ylab=expression(tau))
+lines(seq_len(nplot), smp2[seq_len(nplot), 'tau'], col = 'red')
+library(coda, quietly = TRUE)
+effectiveSize(log(smp1[(burnin+1):niter , 'tau']))
+effectiveSize(log(smp2[(burnin+1):niter , 'tau']))
+```
+
+So we see that the sampler escaped from near zero more quickly. However, even with a run of 25000 iterations, the effective sample size is still small for both samplers.
+
+Side note: the random effects variance component in this model is given a gamma prior on the precision scale, but best practices for random effects variance components, including a strong argument against the gamma/inverse-gamma prior, can be found in Gelman (2006, Bayesian Analysis 1:515-534).
+
+

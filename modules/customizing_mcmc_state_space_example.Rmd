@@ -14,6 +14,7 @@ library(methods)
 ```
 ```{r loadnimble, include=FALSE}
 library(nimble)
+read_chunk('chunks_ssm.R')
 ```
 
 # Outline
@@ -21,9 +22,17 @@ library(nimble)
 In this module we will:
 
    - Use the house martin state-space model from K&eacute;ry and Schaub (2012).
-   - Try block samplers for the `r[t]`s.  Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. 
-   - Try Metropolis-Hastings samplers on a log scale for `sigma.obs` and `sigma.proc`
-   - Automatically compare the customized MCMC to the default MCMC using `compareMCMCs`.
+   - Try block samplers for the `r[t]`s.  Often a key factor that
+     reduces MCMC performance is dependence between parameters that
+     limits the ability of univariate samplers to move very far. A
+     standard strategy is to sample correlated parameters in blocks.
+
+       + This actually doesn't help much in this model (and will
+       be more efficient in a future NIMBLE release) but we'll
+       illustrate it anyway.
+	   
+   - Try Metropolis-Hastings samplers on a log scale for `sigma.obs` and `sigma.proc`.
+   - Automatically compare a customized MCMC to the default MCMC using `compareMCMCs`.
 
 # Build the model and default MCMC
 
@@ -39,7 +48,7 @@ We first need to build the model.
 ```
 
 ```{r, ssm-mcmc}
-mcmcConf <- buildMCMC(ssm) # can skip mcmcConf
+ssmMCMC <- buildMCMC(ssm) # can skip mcmcConf
 CssmMCMC <- compileNimble(ssmMCMC, project = ssm)
 CssmMCMC$run(10000)
 samples <- as.matrix(CssmMCMC$mvSamples)
@@ -63,7 +72,7 @@ There are several ways we can customize an MCMC configuration in NIMBLE.
 Here we will start from a default configuration and then remove and add samplers.
 
 ```{r, ssm-mcmc2}
-mcmcConf2 <- configureMCMC(ssm) # can skip mcmcConf
+mcmcConf2 <- configureMCMC(ssm) 
 mcmcConf2$removeSamplers('sigma.obs')
 mcmcConf2$removeSamplers('sigma.proc')
 mcmcConf2$removeSamplers('r')
@@ -126,32 +135,34 @@ parameter.  Therefore we define
 
 # Comparing MCMC configurations using `compareMCMCs`
 
+After some preliminary exploration, one sees that the slowest-mixing
+parameters are the two standard deviations, and a good strategy for
+them to mix is to include two samplers for each one on a regular scale
+and one on a log scale. So we'll include just that modification for
+the comparison.
+
 ```{r, compare-mcmcs}
 set.seed(1)
 modelInfo <- list(ssm = list(code = ssmCode, data = bugs.data['y'], constants = bugs.data['T'], inits = inits()))
 MCMCdefs <- list(custom = quote({
     mcmcConf2 <- configureMCMC(Rmodel) # can skip mcmcConf
-    mcmcConf2$removeSamplers('sigma.obs')
-    mcmcConf2$removeSamplers('sigma.proc')
-    mcmcConf2$removeSamplers('r')
     mcmcConf2$addSampler(target = 'sigma.obs', type = 'RW', control = list(log=TRUE))
     mcmcConf2$addSampler(target = 'sigma.proc', type = 'RW', control = list(log=TRUE))
-    mcmcConf2$addSampler(target = Rmodel$expandNodeNames('r'), type = 'RW_block')
     mcmcConf2
 }))
 comparisonResults <- compareMCMCs(modelInfo = modelInfo,
                                   MCMCs = c('nimble', 'custom'),
                                   MCMCdefs = MCMCdefs,
-                                  niter = 20000,
-                                  burnin = 1000, summary = FALSE)
+                                  niter = 50000,
+                                  burnin = 5000, summary = FALSE)
 ```
 
 Make comparison figures
 
 ```{r, make-comparison-figures}
-make_MCMC_comparison_pages(comparisonResults)
-## open ssm.html in a browser to see results
-## The name ssm is taken from the name in the modelInfo list
+make_MCMC_comparison_pages(comparisonResults, dir = 'ssm_custom_MCMC_results')
+## open ssm_custom_MCMC_results/ssm.html in a browser to see results
+## The name file name ssm is taken from the name in the modelInfo list
 ```
 
-See ssm.index for results.
+The results are [here](ssm_custom_MCMC_results/ssm.html)
