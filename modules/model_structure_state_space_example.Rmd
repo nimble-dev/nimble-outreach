@@ -32,19 +32,9 @@ Specifically, we'll learn:
    - how NIMBLE sometimes inserts *lifted nodes* into a model and what that means for you.
    - how to determine the variables in a model.
 
-We first need to build the model.  For this module we will use the smaller version of the state-space model, with only the first four time points.  The only purpose is to simplify the examples and the graph figures for clarity.
-
-```{r, ssmSmall-code}
-```
-
-```{r, ssmSmall-model}
-```
-
-# Topological ordering of nodes and why it matters.
-
+We first need to build the model.  For this module we will use the smaller version of the state-space model, with only the first four time points.  The only purpose of making it smaller is to simplify the examples and the graph figures for clarity.
 
 ```{r}
-library(nimble)
 library(igraph)
 ssmSmallCode <- nimbleCode({
 # Priors and constraints
@@ -64,7 +54,7 @@ for (t in 1:T) y[t] ~ dnorm(logN.est[t], sd = sigma.obs)
 
 })
 
-## @knitr ssmSmall-model
+
 pyears <- 6 # Number of future years with predictions
 hm <- c(271, 261, 309, 318, 231, 216, 208, 226, 195, 226, 233, 209, 226, 192, 191, 225,
         245, 205, 191, 174, rep(NA, pyears))
@@ -76,7 +66,12 @@ bugs.data <- list(y = log(hm), T = length(year))
 
 ssmSmall <- nimbleModel(ssmSmallCode, constants = list(T = 5),
                         data = list(y = bugs.data$y[1:5]))
+```
 
+# Topological ordering of nodes and why it matters.
+
+
+```{r, echo=FALSE}
 drawGraph <- function(model, colorBy = "none", colors = c('salmon','cyan','plum')) {
     graph <- model$getGraph()
     numNodes <- length(ssmSmall$getNodeNames())
@@ -107,10 +102,11 @@ drawGraph <- function(model, colorBy = "none", colors = c('salmon','cyan','plum'
 ```
 
 Suppose we want to change the value of `r[3]` and update all relevant
-parts of the graph.  The nodes that need to be updated are shown in red.
+parts of the graph. (The meaning of "relevant" depends on our purpose of changing `r[3]`.  In this case imagine we are making a Metropolis-Hastings (MCMC) proposal and need to calculate its acceptance probability.) The nodes that need to be updated are shown in red.
 
 
-```{r}
+```{r, fig.cap = ""}
+## function drawGraph is defined in the R file for this module
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
 ```
 
@@ -125,24 +121,24 @@ of NIMBLE's model-querying functions will return nodes in tologically sorted ord
 
 There are several kinds of dependencies that may be needed by different algorithms.
 
-   - *Stochastic dependencies* (called *Markov blanket* in computer science) terminate at stochastic nodes (inclusive)
+   - *Stochastic dependencies* (called *Markov blanket* in computer science) terminate at stochastic nodes (inclusive).  That's the default.
 
 ```{r}
 ssmSmall$getDependencies('r[3]')
 ```
-```{r, echo=FALSE}
+```{r, fig.cap = ""}
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
 ```
 
-       + These are the dependencies needed for a Metropolis-Hastings
+   + Stochastic dependencies are needed for a Metropolis-Hastings
        MCMC sampler.
 
    - *Deterministic dependencies* terminate at stochastic nodes but
-omit the stochastic nodes
+omit the stochastic nodes.  These can be useful for implementing a particle filter.
 ```{r}
 ssmSmall$getDependencies('r[3]', determOnly = TRUE)
 ```
-```{r, echo=FALSE}
+```{r, fig.cap=""}
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]', determOnly = TRUE))
 ```
 
@@ -161,7 +157,8 @@ their roles in the model.
 
 Examples include:
 
-   - All nodes in topologically-sorted order
+   - All nodes in topologically-sorted order.
+      + Note that topologically-sorted orderings are typically not unique.  NIMBLE determines one and sticks with it.
 ```{r}
 ssmSmall$getNodeNames()
 ```
@@ -174,7 +171,7 @@ ssmSmall$getNodeNames(stochOnly = TRUE)   #salmon
 ssmSmall$getNodeNames(determOnly = TRUE)  #cyan
 ssmSmall$getNodeNames(dataOnly = TRUE)    #plum
 ```
-```{r}
+```{r, fig.cap = ""}
 drawGraph(ssmSmall, 'stochDetermData')
 ```
 
@@ -185,7 +182,7 @@ ssmSmall$getNodeNames(topOnly = TRUE)   #salmon
 ssmSmall$getNodeNames(latentOnly = TRUE)  #cyan
 ssmSmall$getNodeNames(endOnly = TRUE)    #plum
 ```
-```{r}
+```{r, fig.cap = ""}
 drawGraph(ssmSmall, 'topLatentEnd')
 ```
 
@@ -206,9 +203,6 @@ you can do that:
 ssmSmall$topologicallySortNodes(c('logN.est[5]', 'r[4]', 'logN.est[3]', 'y[2]'))
 ```
 
-Often there is more than one valid topological sorting, but NIMBLE
-chooses one and uses it for your model.
-
 # The importance of querying a model: lifted nodes.
 
 *You should never assume you know what nodes are in a model simply
@@ -218,7 +212,7 @@ NIMBLE implements some features by inserting its own nodes.
 
 Let's look at the two main ways this happens:
 
-```{r}
+```{r, fig.cap = ""}
 m1 <- nimbleModel(
     nimbleCode({
         tau ~ dunif(0, 100)
@@ -235,7 +229,7 @@ created by this BUGS code:
 nimbleCode({
     tau ~ dunif(0, 100)
     lifted_d1_over_sqrt_oPtau_cP <- 1/sqrt(tau)
-    x ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP) #by default, tau is a precision
+    x ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP)
 }))
 ```
 
@@ -253,8 +247,8 @@ The correct way to do this is with model-generic programming:
 m1$calculate( m1$getDependencies('tau') )
 ```
 
-The second common situation that creates lifted this is:
-```{r}
+The second common situation that creates lifted nodes is this:
+```{r, fig.cap = ""}
 m2 <- nimbleModel(
     nimbleCode({
         a ~ dnorm(0, 1)
@@ -279,3 +273,5 @@ many query functions), but it is available:
 ssmSmall$getVarNames()
 ssmSmall$getVarInfo('r')
 ```
+
+This variable has 1 dimension (`nDim`), and its size is 4 (`maxs`).  Currently `mins` is always 1.  If at least one node within the variable is stochastic, then `anyStoch` will be `TRUE`.

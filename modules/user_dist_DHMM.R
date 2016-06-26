@@ -102,7 +102,7 @@
 ##             sumZpi <- sum(Zpi)
 ##             logL <- logL + log(sumZpi)
 ##             if(t != length)
-## 	       pi <- (T[,,t] %*% asCol(Zpi) / sumZpi)[ ,1]
+## 	       pi <- (T[,,t] %*% Zpi / sumZpi)[ ,1]
 ##         }
 ##         returnType(double())
 ##         return(logL)
@@ -126,9 +126,6 @@
 ##         discrete = TRUE
 ##     )
 ## ))
-## 
-## ## load data
-## load('../data/orchidData.RData')
 ## 
 ## ## define hierarchical model
 ## code <- nimbleCode({
@@ -185,30 +182,4 @@
 ##     }
 ## })
 ## 
-## ## define model constants, data, and initial values
-## constants <- list(f=f, k=k, nind=nind, prior=c(1/2,1/2,0,0), Z=array(c(1,0,0,0,1,0,0,0,1,0,0,1), c(3,4)))
-## data <- list(y = y)
-## inits <- list(s = rep(1/2,k-1), a = rep(1,3), b = rep(1,3), c = rep(1,3))
-## 
-## ## create model object
-## Rmodel <- nimbleModel(code, constants, data, inits, check = FALSE)
-## 
-## ## specify MCMC algorithm
-## spec <- configureMCMC(Rmodel)
-## spec$printSamplers()
-## 
-## ## build MCMC algorithm
-## Rmcmc <- buildMCMC(spec)
-## 
-## ## compile model and MCMC
-## Cmodel <- compileNimble(Rmodel)
-## Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
-## 
-## ## run MCMC
-## set.seed(0)
-## Cmcmc$run(10000)
-## 
-## ## extract samples
-## samples <- as.matrix(Cmcmc$mvSamples)
-## apply(samples, 2, mean)
 

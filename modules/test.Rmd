@@ -1,0 +1,86 @@
+---
+title: "User-defined distributions"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+I am not sure why
+
+    - My bullet points are wrapped as code `y`.
+    - Etc.
+
+# Slide 2
+
+But a question is
+
+   - Whether this looks different
+   
+      + Is this second depth
+
+   - Or then again
+   
+       + is it this
+
+# Example setup
+
+   - N=28 animals are simulated in an arena of size 19 x 19.
+   - Some will never be seen.  A goal is to estimate N.
+   - 100 cameras on a grid at locations 4:13 x 4:13
+   - 0:3 and 14:18 are buffers (not sure why they're asymmetric, but that's what the example code seems to do).
+   - Detection probability decreases as a bell curve (Gaussian) with distance
+   - For animal i at trap j:
+   
+      + detection rate = `Eo = lam0 * exp(-Distance^2 / sigma)`. (It is not written as `sigma^2`).
+      + Probability of at least one detection in a period = `pmean = 1-exp(-Eo)`
+      + Number of detections `y` is binomial from `J` sampling periods.
+
+
+# Think like a graph to re-write the model
+
+Notice that every time `SX[i]` or `SY[i]` are modified, all of the following will always need recalculation:
+
+   - All distances to animal `i`: `D2[i, 1:ntraps]` 
+   - All downstream quantities for animal i: `Eo[i, 1:ntraps]`, `pmean[i, 1:ntraps]`, and `tmp[i, 1:ntraps]`
+
+We can rewrite the model using vectorized declarations in NIMBLE to take advantage of our understanding of the graph:
+
+*In the current NIMBLE release, this model should build faster, but in an upcoming release all models should build even more faster so the build times will be less concerning.*
+
+# Observations about MCMC sampling for this model
+
+The following points require some familiarity with how MCMC, and particularly Metropolis-Hastings, works.
+
+   - `SX[i]` and `SY[i]` are conceptually related and have the same dependencies.
+   - When `z[i]==0`, `SX[i]` and `SY[i]` follow their prior, and other calculations aren't needed.
+
+      + If animal `i` is not in the model, sampling `SX[i]` and `SY[i]` is wasted computation.
+      + Would be better to propose new location values jointly when proposing `z[i]=1`
+
+   - It *might* be better to sample `lam0`, `sigma`, and `psi` more often than all the `z[i]`s.
+
+
+*This example gives preliminary exploration of some of the kinds of considerations one might make to improve MCMC efficiency for this model.  It is meant to illustrate what you can do with NIMBLE.  It is not at all thorough or final.*
+
+We'll show two samplers that jointly handles a trio of `z[i]`, `SX[i]` and `SY[i]` as follows:
+
+   1. If `z[i]==1`, jointly sample `SX[i]` and `SY[i]`.
+   2. Sample `z[i]` as follows:
+
+      + Only sample a given `z[i]` with probability 0.2 (a level chosen for illustration without any trials) on each iteration, to balance sampling effort.
+      + If `z[i]==1`, propose `z[i] = 0` and avoid distance computations.
+      + If `z[i]==0`, propose `z[i] = 1` and propose `SX[i]` and `SY[i]` from their priors.  *This is recognizable as a Metropolis-Hastings sampler, but it can also be viewed as a reversible-jump sampler.*
+

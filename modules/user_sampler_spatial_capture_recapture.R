@@ -1,49 +1,12 @@
----
-title: "User-defined MCMC samplers (Spatial capture-recapture example)"
-subtitle: "NIMBLE training materials module"
-author: "NIMBLE Development Team"
-output:
-  html_document:
-    code_folding: show
----
-
-```{r chunksetup, include=FALSE} 
+## ----chunksetup, include=FALSE-------------------------------------------
 # Following code is only needed for slide generation, not for using R code separately.
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)
-```
-```{r loadnimble, include=FALSE}
+
+## ----loadnimble, include=FALSE-------------------------------------------
 library(nimble)
-```
 
-# Introduction
-
-NIMBLE's MCMC system was designed to be extensible. It's easy for users to add samplers and use them right away for their models.
-
-Samplers and MCMC configuration functions for specific models could then be distributed as a package.
-
-We'll use a spatial capture-recapture example to illustrate writing and using new samplers.
-
-The example is from Chapter 7 of Royle and Dorazio (2009)[^1], which draws upon Royle and Gardner.  The example simulates and then fits simple camera trap data.
-
-[^1]:
-J. Andrew Royle and Robert M. Dorazio. 2009. Hierarchical Modeling and Inference in Ecology: The Analysis of Data from Populations, Metapopulations and Communities. Academic Press.
-
-# Example setup
-
-   - N=28 animals are simulated in an arena of size 19 x 19.
-   - Some will never be seen.  A goal is to estimate N.
-   - 100 cameras on a grid at locations 4:13 x 4:13
-   - 0:3 and 14:18 are buffers (not sure why they're asymmetric, but that's what the example code seems to do).
-   - Detection probability decreases as a bell curve (Gaussian) with distance
-   - For animal i at trap j:
-      + detection rate = `Eo = lam0 * exp(-Distance^2 / sigma)`. (It is not written as `sigma^2`).
-      + Probability of at least one detection in a period = `pmean = 1-exp(-Eo)`
-      + Number of detections `y` is binomial from `J` sampling periods.
-
-# BUGS code from Royle & Dorazio
-
-```{r}
+## ------------------------------------------------------------------------
 
 scrCode <- nimbleCode({
     sigma~dunif(0, 15)
@@ -67,20 +30,8 @@ scrCode <- nimbleCode({
 })	
 
 	
-```
 
-# Think like a graph to re-write the model
-
-Notice that every time `SX[i]` or `SY[i]` are modified, all of the following will always need recalculation:
-
-   - All distances to animal `i`: `D2[i, 1:ntraps]` 
-   - All downstream quantities for animal i: `Eo[i, 1:ntraps]`, `pmean[i, 1:ntraps]`, and `tmp[i, 1:ntraps]`
-
-We can rewrite the model using vectorized declarations in NIMBLE to take advantage of our understanding of the graph:
-
-*In the current NIMBLE release, this model should build faster, but in an upcoming release all models should build even more faster so the build times will be less concerning.*
-
-```{r}
+## ------------------------------------------------------------------------
 scrCode2 <- nimbleCode({
     sigma~dunif(0, 15)
     lam0~dgamma(.1,.1)
@@ -90,8 +41,7 @@ scrCode2 <- nimbleCode({
         z[i]~dbern(psi)
 	SX[i]~dunif(xl, xu)
 	SY[i]~dunif(yl, yu)
-        D2[i,1:ntraps] <- pow(SX[i]-trapmat[1:ntraps,1], 2) +
-                          pow(SY[i]-trapmat[1:ntraps,2],2)
+        D2[i,1:ntraps] <- pow(SX[i]-trapmat[1:ntraps,1], 2) + pow(SY[i]-trapmat[1:ntraps,2],2)
         Eo[i,1:ntraps] <- lam0*exp(-D2[i,1:ntraps]/sigma)
         pmean[i,1:ntraps]<-1-(exp(-Eo[i,1:ntraps]))
         tmp[i,1:ntraps]<-pmean[i,1:ntraps]*z[i]
@@ -103,20 +53,12 @@ scrCode2 <- nimbleCode({
 })	
 
 ## will run below:
-## scrModel2 <- nimbleModel(scrCode2, constants = list(M = M, ntraps = ntraps,
-##                                                   J = J,
+## scrModel2 <- nimbleModel(scrCode2, constants = list(M = M, ntraps = ntraps, J = J,
 ##                                                   xl = xl, yl = yl,
 ##                                                   xu = xu, yu = yu),
 ##                                  data = list(trapmat = trapmat), check = FALSE) 
-```
 
-# Simulate using NIMBLE
-
-Often for a simulation study people re-write their model for simulation in R.  That is what R&amp;D's book code does.
-
-We can use NIMBLE's `simulate` function instead.
-
-```{r}
+## ------------------------------------------------------------------------
 ## From Royle & Dorazio:
 sigma=3
 ## beta=1 ## beta is never used so must have been a typo in book code
@@ -149,34 +91,21 @@ scrModel2$z <- c(rep(1, 28), rep(0, 100)) ## R&D simulate 28 animals.
 set.seed(123)
 scrModel2$simulate( scrModel2$getDependencies(c('SX','SY'), downstream = TRUE))
 dim(scrModel2$y)
-scrModel2$y[1:3,] ## camera detections for first three real animals
+scrModel2$y[1:3,] ## real animals
 scrModel2$y[29:31,] ## zeros in augmentation range
-```
 
-# Look at data
-
-Use plot concepts from R&amp;D code.
-```{r fig.cap = ""}
+## ----fig.cap = NULL------------------------------------------------------
 plot(c(llx,upx), c(llx, upx), typ='n')
 points(locs)
 points(scrModel2$SX[1:28], scrModel2$SY[1:28], col = 'red')
-```
 
-Black points are cameras.  Red dots are animal activity centers.
-
-# Set up data and initial values for MCMC
-
-Now that we've used the model for simulation, we want to mark the simulated `y` values as data and change other values to be naive.
-
-We'll also manually save some of the values to reset them later.  (Alternatively, we could have used inits when defining the model to do this.)
-
-```{r}
+## ------------------------------------------------------------------------
 ## We'll manually set initial values similarly to R&D
 ## This MCMC can fail if the initial values provide -Inf likelihood terms
 scrModel2$sigma <- 5
 scrModel2$lam0 <- lam0
 scrModel2$psi <- 0.6
-scrModel2$SX <- initSX <- runif(M, 4, 13) ## Unclear why R&D use runif(M, 2, 10) 
+scrModel2$SX <- initSX <- runif(M, 4, 13) ## R&D use runif(M, 2, 10) for reasons I don't see
 scrModel2$SY <- initSY <- runif(M, 4, 13) ## ditto
 scrModel2$z <- rbinom(M, 1, .5)
 ## not fully necessary, but it seems cleaner to set animals that were seen
@@ -184,76 +113,37 @@ scrModel2$z <- rbinom(M, 1, .5)
 scrModel2$z[ rowSums(scrModel2$y) > 0 ] <- 1 
 initZ <- scrModel2$z
 scrModel2$setData(list(y = scrModel2$y)) 
-```
 
-# Default MCMC
-
-First we'll set up a default MCMC configuration.
-
-```{r}
+## ------------------------------------------------------------------------
 defaultMCMCconf <- configureMCMC(scrModel2, monitors = c('sigma','lam0','psi','N'))
 ## For illustration, let's look at samplers for a few nodes of each variable
 defaultMCMCconf$printSamplers(c('sigma', 'lam0','psi','SX[1:3]', 'SY[1:3]', 'z[1:3]'))
-```
 
-# Observations about MCMC sampling for this model
-
-The following points require some familiarity with how MCMC, and particularly Metropolis-Hastings, works.
-
-   - `SX[i]` and `SY[i]` are conceptually related and have the same dependencies.
-   - When `z[i]==0`, `SX[i]` and `SY[i]` follow their prior, and other calculations aren't needed.
-
-      + If animal `i` is not in the model, sampling `SX[i]` and `SY[i]` is wasted computation.
-      + Would be better to propose new location values jointly when proposing `z[i]=1`
-
-   - It *might* be better to sample `lam0`, `sigma`, and `psi` more often than all the `z[i]`s.
-
-
-*This example gives preliminary exploration of some of the kinds of considerations one might make to improve MCMC efficiency for this model.  It is meant to illustrate what you can do with NIMBLE.  It is not at all thorough or final.*
-
-We'll show two samplers that jointly handles a trio of `z[i]`, `SX[i]` and `SY[i]` as follows:
-
-   1. If `z[i]==1`, jointly sample `SX[i]` and `SY[i]`.
-   2. Sample `z[i]` as follows:
-
-      + Only sample a given `z[i]` with probability 0.2 (a level chosen for illustration without any trials) on each iteration, to balance sampling effort.
-      + If `z[i]==1`, propose `z[i] = 0` and avoid distance computations.
-      + If `z[i]==0`, propose `z[i] = 1` and propose `SX[i]` and `SY[i]` from their priors.  *This is recognizable as a Metropolis-Hastings sampler, but it can also be viewed as a reversible-jump sampler.*
-
-# New sampler 1: Sample location only if indicator is 1
-
-Here is our first new sampler:
-
-```{r}
+## ------------------------------------------------------------------------
 sampler_scr_locations <- nimbleFunction(
     contains = sampler_BASE, ## Class inheritance system
     setup = function(model, mvSaved, target, control) { ## required args
         ## target will be a vector like c('SX[3]','SY[3]')
         indicatorNode <- control$indicatorNode ## like 'z[3]'
         calcNodes <- model$getDependencies(target)
-        ## The rest of this can be ignored:
-        ## It is boilerplate for proposal scale adaptation
+        ## The rest of this can be ignored: It is boilerplate for proposal scale adaptation
         scaleOriginal <- 1
         scale <- 1
         adaptive <- TRUE
         timesRan <- 0
         timesAccepted <- 0
         timesAdapted <- 0
-        optimalAR <- 0.44 ## Actually this is for the 1D case instead of 2D
+        optimalAR <- 0.44 ## Actually I've hastily thrown in the 1D case instead of 2D
         gamma1    <- 0
         adaptInterval <- 100
     },    
     run = function() {
-        if(model[[indicatorNode]]==0) return() ## Skip location sampling
-
-        ## Get current location (2 coordinates)
+        if(model[[indicatorNode]]==0) return() ## Locations will be sampled elsewhere
         location <- values(model, target)
-
-        ## propose isotropically
+ 
         location[1] <- rnorm(1, mean = location[1], sd = scale)
         location[2] <- rnorm(1, mean = location[2], sd = scale)
 
-        ## Put proposed location in model
         values(model, target) <<- location
 
         logMHR <- calculateDiff(model, calcNodes)
@@ -268,8 +158,7 @@ sampler_scr_locations <- nimbleFunction(
     },
     methods = list(
         ## from adaptive MCMC theory, copied from our RW sampler source code
-        ## Should be modified since it is really a 2D sampler, but this will do
-        ## for now
+        ## Should be modified since it is really a 2D sampler, but this will do for now
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
@@ -293,15 +182,9 @@ sampler_scr_locations <- nimbleFunction(
             gamma1 <<- 0
         })
 )
-```
 
-There is another approach that would be cleaner but less illustrative for learning:  The setup code could create a block sampler with identity covariance and adaptation only of the scale parameter.  The run code could call that sampler when `z[i]==1`.  This would take much less code and save us from copying adaptation code from NIMBLE's source code.  But for learning purposes we wanted to show more full-blown source code.
-
-# Put the new samplers in an MCMC configuration
-
-```{r}
-customMCMCconf <- configureMCMC(scrModel2, nodes = c('lam0','sigma','psi'),
-                                monitors = c('lam0','sigma','psi','N'))
+## ------------------------------------------------------------------------
+customMCMCconf <- configureMCMC(scrModel2, nodes = c('lam0','sigma','psi'), monitors = c('lam0','sigma','psi','N'))
 customMCMCconf$printSamplers()
 zNodes <- scrModel2$expandNodeNames('z')
 SXnodes <- scrModel2$expandNodeNames('SX')
@@ -317,13 +200,8 @@ for(i in 1:length(zNodes))
                               control = list(indicatorNode = zNodes[i]))
 ## Illustrate that they have been added
 customMCMCconf$printSamplers('SX[1:3]')
-```
 
-# New sampler 2: joint inclusion and location
-
-Here is the joint sampler for inclusion (or indicator variable) and location:
-
-```{r}
+## ------------------------------------------------------------------------
 sampler_scr_inclusion <- nimbleFunction(
     contains = sampler_BASE, ## Class inheritance system
     setup = function(model, mvSaved, target, control) { ## required args
@@ -342,18 +220,14 @@ sampler_scr_inclusion <- nimbleFunction(
             model$simulate( target )
             proposalLogProb <- model$calculate(calcNodes)
             logProbForwardProposal <- model$getLogProb(target) ## proposal prob
-            ## reversible jump / Metropolis-Hastings acceptance probability
-            log_accept_prob <- proposalLogProb - currentLogProb
-                                          - logProbForwardProposal
+            log_accept_prob <- proposalLogProb - currentLogProb - logProbForwardProposal
         } else {
             ## propose removing from model
             currentLogProb <- model$getLogProb(calcNodes)
             model[[indicatorNode]] <<- 0
             proposalLogProb <- model$calculate(indicatorZeroCalcs)
             logProbReverseProposal <- model$calculate(target)
-            ## reversible jump / Metropolis-Hastings acceptance probability
-            log_accept_prob <- proposalLogProb - currentLogProb
-                                          + logProbReverseProposal
+            log_accept_prob <- proposalLogProb - currentLogProb + logProbReverseProposal
         }
 
         accept <- decide(log_accept_prob)
@@ -361,22 +235,19 @@ sampler_scr_inclusion <- nimbleFunction(
         ## depending on which of the above cases was used
         ## but for simplicity I'm leaving it as is
         if(accept)
-            copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
                          logProb = TRUE)
         else
-            copy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
                          logProb = TRUE)
     },
     methods = list(
             reset = function () {}
             )
 )
-```
 
 
-# Put the second new samplers in an MCMC configuration
-
-```{r}
+## ------------------------------------------------------------------------
 for(i in 1:length(zNodes))
     customMCMCconf$addSampler(sampler_scr_inclusion,
                               target = c(SXnodes[i], SYnodes[i]),
@@ -385,22 +256,13 @@ for(i in 1:length(zNodes))
 ## Note that the z[i]s are sampled even though
 ## not provided via the "target" argument
 customMCMCconf$printSamplers('SX[1:3]')
-```
 
-
-# Compiling and running model and both samplers
-
-We can compile the model and algorithms all together:
-
-```{r}
+## ------------------------------------------------------------------------
 defaultMCMC <- buildMCMC(defaultMCMCconf)
 customMCMC <- buildMCMC(customMCMCconf)
 compiled <- compileNimble(scrModel2, defaultMCMC, customMCMC)
-```
 
-Let's run them:
-
-```{r}
+## ------------------------------------------------------------------------
 timeDefaultMCMC <- system.time(compiled$defaultMCMC$run(10000))
 ## To be fair, we'll reset states
 compiled$scrModel2$SX <- initSX
@@ -410,10 +272,8 @@ compiled$scrModel2$sigma <- 5
 compiled$scrModel2$lam0 <- lam0
 compiled$scrModel2$psi <- 0.6
 timeCustomMCMC <- system.time(compiled$customMCMC$run(10000))
-```
 
-Let's look at results:
-```{r}
+## ------------------------------------------------------------------------
 i <- 1000:10000
 ## inspection of results shows they are similar
 library(coda)
@@ -426,6 +286,4 @@ timeCustomMCMC
 ## How does MCMC efficiency compare?
 effectiveSize(as.matrix(compiled$defaultMCMC$mvSamples)[i,])/timeDefaultMCMC[3]
 effectiveSize(as.matrix(compiled$customMCMC$mvSamples)[i,])/timeCustomMCMC[3]
-```
 
-It looks like the new samplers helped.  Although scientific interest in this problem may focus on `N`, one wants all parameters to be well estimated in order to trust any results.  For this reason we focus on the worst among the MCMC efficiencies, which has been improved by the custom samplers.  Further improvements could likely be made.

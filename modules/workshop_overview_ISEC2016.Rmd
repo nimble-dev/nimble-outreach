@@ -156,23 +156,23 @@ Here are the modules we'll work through for this workshop, though we probably wo
     1. [The BUGS language](bugs_language_state_space_model_slides.html)
     2. [Building a model in NIMBLE](build_model_state_space_model_slides.html)
     3. [Running an MCMC](run_mcmc_state_space_example_slides.html)
-    4. [Customizing an MCMC](customizing_mcmc_state_space_example_slides.html) BROKEN (This example is a bit finicky and illustrates issues about how the model is written that we may explore later.)
+    4. [Customizing an MCMC](customizing_mcmc_state_space_example_slides.html) 
     5. [How NIMBLE goes beyond other packages](how_nimble_extends_bugs_slides.html)
     6. [Great things you could build with NIMBLE](how_you_could_use_nimble_slides.html)
  - NIMBLE programming: models and algorithms
     7. [Programming with models (I): Operating a model](operating_model_state_space_example_slides.html)
-    8. [Programming with models (II): Understanding and querying model structure](model_structure_state_space_example_slides.html) CLEAN UP DRAWING CODE 
-    9. If time: how to re-write this state-space example to allow more efficient MCMC (by NIMBLE or JAGS). TO-DO.
-    10. nimbleFunction programming (I): Compiling simple math from R to C++.
-        [Providing new distributions for use in BUGS](user_dist_slides.html)
-    11. [Capture-recapture example: a user-defined distribution for multi-state capture histories](user_dist_DHMM_slides.html)
-    12. nimbleFunction programming (II): model-generic two-stage programming.
-    13. Spatial capture-recapture example: Writing new MCMC samplers
+    8. [Programming with models (II): Understanding and querying model structure](model_structure_state_space_example_slides.html)
+    9. [How to re-write this state-space example to allow more efficient MCMC](thinking_like_a_graph_state_space_example_slides.html)
+    10. [nimbleFunction programming (I): Compiling simple math from R to C++](compile_R_slides.html)
+    11. [Providing new distributions for use in BUGS](user_dist_slides.html)
+    12. [Capture-recapture example: a user-defined distribution for multi-state capture histories](user_dist_DHMM_slides.html)
+    13. [nimbleFunction programming (II): model-generic two-stage programming](nimbleFunctions_slides.html)
+    14. [Spatial capture-recapture example: Writing new MCMC samplers](user_sampler_spatial_capture_recapture_slides.html)
  - Writing and using other algorithms:
-    14. A general model simulator
-    15. Maximum likelihood by ascent-based Monte Carlo Expectation Maximization
-    16. Sequential Monte Carlo (aka particle filtering).
-    17. Comparing MCMCs
+    15. A general model simulator
+    16. Maximum likelihood by ascent-based Monte Carlo Expectation Maximization
+    17. Sequential Monte Carlo (aka particle filtering).
+
 
 [//]: # (Notes in progress
 [//]: # Understanding graphical models

@@ -83,7 +83,7 @@ Comments:
 
 # Using the distribution
 
-```{r, use-dist}
+```{r, use-dist, fig.cap=""}
 code <- nimbleCode({
 y ~ dmyexp(scale = mu)
 mu ~ dunif(0, 10)
@@ -104,6 +104,8 @@ While educational, the exponential example is not particularly interesting given
 When working with multinomial data, the Dirichlet distribution can be used to relate the probability vector in the multinomial to covariates and to induce over-dispersion.
 
 One context in which this comes up is topic modeling. You might have textual data from multiple documents, with each document being about a topic. The probabilities of words in each document in a topic can be represented as being a sample from a Dirichlet distribution for that topic.  
+
+Another context is modeling of use of discrete resources by organisms.
 
 # Basic topic model 
 
@@ -223,4 +225,4 @@ In real document analysis, you would want to infer topics for unlabelled documen
 
 Also, a standard model for topic analysis, called *latent Dirichlet allocation*, allows each document to be a mixture of topics. One could expand the code here to allow for that. 
 
-
+Another kind of useful distribution to define is a zero-inflated distribution, for which there is an example on our [web site](r-nimble.org/examples).

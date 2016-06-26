@@ -7,12 +7,7 @@ if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)
 read_chunk('chunks_ssm.R')
 
-## ---- ssmSmall-code------------------------------------------------------
-
-## ---- ssmSmall-model-----------------------------------------------------
-
 ## ------------------------------------------------------------------------
-library(nimble)
 library(igraph)
 ssmSmallCode <- nimbleCode({
 # Priors and constraints
@@ -32,7 +27,7 @@ for (t in 1:T) y[t] ~ dnorm(logN.est[t], sd = sigma.obs)
 
 })
 
-## @knitr ssmSmall-model
+
 pyears <- 6 # Number of future years with predictions
 hm <- c(271, 261, 309, 318, 231, 216, 208, 226, 195, 226, 233, 209, 226, 192, 191, 225,
         245, 205, 191, 174, rep(NA, pyears))
@@ -45,6 +40,7 @@ bugs.data <- list(y = log(hm), T = length(year))
 ssmSmall <- nimbleModel(ssmSmallCode, constants = list(T = 5),
                         data = list(y = bugs.data$y[1:5]))
 
+## ---- echo=FALSE---------------------------------------------------------
 drawGraph <- function(model, colorBy = "none", colors = c('salmon','cyan','plum')) {
     graph <- model$getGraph()
     numNodes <- length(ssmSmall$getNodeNames())
@@ -73,19 +69,20 @@ drawGraph <- function(model, colorBy = "none", colors = c('salmon','cyan','plum'
          vertex.color = vertex.color ) ## uses plot.igraph
 }
 
-## ------------------------------------------------------------------------
+## ---- fig.cap = ""-------------------------------------------------------
+## function drawGraph is defined in the R file for this module
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
 
 ## ------------------------------------------------------------------------
 ssmSmall$getDependencies('r[3]')
 
-## ---- echo=FALSE---------------------------------------------------------
+## ---- fig.cap = ""-------------------------------------------------------
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]'))
 
 ## ------------------------------------------------------------------------
 ssmSmall$getDependencies('r[3]', determOnly = TRUE)
 
-## ---- echo=FALSE---------------------------------------------------------
+## ---- fig.cap=""---------------------------------------------------------
 drawGraph(ssmSmall, ssmSmall$getDependencies('r[3]', determOnly = TRUE))
 
 ## ------------------------------------------------------------------------
@@ -100,7 +97,7 @@ ssmSmall$getNodeNames(stochOnly = TRUE)   #salmon
 ssmSmall$getNodeNames(determOnly = TRUE)  #cyan
 ssmSmall$getNodeNames(dataOnly = TRUE)    #plum
 
-## ------------------------------------------------------------------------
+## ---- fig.cap = ""-------------------------------------------------------
 drawGraph(ssmSmall, 'stochDetermData')
 
 ## ------------------------------------------------------------------------
@@ -108,7 +105,7 @@ ssmSmall$getNodeNames(topOnly = TRUE)   #salmon
 ssmSmall$getNodeNames(latentOnly = TRUE)  #cyan
 ssmSmall$getNodeNames(endOnly = TRUE)    #plum
 
-## ------------------------------------------------------------------------
+## ---- fig.cap = ""-------------------------------------------------------
 drawGraph(ssmSmall, 'topLatentEnd')
 
 ## ------------------------------------------------------------------------
@@ -117,7 +114,7 @@ ssmSmall$expandNodeNames('logN.est[2:5]')
 ## ------------------------------------------------------------------------
 ssmSmall$topologicallySortNodes(c('logN.est[5]', 'r[4]', 'logN.est[3]', 'y[2]'))
 
-## ------------------------------------------------------------------------
+## ---- fig.cap = ""-------------------------------------------------------
 m1 <- nimbleModel(
     nimbleCode({
         tau ~ dunif(0, 100)
@@ -130,7 +127,7 @@ m1$getNodeNames()
 ## nimbleCode({
 ##     tau ~ dunif(0, 100)
 ##     lifted_d1_over_sqrt_oPtau_cP <- 1/sqrt(tau)
-##     x ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP) #by default, tau is a precision
+##     x ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP)
 ## }))
 
 ## ---- eval = FALSE-------------------------------------------------------
@@ -139,7 +136,7 @@ m1$getNodeNames()
 ## ---- eval = FALSE-------------------------------------------------------
 ## m1$calculate( m1$getDependencies('tau') )
 
-## ------------------------------------------------------------------------
+## ---- fig.cap = ""-------------------------------------------------------
 m2 <- nimbleModel(
     nimbleCode({
         a ~ dnorm(0, 1)

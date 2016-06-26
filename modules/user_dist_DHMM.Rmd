@@ -13,23 +13,19 @@ We will use the orchid (Showy Lady's Slipper) example from Chapter 9 of K&eacute
 
 We will show code but not take the time to run as a working example.
 
-[^1]: 
-Marc K&eacute;ry and Michael Schaub. 2012. Bayesian Population Analysis Using WinBUGS: A hierarchical perspective.  Elsevier / Academic Press.
-
-
-    - States are vegetative (1), flowering (2), dormant (3), or dead (4)
-    - Observations are "seen vegetative" (1), "seen flowering" (2), or "not seen" (3).
-    - Data from 250 plants on 11 sampling occassions.
-    - Capture histories look like:
-        + 1 1 2 2 2 2 1 2 2 2 2
-        + 1 1 0 1 1 1 0 0 0 0 0
-        + 0 0 0 1 2 2 1 0 0 2 2
-    - Observations match state if vegetative (1) or flowering (2) and are "not seen" when dormant (3) or dead (4).
-    - Although simple, this has the basic math of uncertain states.
-    - Parameters are survival and probabilities of transitions between states.
-    - Typical BUGS implementation uses discrete latent state which must be sampled by MCMC.
-    - For one individual, probability of capture history can be calculated from a Dynamic Hidden Markov Model.
-    - In NIMBLE we can replace the latent states by a distribution for each capture history.
+   - States are vegetative (1), flowering (2), dormant (3), or dead (4)
+   - Observations are "seen vegetative" (1), "seen flowering" (2), or "not seen" (3).
+   - Data from 250 plants on 11 sampling occassions.
+   - Capture histories look like:
+      + 1 1 2 2 2 2 1 2 2 2 2
+      + 1 1 0 1 1 1 0 0 0 0 0
+      + 0 0 0 1 2 2 1 0 0 2 2
+   - Observations match state if vegetative (1) or flowering (2) and are "not seen" when dormant (3) or dead (4).
+   - Although simple, this has the basic math of uncertain states.
+   - Parameters are survival and probabilities of transitions between states.
+   - Typical BUGS implementation uses discrete latent state which must be sampled by MCMC.
+   - For one individual, probability of capture history can be calculated from a Dynamic Hidden Markov Model.
+   - In NIMBLE we can replace the latent states by a distribution for each capture history.
 
 # Typical BUGS implementation
 
@@ -122,13 +118,17 @@ for (i in 1:nind){
 }
 ```
 
-Key element is that `z[i,t]` are latent states (true state of plant i at time t) and hence need MCMC sampling.  But in this case many of the states are known with certainty, but we're using it because it is simple.
+Key element is that `z[i,t]` are latent states (true state of plant i at time t) and hence need MCMC sampling.  In this case many of the states are known with certainty, but we're using it because it is simple.
 
 Actually this code will not run in NIMBLE because it uses stochastic indices.  We expect a future version of NIMBLE to support that.
 
 # NIMBLE implementation using a hidden-Markov model distribution.
 
 This is from [Turek et al.](http://arxiv.org/abs/1601.02698), recently accepted.
+
+As commonly recognized, a discrete filtering algorithm can compute the likelihood for an observation history for one individual.
+
+In the past some other software has used this approach, but not within the full flexbility of BUGS code.
 
 ```{r eval=FALSE}
 ## Filter MCMC for the orchid model
@@ -148,7 +148,7 @@ dDHMMorchid <- nimbleFunction(
             sumZpi <- sum(Zpi)
             logL <- logL + log(sumZpi)
             if(t != length)
-	       pi <- (T[,,t] %*% asCol(Zpi) / sumZpi)[ ,1]
+	       pi <- (T[,,t] %*% Zpi / sumZpi)[ ,1]
         }
         returnType(double())
         return(logL)
@@ -172,9 +172,6 @@ registerDistributions(list(
         discrete = TRUE
     )
 ))
-
-## load data
-load('../data/orchidData.RData')
 
 ## define hierarchical model
 code <- nimbleCode({
@@ -231,35 +228,9 @@ code <- nimbleCode({
     }
 })
 
-## define model constants, data, and initial values
-constants <- list(f=f, k=k, nind=nind, prior=c(1/2,1/2,0,0), Z=array(c(1,0,0,0,1,0,0,0,1,0,0,1), c(3,4)))
-data <- list(y = y)
-inits <- list(s = rep(1/2,k-1), a = rep(1,3), b = rep(1,3), c = rep(1,3))
-
-## create model object
-Rmodel <- nimbleModel(code, constants, data, inits, check = FALSE)
-
-## specify MCMC algorithm
-spec <- configureMCMC(Rmodel)
-spec$printSamplers()
-
-## build MCMC algorithm
-Rmcmc <- buildMCMC(spec)
-
-## compile model and MCMC
-Cmodel <- compileNimble(Rmodel)
-Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
-
-## run MCMC
-set.seed(0)
-Cmcmc$run(10000)
-
-## extract samples
-samples <- as.matrix(Cmcmc$mvSamples)
-apply(samples, 2, mean)
 ```
 
-Key element is that there are no latent states. `dDHMM` sums over the latent states using a Hidden Markov Model filtering calculation for each capture history.
+Key element is that there are no latent states because `dDHMM` sums over the latent states internally.
 
 # Results 
 
@@ -272,3 +243,5 @@ Combining dDHMM with *parameter blocking* yielded about 3x more efficiency (mini
 
 For Goose example (> 11000 animals), taking advantage also of multiple identical capture histories (only 153 unique capture histories), dDHMM with default samplers yielded about 70x improvement over JAGS.  Parameter blocking yielded another order of magnitude improvement.
 
+[^1]: 
+Marc K&eacute;ry and Michael Schaub. 2012. Bayesian Population Analysis Using WinBUGS: A hierarchical perspective.  Elsevier / Academic Press.

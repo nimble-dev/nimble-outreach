@@ -18,7 +18,8 @@ ssm$getNodeNames()
 
 ## ---- model-values-------------------------------------------------------
 ssm$mean.r
-ssm$logProb_mean.r  # log-likelihood components
+ssm$logProb_mean.r  # log-likelihood components can be seen like this, but 
+                    # usually should be obtained by ssm$getLogProb('mean.r'); see below. 
 ssm$r
 ssm$r <- rnorm(length(ssm$r), 0, 1)
 ssm$r
@@ -26,13 +27,13 @@ ssm$logProb_r # not calculated yet!
 
 ## ---- model-operate------------------------------------------------------
 ssm$r[1:3] <- c(.1, .2, .3)
-ssm$calculate(c('r[1]','r[2]','r[3]'))
-## The following is equivalent:
+ssm$calculate(c('r[1]','r[2]','r[3]')) 
+ssm$logProb_r[1:3]
+sum(ssm$logProb_r[1:3])
+## The following is equivalent to what we just did:
 ## ssm$calculate('r[1:3]')
 ## If we wanted to calculate all of r, we could do:
 ## ssm$calculate('r')
-ssm$logProb_r[1:3]
-sum(ssm$logProb_r[1:3])
 
 ## ---- model-simulate-----------------------------------------------------
 set.seed(0)  # so the calculations are reproducible
@@ -43,7 +44,7 @@ ssm$r[1:3]
 ssm$getParam('r[1]', 'sd')
 
 ## ------------------------------------------------------------------------
-ssm$getParam('r[1]', 'tau') # label for precision
+ssm$getParam('r[1]', 'tau') # tau is the name for precision
 
 ## ------------------------------------------------------------------------
 ssm$getLogProb('r[1:3]')
@@ -59,11 +60,14 @@ set.seed(0)
 Cssm$r[1:3]
 Cssm$simulate('r[1:3]')
 Cssm$calculate('r[1:3]')
+Cssm$r <- c(1,2,3)
+Cssm$calculate('r[1:3]')
 
 ## ------------------------------------------------------------------------
 ## Put new values in r[1:3]
 ssm$r[1:3] <- c(0.1, 0.2, 0.3)
-## need to update log probabilities of r[1:3], values of logN.est[2:T], and log probabilities of logN[2:T], in that order.
-## If we go out of order, calculates will not be correct.
+## need to update log probabilities of r[1:3], values of logN.est[2:T],
+## and log probabilities of logN[2:T], in that order.
+## If we go out of order, calculations will not be correct.
 ssm$calculate(c('r[1:3]','logN.est[2:T]', 'y[2:T]'))
 
