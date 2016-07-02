@@ -1,0 +1,9 @@
+# Operating a model
+
+1.) Experiment with different values for the top-level (hyperparameter) nodes in the state-space model, simulating values for the true and observed population sizes over time given hyperparameter values that you choose. Plot these sizes to get a better understanding of how the hyperparameters determine population growth. 
+
+Note that to simulate into data nodes, you'll need to use the *includeData* argument when calling the *simulate* method. Otherwise, by default NIMBLE will not overwrite data values.
+
+# Graph structure
+
+2.) (Advanced) Can you figure out how to reparameterize the state space model so that one doesn't have parameters such as `r[t]` that have many dependent nodes?

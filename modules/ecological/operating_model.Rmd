@@ -1,0 +1,238 @@
+---
+title: "Programming with models (1): Operating a model (state-space model example)"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+library(methods)
+read_chunk('chunks_ssm.R')
+```
+
+# Outline
+
+In this module we'll see how a model can be operated.  This will
+include:
+
+   - The distinction between nodes and variables.
+   - NIMBLE's node naming convention
+   - Getting and setting values.
+   - Ability to do two core operations:
+      + *calculate()* 
+      + *simulate()* 
+   - Ability to do three other helpful operations:
+      + *getLobProb()* 
+      + *calculateDiff()*
+      +  *getParam()* 
+   - More general getting and setting of values:
+      + *values()*
+   - Equivalent operation of uncompiled and compiled models
+
+#Running example: state-space model example
+
+We first need to build the model.
+
+```{r, ssm-code}
+```
+
+```{r, ssm-model}
+```
+
+```{r, ssm-compile}
+```
+
+# Nodes and variables
+
+The parameters, latent states, and data in a model are represented as nodes in a graph.  We'll cover more about the graph later.
+
+An important distinction is between *nodes* and *variables*.
+
+ - node: an element in the model that will always be calculated together, such as "`r[2]`" or "`y[4]`":
+    + nodes represent a graph "vertex" (or simply "node").
+    + a deterministic node is calculated by updating its value
+    + a stochastic node is calculated by updating the log probability density of its value.
+ - variable: a collection of one or more nodes with the same name, e.g., "`r`" or "`y`" in the state-space model 
+
+# NIMBLE's node naming convention
+
+Every node has a character name.  In our example these are:
+```{r node-names}
+ssm$getNodeNames()
+```
+
+In a model with scalar nodes embedded in multivariate variables, we
+would have names like "`x[2, 3]`" or "`z[3, 2, 5]`".
+
+In a model with multivariate nodes we would have names like
+"`a[1:5]`" or "`b[2:5, 3:6]`"
+
+*The spaces after the commas are important*, but you will usually 
+ obtain node names from a model object, so they will be correct. (You can use `model$expandNodeNames` to ensure they are correctly formatted.)
+
+We will see more about querying the model about its nodes and
+variables later.
+
+# Values in the model
+
+What's the current value in a node or the value of the log probability density for that node?
+
+```{r, model-values}
+ssm$mean.r
+ssm$logProb_mean.r  # log-likelihood components can be seen like this, but 
+                    # usually should be obtained by ssm$getLogProb('mean.r'); see below. 
+ssm$r
+ssm$r <- rnorm(length(ssm$r), 0, 1)
+ssm$r
+ssm$logProb_r # not calculated yet!
+```
+
+# Operating a model: *calculate()* 
+
+When you program with a model, you are in charge of using the model
+correctly.  As we will see later, you can query the model itself to make sure you do so. NIMBLE's programming system provides tools to help you do
+so, but it does not try to read your mind.
+
+*Calculate* means:
+
+   - For a stochastic node, calculating the log probability (density)
+    and storing it as the "logProb" value.
+   - For a deterministic node, calculating the node's value.
+
+Calling `model$calculate(nodes)` will
+
+   - Calculate each element of `nodes` **in order**.
+   - Return the sum of the log probabilities.
+   - The log probability contribution from a deterministic node is 0.
+
+Let's see an example:
+
+```{r, model-operate}
+ssm$r[1:3] <- c(.1, .2, .3)
+ssm$calculate(c('r[1]','r[2]','r[3]'))
+## The following is equivalent:
+## ssm$calculate('r[1:3]')
+## If we wanted to calculate all of r, we could do:
+## ssm$calculate('r')
+ssm$logProb_r[1:3]
+sum(ssm$logProb_r[1:3])
+```
+
+Note that values of `logN.est` are *out of date* with the new values
+of `r[1:3]`.  We would need to call `calculate` for `logN.est` to
+update them.  The model will not read your mind about whether you want
+to update those values or not; you are responsible for using the model
+correctly.
+
+# Operating a model: *simulate()*
+ 
+*Simulate* means
+ 
+   - for a stochastic node: drawing a random number and storing it as
+    the node's value.
+   - for a deterministic node: calculating and storing the value (the
+    same as calculate).
+
+Calling `simulate$model(nodes)` will:
+
+   - Simulate each element of `nodes` **in order**. 
+   - return nothing.
+
+If you want to see the new values, you must look at the model's variables.
+
+```{r, model-simulate}
+set.seed(0)  # so the calculations are reproducible
+ssm$simulate('r[1:3]')  # simulate from prior
+ssm$r[1:3]
+```
+You must call `ssm$calculate('r[1:3]')` if you want the log probability values updated to correspond to the new values of `r[1:3]`. Again, you are in control of the model.
+
+# Operating a model: *getParam()*
+
+*getParam* means obtaining the value of a parameter to a distribution.
+
+Example:
+
+```{r}
+ssm$getParam('r[1]', 'sd')
+```
+
+You can get the value of alternative parameters that you didn't even
+use in the BUGS code:
+
+```{r}
+ssm$getParam('r[1]', 'tau') # tau is the name for the precision
+```
+
+`getParam` can only be used for one node at a time.
+
+# Operating a model: *getLogProb()* and *calculateDiff()*
+
+`model$getLogProb(nodes)`
+
+   - returns the sum of stored log probability (densities) for
+   elements of `nodes`
+   - does **not** calculate the log probabilities.
+   - deterministic nodes in `nodes` contribute 0 to the result.
+
+```{r}
+ssm$getLogProb('r[1:3]')
+```
+
+`model$calculateDiff(nodes)` is just like `model$calculate(nodes)` except:
+
+   - it returns the sum of the differences between the new log probabilities and the previously stored ones.
+
+This is often useful in Monte Carlo algorithms.
+
+# Getting and setting values of groups of variables
+
+Sometimes it is useful to set or get model values from a single
+vector of node names.  *values* does that.
+
+```{r}
+values(ssm, c('r[1:3]','logN.est[1:3]'))
+values(ssm, c('r[1:3]','logN.est[1:3]')) <- 1:6
+ssm$r[1:3]
+ssm$logN.est[1:3]
+```
+
+Note that this allows for programmatically using the names of nodes as a variable, unlike this:
+```{r}
+ssm$r[1:3]
+ssm$r[1:3] <- rnorm(3)
+```
+
+# Compiled models can be used just like uncompiled models
+
+```{r}
+set.seed(0)
+Cssm$r[1:3]
+Cssm$simulate('r[1:3]')
+Cssm$calculate('r[1:3]')
+Cssm$r <- c(1,2,3)
+Cssm$calculate('r[1:3]')
+```
+
+# Putting the pieces together
+
+Say we want to put new values in `r[1:3]` and update all values and
+log probabilities.  This takes several steps:
+
+```{r}
+## Put new values in r[1:3]
+ssm$r[1:3] <- c(0.1, 0.2, 0.3)
+## need to update log probabilities of r[1:3], values of logN.est[2:T], 
+##   and log probabilities of logN[2:T], in that order.
+## if we go out of order, calculates will not be correct.
+ssm$calculate(c('r[1:3]','logN.est[2:T]', 'y[2:T]'))
+```
+
+What we really should do is determine which nodes to calculate, in a valid order, from the model itself.  That will allow us to write *model-generic* code.  We'll get to that later.
+

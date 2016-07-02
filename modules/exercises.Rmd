@@ -6,6 +6,20 @@ library(methods)  # otherwise new() not being found - weird
 library(nimble)
 ```
 
+# Using and customizing MCMC in NIMBLE
+
+1.) The file `litters.R` provides BUGS code and data/constants/initial values for a hierarchical model for survival data for rat pups in a simple experiment with a treatment and a control. 
+
+There are ```G=2``` groups of rat litters, with ```N=16```  litters (i.e., mothers) in each group, and a variable number of pups in each litter. Survival of the pups in a litter is governed by a survival probability for each litter, ```p[i,j]```, but the probabilities for the litters within a group are considered to come from a common distribution, ```p[i,j] ~ dbeta(a[i], b[i])```, thereby borrowing strength across the litters in a group.
+
+<center><img src="figures/littersDAG.jpg"></center>
+
+  - Examine the BUGS code and assess whether you understand the model structure (and ask me if you don't).
+  - Run an MCMC for this model. 
+  - Assess how it performs. If it doesn't perform well, what aspects of the model structure might be causing problems.  
+  - Try to customize the MCMC (feel free to ask me for hints).
+
+
 # Writing a model and operating it
 
 1) Write BUGS code for a normal random effects model with 6 groups and 10 observations in each group. 

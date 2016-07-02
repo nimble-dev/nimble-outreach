@@ -1,0 +1,143 @@
+---
+title: "The BUGS language (state-space model example)"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+library(methods)
+```
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+
+# The BUGS language
+
+The BUGS language is described in detail in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.html). 
+
+### Stochastic declarations:
+
+  - `x ~ dgamma(shape, scale)` (x follows a gamma distribution with parameters `shape` and `scale`)
+
+### Deterministic declarations
+
+  - `y <- 2 * x`
+
+### For loops
+
+  - `for(i in 1:10) {x[i] <- exp(y[i])}`
+
+### Classic BUGS examples
+
+  - included in NIMBLE or found here on the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).
+  - Information: [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
+
+### NIMBLE's dialect of BUGS :
+
+   - Differences between NIMBLE and WinBUGS, OpenBUGS and/or JAGS will be covered later.
+   - Also described in Section 5 of the [NIMBLE Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+
+# A basic example: population state-space model
+
+We'll use an example from Chapter 5 of K&eacute;ry and Schaub (2012)[^1]
+
+Code and data are available from the [BPA web site](http://www.vogelwarte.ch/de/projekte/publikationen/bpa/complete-code-and-data-files-of-the-book.html), in bpa-code.txt.
+
+### Summary
+
+   - House martin counts (1990 - 2009) by Reto Freuler
+   - Exponential population model with population growth rate varying each year
+   - Log-normal observations of population size.
+   - Parameters to estimate: mean and variance of population growth rate; observation variance.
+   - Latent states: True population size in each year.
+   - The example also generates predictions through 2015.
+
+### BUGS \& NIMBLE code for the model
+
+```{r model-code}
+library(nimble)
+ssmCode <- nimbleCode({
+        # Priors and constraints
+        logN.est[1] ~ dnorm(5.6, 0.01)    # Prior for initial population size
+        mean.r ~ dnorm(1, 0.001)          # Prior for mean growth rate
+        sigma.proc ~ dunif(0, 1)          # Prior for sd of state process
+        sigma2.proc <- pow(sigma.proc, 2)
+        tau.proc <- pow(sigma.proc, -2)
+        sigma.obs ~ dunif(0, 1)           # Prior for sd of observation process
+        sigma2.obs <- pow(sigma.obs, 2)
+        tau.obs <- pow(sigma.obs, -2)
+
+        # State process
+        for (t in 1:(T-1)){
+           r[t] ~ dnorm(mean.r, tau.proc)
+           logN.est[t+1] <- logN.est[t] + r[t]
+        }
+
+        # Likelihood
+        # Observation process 
+        for (t in 1:T) {
+           y[t] ~ dnorm(logN.est[t], tau.obs)
+        }
+
+        # Population sizes on real scale
+        for (t in 1:T) {
+            N.est[t] <- exp(logN.est[t])
+        }
+})
+```
+
+Argument to `nimbleCode` was copied and pasted from the book's code.
+
+[^1]: 
+Marc K&eacute;ry and Michael Schaub. 2012. Bayesian Population Analysis Using WinBUGS: A hierarchical perspective.  Elsevier / Academic Press.
+
+# Reading BUGS code from a file
+
+A typical idiom for users of the R2WinBUGS and rjags packages is to use `sink` and `cat` to write BUGS code to a file from R:
+```{r, ssm-cat}
+sink("ssm.bug")
+cat("
+model {
+# Priors and constraints
+logN.est[1] ~ dnorm(5.6, 0.01)       # Prior for initial population size
+mean.r ~ dnorm(1, 0.001)             # Prior for mean growth rate
+sigma.proc ~ dunif(0, 1)             # Prior for sd of state process
+sigma2.proc <- pow(sigma.proc, 2)
+tau.proc <- pow(sigma.proc, -2)
+sigma.obs ~ dunif(0, 1)              # Prior for sd of observation process
+sigma2.obs <- pow(sigma.obs, 2)
+tau.obs <- pow(sigma.obs, -2)
+
+# Likelihood
+# State process
+for (t in 1:(T-1)){
+   r[t] ~ dnorm(mean.r, tau.proc)
+   logN.est[t+1] <- logN.est[t] + r[t]
+   }
+
+# Observation process
+for (t in 1:T) {
+   y[t] ~ dnorm(logN.est[t], tau.obs)
+   }
+
+# Population sizes on real scale
+for (t in 1:T) {
+   N.est[t] <- exp(logN.est[t])
+   }
+}
+",fill = TRUE)
+sink()
+```
+
+This can be read into NIMBLE using `readBUGSmodel`:
+
+```{r read-bugs-model}
+ssmCode <- readBUGSmodel('ssm.bug', dir ="", 
+                         returnModelComponentsOnly = TRUE)$model
+file.remove('ssm.bug')
+```
+

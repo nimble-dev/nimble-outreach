@@ -31,3 +31,4 @@ user_function: user_function.html
 vectorizing: vectorizing.html
 nimbleFunctions: nimbleFunctions.html
 exercises: exercises.html
+extends_bugs: how_nimble_extends_bugs.html

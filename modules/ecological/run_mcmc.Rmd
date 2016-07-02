@@ -1,0 +1,163 @@
+---
+title: "Running an MCMC (state-space model example)"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+library(methods)
+read_chunk('chunks_ssm.R')
+```
+
+# A basic MCMC
+
+The steps of running an MCMC are as follows:
+
+ - configure the MCMC (can be combined with next step)
+ - build the MCMC 
+ - compile the MCMC
+ - run the MCMC
+ - extract the MCMC samples
+
+# Build the model
+
+We first need to build the model.
+
+```{r, ssm-code}
+```
+
+```{r, ssm-model, tidy=FALSE}
+```
+
+```{r, ssm-compile}
+```
+
+# Configuring a basic MCMC
+
+*Configuring* the MCMC means setting up the samplers to be used for
+ each node or group of nodes, which nodes will be recorded and any
+ thinning.
+
+You can modify the configuration before you build the actual MCMC algorithm for compiling and running.
+
+
+NIMBLE provides a default configuration, but we'll see shortly how you can modify that. 
+
+The entire MCMC system is written using nimbleFunctions, so you can read and modify the source code in R or write your own MCMC system if you want.
+
+It is easy to write new samplers as nimbleFunctions and include them in an MCMC configuration.
+
+```{r, conf}
+mcmcConf <- configureMCMC(ssm)
+```
+
+You can see what kind of sampler has been assigned to each node:
+```{r seesamplers}
+mcmcConf$printSamplers()
+```
+
+This list reveals that this model is not written well for efficient
+computation.  Every time time the MCMC considers a new value for
+`r[t]`, the value of `logN.est` and the probability density of
+`y` must be calculated for every value of `t` until the end of the
+data.  We'll reconsider that later, but it's tangential to our current
+purpose of illustrating MCMC.
+
+We'll see how to modify sampler assignments later.  
+
+You can also inspect the monitors, which is the vector of nodes that will be
+recorded in output.
+
+```{r, seemonitors}
+mcmcConf$getMonitors()
+```
+
+If we wanted to add or remove variables from monitors, we could use
+`mcmcConf$addMonitors()`.
+
+# Building, compiling and running the MCMC
+
+
+```{r build-mcmc}
+ssmMCMC <- buildMCMC(mcmcConf)
+CssmMCMC <- compileNimble(ssmMCMC, project = ssm)
+```
+
+Now let's run the MCMC.  *Both the uncompiled and compiled versions
+can be run*, but the uncompiled version will be really slow.  Its
+purpose is to allow debugging of algorithms from R.  (They will usually
+create exactly the same samples if you set the random number seed to
+the same value before each.)
+
+Let's run each for 10 iterations and time them:
+```{r run-mcmc, warning=FALSE}
+set.seed(0)
+print(system.time(ssmMCMC$run(10)))  # uncompiled version
+set.seed(0)
+print(system.time(CssmMCMC$run(10)))   # compiled version
+```
+
+In this case the uncompiled MCMC generates a set of warnings
+(suppressed in these slides).   These arise from the
+Metropolis-Hastings algorithm proposing negative values for standard
+deviations, which create NaNs in `dnorm` calculations.  These are not
+a problem and could be removed by using a reflected sampler, a sampler
+on a log scale, or other customization.
+
+But now let's run the compiled version for much longer:
+```{r run-mcmc-longer}
+print(system.time(CssmMCMC$run(10000)))
+```
+
+# Extracting MCMC output
+
+The samples are saved inside of the `CssmMCMC` object and must be
+extracted and converted to a matrix.
+
+```{r Rmcmc}
+samples <- as.matrix(CssmMCMC$mvSamples)
+```
+
+Now let's look at a few parameters
+
+```{r output-mcmc, fig.height=4, fig.width=9, fig.cap=""}
+tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
+
+par(mfrow = c(1, 3), mai = c(.6, .5, .1, .2))
+tsplot(samples[ , 'mean.r'], xlab = 'iteration',
+     ylab = 'mean.r', main = 'mean.r')
+tsplot(samples[ , 'sigma.proc'], xlab = 'iteration',
+     ylab = 'sigma.proc', main = 'sigma.proc')
+tsplot(samples[ , 'sigma.obs'], xlab = 'iteration',
+     ylab = 'sigma.obs', main = 'sigma.obs')
+```
+
+### Using CODA
+
+NIMBLE does not provide any MCMC diagnostics, but one can easily use CODA or other R packages with the MCMC output from a NIMBLE MCMC.
+
+```{r coda}
+library(coda)
+burnin <- 100
+mcmc <- as.mcmc(samples[(burnin+1):nrow(samples), ])
+crosscorr(mcmc[ , c('mean.r', 'sigma.proc', 'sigma.obs')])
+effectiveSize(mcmc)
+```
+
+One could apply the commonly used Gelman-Rubin potential scale
+reduction factor diagnostic (which requires multiple chains).
+
+NIMBLE does not automate running multiple chains, but one can easily
+write a for-loop to do so.
+
+
+
+
+

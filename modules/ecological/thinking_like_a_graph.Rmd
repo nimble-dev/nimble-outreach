@@ -1,0 +1,89 @@
+---
+title: "Using our understanding of graphs to re-write the state-space model example"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+library(methods)
+read_chunk('chunks_ssm.R')
+```
+# Outline
+
+In this module, we'll apply our understanding of the computations implied by the graphical structure of a model.
+
+The state-space model as written previously creates a computational burden that increases non-linearly with the length of the data set.
+
+# The running state-space model example
+
+```{r, ssm-code}
+```
+
+```{r, ssm-model}
+```
+
+# Re-writing the model
+
+In this model, if an algorithm (such as MCMC) wants to change `r[t]` and update the model correspondingly, then it needs to recalculate `logN.est[t+1]`, `logN.est[t+2]`, `logN.est[t+3]` etc.  It also needs to recalculate the log probability density for `y[t+1]`, `y[t+2]`, `y[t+3]`, etc.
+
+We can re-write the model like this:
+
+```{r}
+ssmCodeAlt <- nimbleCode({
+# Priors and constraints
+logN.est[1] ~ dnorm(5.6, 0.01)       # Prior for initial population size
+mean.r ~ dnorm(1, 0.001)             # Prior for mean growth rate
+sigma.proc ~ dunif(0, 1)             # Prior for sd of state process
+sigma.obs ~ dunif(0, 1)              # Prior for sd of observation process
+
+# Likelihood
+# State process
+for (t in 1:(T-1)){
+   logN.est[t+1] ~ dnorm(logN.est[t] + mean.r, sd = sigma.proc)
+   }
+
+# Observation process
+for (t in 1:T) {
+   y[t] ~ dnorm(logN.est[t], sd = sigma.obs)
+   }
+
+# Population sizes on real scale
+for (t in 1:T) {
+   N.est[t] <- exp(logN.est[t])
+   }
+})
+```
+
+# Compare MCMCs
+
+We'll use `compareMCMCs` and related functions to compare MCMC efficiency for the original and alternate way to write the model. 
+
+```{r}
+set.seed(1)
+ourInits <- inits()
+mcmcResult <- compareMCMCs(
+     list(ssm = list(code = ssmCode, inits = ourInits, data = bugs.data)),
+     niter = 50000, burnin = 5000, MCMCs = 'nimble', summary = TRUE)
+
+mcmcResultAlt <- compareMCMCs(
+     list(ssm = list(code = ssmCodeAlt, inits = ourInits, data = bugs.data)),
+     niter = 50000, burnin = 5000, MCMCs = 'nimble', summary = TRUE)
+
+mcmcResultAlt[[1]] <- rename_MCMC_comparison_method('nimble', 'nimble(alt)',
+                      mcmcResultAlt[[1]])
+
+mcmcBoth <- combine_MCMC_comparison_results(mcmcResult[[1]], mcmcResultAlt[[1]])
+
+make_MCMC_comparison_pages(mcmcBoth, dir = 'ssm_MCMC_comparison')
+```
+
+The results are [here](ssm_MCMC_comparison/MCMCresults.html)
+
+It does look like the alternative version yields faster MCMC.

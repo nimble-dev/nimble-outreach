@@ -1,0 +1,45 @@
+---
+title: "Some inspirations for how you could you use NIMBLE"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)
+```
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+
+# What are some ways you can use NIMBLE?
+
+   - Run your own analyses, of course.
+   - Combine methods in new ways: e.g. Particle MCMC = Particle filter + MCMC.
+   - Write and share new MCMC samplers.
+   - Write and share new algorithms.
+   - Make a package that uses NIMBLE as an engine.
+
+# Example: Providing efficient MCMCs for a class of models
+
+   - Say you have good MCMC strategies for state-space models
+   - You could write a function to automate the custom configuration:
+       + e.g., `ssmMCMC <- configureStateSpaceMCMC(ssm)`
+   - You could write a package that provides the samplers and configuration function to end users.
+
+# Example: Providing high-level access to a class of models and/or methods
+   - Say you want to provide an R-style single-line call such as `lm` or `glm` for a complicated class of models.
+   - You can convert that line into inputs for one or more pre-written BUGS models and then use any algorithms on it.
+       + Model-definition if-then-else could be especially useful.
+   - The idea is to raise the level of abstraction one level above BUGS code.
+
+# Example: You have an algorithm that could be used for many kinds of models
+
+  - Maybe you want to automate Bayesian cross-validation.
+      + Warning: how to hold out data in a hierarchical setting is not trivial.
+  - You can program this in a way that adapts to any `nimbleModel` by querying each model  about its nodes and their relationships.
+  - Then you can provide the *model-generic* algorithm as a package.
