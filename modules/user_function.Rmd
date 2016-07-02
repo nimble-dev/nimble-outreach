@@ -1,0 +1,185 @@
+---
+title: "User-defined functions"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+NIMBLE provides a variety of functions for use in BUGS code, as seen in Section 5.2.4 of the [NIMBLE manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
+
+However, there are lots of other calculations that you might want to do in BUGS code. So NIMBLE allows you to code up your own function and then use it in BUGS code. Since these functions are compiled to C++, this can be a good way to increase computational efficiency.
+
+
+# Basic example
+
+We'll start with a silly example. Suppose you needed to take a parameter vector in a model and multiple all the elements by two. You could just do this in the BUGS code itself, but we'll illustrate doing this in a user-defined function. User-defined functions are just nimbleFunctions that have only run-time code; more information is available in the *compile_R* module.
+
+Here's the user-defined function.
+
+```{r, userfun-basic}
+mult2 <- nimbleFunction(
+      run = function(x = double(1)) {
+        returnType(double(1))
+        return(2*x)
+      }
+)
+```
+
+```{r, scopefix, echo=FALSE}
+# not clear why mult2() not being put into global
+# if this isn't done, knitr can't find mult2
+assign('mult2', mult2, .GlobalEnv)
+```
+
+# Using the function in BUGS code
+
+Now let's use that function in BUGS code.
+
+```{r, userfun-use}
+code <- nimbleCode({
+     for(i in 1:n) 
+           y[i] ~ dnorm(mu[i], sd = sigma)
+     mu[1:n] <- mult2(lambda[1:n])
+     lambda[1:n] ~ dmnorm(mu0[1:n], C[1:n, 1:n])
+})
+n <- 10
+data <- list(y = rnorm(n))
+inits <- list(mu0 = rep(1, n), C = diag(rep(1, n)),
+      sigma = 1)
+model <- nimbleModel(code, constants = list(n = n),
+      data = data, inits = inits)
+model$simulate('lambda')
+model$lambda
+model$mu
+model$calculate('mu')
+model$mu
+```
+
+# A real example
+
+Covariance matrices that are parameterized by hyperparameters are commonly used in longitudinal, spatial, and assorted random effects model contexts. 
+
+Let's consider constructing a covariance matrix for temporally-correlated random effects using a user-defined function. One could do this directly using for loops in BUGS code, but there are two advantages to using a user-defined function:
+
+ - It will generally be more computationally efficient to do it in a user-defined function. This is because all of the looping will be done within simple loops in compiled code, rather than by looping over nodes in the model, which involves some overhead. In the example below, only one node, for the entire covariance matrix, is created, while looping in the BUGS code would create one node per matrix element. 
+ - The user-defined function can be re-used in multiple models, providing modularity.
+
+At the moment, we don't have an *outer* function in the NIMBLE DSL so we'll have to write this as two for loops. Computationally that's not a problem because NIMBLE will compile the function to C++ where for loops are fast. 
+
+```{r, usefun-cov}
+expcov <- nimbleFunction(     
+   run = function(times = double(1), rho = double(0), tau = double(0)) {
+      returnType(double(2))
+      n <- length(times)
+      result <- matrix(nrow = n, ncol = n, init = FALSE)
+      for(i in 1:n)
+            for(j in 1:n)
+                  result[i, j] <- tau*tau*exp(-abs(times[i]-times[j])/rho)
+      return(result)
+})
+```
+
+```{r, scopefix2, echo=FALSE}
+# not clear why expcov() not being put into global
+# if this isn't done, knitr can't find expcov
+assign('expcov', expcov, .GlobalEnv)
+```
+
+Let's generate some time series data. In this case, the series is quite smooth as I'm just generating from a polynomial.
+
+```{r, gen-data, fig.height=4, fig.width=6}
+nT <- 50
+set.seed(0)
+times <- seq(0, 1, length = nT)
+betas <- c(0.5, .1, 1.6, -1.5)
+f <- betas[1] + betas[2]*times + betas[3]*times^2 + betas[4]*times^3
+y <- rnorm(nT, f, 0.1)
+plot(times, y, xlab = "time", ylab = "y")
+lines(times, f)
+```
+
+# Real example: Building the model
+
+```{r, use-usefun-cov}
+code <- nimbleCode({
+       # likelihood
+       for(i in 1:T) 
+             y[i] ~ dnorm(b[i], sd = sigma)
+       # latent process      
+       b[1:T] ~ dmnorm(mn[1:T], cov = C[1:T, 1:T])
+       # process structure
+       mn[1:T] <- ones[1:T]*mu
+       C[1:T,1:T] <- expcov(times[1:T], rho, tau)
+       # hyperparameters
+       mu ~ dnorm(0, sd = 10)
+       sigma ~ dunif(0, 10)
+       rho ~ dunif(0, 20)
+       tau ~ dunif(0, 10)
+})
+inits <- list(mu = 0, rho = .3, tau = 1, sigma = 1)
+inits$C <- expcov(times, inits$rho, inits$tau)
+inits$b <- t(chol(inits$C)) %*% rnorm(nT)
+model <- nimbleModel(code, data = list(y = y),
+      constants = list(T = nT, times = times, ones = rep(1, nT)),
+      inits = inits)
+Cmodel <- compileNimble(model)
+```
+
+# Real example: Fitting via MCMC
+
+Here we note that by using a vectorized representation of *b*, there is a single node for *b*, so the default sampler for *b* is a block sampler on all of its elements. We know that the elements of *b* are correlated; plus, using a single block sampler will take good computational advantage of having a single node, so this is a good choice.
+
+```{r, mcmc}
+conf <- configureMCMC(model)
+conf$getSamplers()
+conf$addMonitors('b')
+mcmc <- buildMCMC(conf)
+Cmcmc <- compileNimble(mcmc, project = model)
+niter <- 10000
+Cmcmc$run(niter)
+samples <- as.matrix(Cmcmc$mvSamples)
+```
+
+And let's look at the MCMC performance and the model fit.
+
+```{r output-mcmc, fig.height=5, fig.width=12}
+tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
+par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
+tsplot(samples[ , 'rho'], xlab = 'iteration',
+     ylab = expression(rho), main = expression(rho))
+tsplot(samples[ , 'tau'], xlab = 'iteration',
+     ylab = expression(tau), main = expression(tau))
+tsplot(samples[ , 'tau'], xlab = 'iteration',
+     ylab = expression(sigma), main = expression(sigma))
+tsplot(samples[ , 'b[40]'], xlab = 'iteration',
+     ylab = expression(b[40]), main = expression(b[40]))
+```
+
+Ok, that's not so good, though by iteration 5000, it seems that the model may have settled on the bulk of the posterior.
+
+How does the fit look in the second half of the samples? It looks like the exponential covariance is not inducing enough smoothness in the fit (though of course we only know that because we simulated the data). 
+
+```{r, plot-fit, fig.height=6, fig.width=8}
+postBurn <- 5001:niter
+bMean <- apply(samples[postBurn, 1:nT], 2, mean)
+bSD <- apply(samples[postBurn, 1:nT], 2, sd)
+
+plot(times, y, xlab = "time", ylab = "y")
+lines(times, f)
+lines(times, bMean, col = 'red')
+lines(times, bMean + 2*bSD, col = 'red', lty = 2)
+lines(times, bMean - 2*bSD, col = 'red', lty = 2)
+```
