@@ -14,7 +14,7 @@ if (file.exists(source)){
     knit(source, envir = new.env())
     system(paste("pandoc -s --webtex -t slidy ", paste(module, ".md", sep = ""), " -o ", paste(module, "_slides.html", sep = ""), " --self-contained"))
     render(source, envir = new.env()) # for style that can hide code chunks dynamically
-    purl(source) ## make separate .R file with just the code
+    # purl(source) ## make separate .R file with just the code
     # knit2html(source, envir = new.env())
 } else {
     cat("Error: ", source, " does not exist.\n")
