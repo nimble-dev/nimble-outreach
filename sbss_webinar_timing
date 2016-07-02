@@ -1,0 +1,22 @@
+2 hour sessions starting at noon
+
+12:05 Logistics
+12:10 Why NIMBLE
+12:14 Starting modules
+12:20 Middle of building first model
+12:21 First Rstudio
+12:28 CpumpMCMC$run(niter)
+12:32 recapping 1st 3 modules
+12:33 customizing an mcmc
+12:40 finished slice sampler example
+12:43 programming with nimble
+12:50 simulate
+12:52 done with operating a model
+12:56 inspecting model structure
+1:00 break started
+1:06/7 restarted
+1:09 lifted nodes
+1:13 writing nimbleFunctions
+1:25 [writing own sampler — lost track of time]
+1:38 done writing sampler
+1:40 user-defined distributions
