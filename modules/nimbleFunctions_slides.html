@@ -115,19 +115,142 @@ Clogistic_obj &lt;-<span class="st"> </span><span class="kw">compileNimble</span
 <pre class="sourceCode r"><code class="sourceCode r">out &lt;-<span class="st"> </span><span class="kw">optim</span>(<span class="kw">c</span>(Cmodel$b0, Cmodel$b1), Clogistic_obj$run, 
     <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">fnscale =</span> -<span class="dv">1</span>))
 out$par</code></pre>
-<pre><code>## [1] -0.5605351  3.8865625</code></pre>
+<pre><code>## [1] -0.5265655  3.4373197</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">glm</span>(y ~<span class="st"> </span>x, <span class="dt">family =</span> <span class="st">'binomial'</span>)</code></pre>
 <pre><code>## 
 ## Call:  glm(formula = y ~ x, family = &quot;binomial&quot;)
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##     -0.5607       3.8874  
+##     -0.5267       3.4378  
 ## 
 ## Degrees of Freedom: 299 Total (i.e. Null);  298 Residual
-## Null Deviance:       412.9 
-## Residual Deviance: 229.5     AIC: 233.5</code></pre>
+## Null Deviance:       400.3 
+## Residual Deviance: 245.4     AIC: 249.4</code></pre>
 <p>Looks like it works.</p>
+</div>
+<div id="example-of-a-simple-mcmc-sampler" class="slide section level1">
+<h1>Example of a simple MCMC sampler</h1>
+<p>Here's a simplified version of the random walk sampler used for NIMBLE's MCMC engine. Note that this simplification excludes the use of an adaptive algorithm that adjusts the proposal standard deviation to the acceptance rate as the MCMC iterations proceed.</p>
+<pre class="sourceCode r"><code class="sourceCode r">sampler_RW &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
+    <span class="dt">contains =</span> sampler_BASE,  <span class="co"># some object-oriented inheritance for MCMC samplers</span>
+    <span class="dt">setup =</span> function(model, mvSaved, target, control) {
+        targetAsScalar &lt;-<span class="st"> </span>model$<span class="kw">expandNodeNames</span>(target, <span class="dt">returnScalarComponents =</span> <span class="ot">TRUE</span>)
+        if(<span class="kw">length</span>(targetAsScalar) &gt;<span class="st"> </span><span class="dv">1</span>)   
+           <span class="kw">stop</span>(<span class="st">'cannot use RW sampler on more than one target; try RW_block sampler'</span>)
+        if(model$<span class="kw">isDiscrete</span>(target))     
+           <span class="kw">stop</span>(<span class="st">'cannot use RW sampler on discrete-valued target; try slice sampler'</span>)
+        ###  control list extraction  ###
+        scale &lt;-<span class="st"> </span>control$scale
+        ###  node list generation  ###
+        calcNodes  &lt;-<span class="st"> </span>model$<span class="kw">getDependencies</span>(target)
+    },
+
+    <span class="dt">run =</span> function() {
+        currentValue &lt;-<span class="st"> </span>model[[target]]
+        <span class="co"># note that scale is available because created in setup code</span>
+        propValue &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>, <span class="dt">mean =</span> currentValue,  <span class="dt">sd =</span> scale)
+        model[[target]] &lt;&lt;-<span class="st"> </span>propValue
+        logMHR &lt;-<span class="st"> </span><span class="kw">calculateDiff</span>(model, calcNodes) 
+        jump &lt;-<span class="st"> </span><span class="kw">decide</span>(logMHR)
+        if(jump) <span class="kw">nimCopy</span>(<span class="dt">from =</span> model, <span class="dt">to =</span> mvSaved, <span class="dt">row =</span> <span class="dv">1</span>, 
+                         <span class="dt">nodes =</span> calcNodes, <span class="dt">logProb =</span> <span class="ot">TRUE</span>)
+        else     <span class="kw">nimCopy</span>(<span class="dt">from =</span> mvSaved, <span class="dt">to =</span> model, <span class="dt">row =</span> <span class="dv">1</span>, 
+                         <span class="dt">nodes =</span> calcNodes, <span class="dt">logProb =</span> <span class="ot">TRUE</span>)
+    },
+
+    <span class="dt">where =</span> <span class="kw">getLoadingNamespace</span>()
+)</code></pre>
+</div>
+<div id="using-modelvalues-objects-to-store-sets-of-node-values-for-a-model" class="slide section level1">
+<h1>Using <code>modelValues</code> objects to store sets of node values for a model</h1>
+<p>A common need is to store multiple sets of values for model variables, such as MCMC output, sets of particles for a particle filter, or an input sample for importance sampling.</p>
+<p>NIMBLE provides a <code>modelValues</code> class for this purpose. A <code>modelValues</code> class can be created to hold the variables in a model or any other sets of variables you define.</p>
+<p>Like models and algorithms, modelValues objects have uncompiled and compiled versions that can be used in (mostly) the same ways.</p>
+</div>
+<div id="example-simulating-many-sets-of-data-from-a-model" class="slide section level1">
+<h1>Example: simulating many sets of data from a model</h1>
+<p>Suppose we want a nimbleFunction to simulate multiple sets of data (and latent states, if wanted) from a model. Arguments will be the parameter values and the number of samples wanted.</p>
+<p>Then we'll use it for the GLM model defined above.</p>
+<pre class="sourceCode r"><code class="sourceCode r">simMany &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
+    <span class="dt">setup =</span> function(model, parameters) {
+          calcNodes &lt;-<span class="st"> </span>model$<span class="kw">getDependencies</span>(parameters, <span class="dt">self =</span> <span class="ot">FALSE</span>)
+          results &lt;-<span class="st"> </span><span class="kw">modelValues</span>(model)
+    },
+    <span class="dt">run =</span> function(<span class="dt">p =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">m =</span> <span class="kw">integer</span>()) {
+       <span class="kw">values</span>(model, parameters) &lt;&lt;-<span class="st"> </span>p
+       <span class="kw">resize</span>(results, m)
+       for(i in <span class="dv">1</span>:m) {
+         model$<span class="kw">simulate</span>(calcNodes, <span class="dt">includeData =</span> <span class="ot">TRUE</span>)
+         <span class="kw">copy</span>(model, results, <span class="dt">nodes =</span> calcNodes,
+              <span class="dt">logProb =</span> <span class="ot">FALSE</span>, <span class="dt">row =</span> i)
+       }
+    }
+)</code></pre>
+</div>
+<div id="use-the-simulator-with-the-glm" class="slide section level1">
+<h1>Use the simulator with the GLM</h1>
+<p>We can use it uncompiled:</p>
+<pre class="sourceCode r"><code class="sourceCode r">## Make a specialized case:
+simManyGLM &lt;-<span class="st"> </span><span class="kw">simMany</span>(<span class="dt">model =</span> model, <span class="kw">c</span>(<span class="st">'b0'</span>,<span class="st">'b1'</span>))
+<span class="kw">set.seed</span>(<span class="dv">1</span>)
+simManyGLM$<span class="kw">run</span>(<span class="kw">c</span>(.<span class="dv">2</span>, .<span class="dv">8</span>), <span class="dv">10</span>)
+## Look at first 20 y's to keep this small
+<span class="kw">as.matrix</span>(simManyGLM$results)[, model$<span class="kw">expandNodeNames</span>(<span class="st">'y'</span>)[<span class="dv">1</span>:<span class="dv">20</span>]]</code></pre>
+<pre><code>##       y[1] y[2] y[3] y[4] y[5] y[6] y[7] y[8] y[9] y[10] y[11] y[12] y[13]
+##  [1,]    1    1    0    1    0    1    1    1    1     1     1     0     0
+##  [2,]    1    1    0    0    0    1    0    0    0     1     1     0     0
+##  [3,]    0    0    0    1    1    1    0    1    1     1     0     0     0
+##  [4,]    0    0    0    0    0    0    0    1    0     1     1     1     0
+##  [5,]    1    0    1    1    1    1    1    0    0     0     1     1     1
+##  [6,]    1    0    0    0    0    0    1    1    0     0     1     1     0
+##  [7,]    1    1    0    0    1    0    0    0    1     1     1     0     0
+##  [8,]    1    0    0    0    0    1    1    1    1     0     1     0     0
+##  [9,]    1    1    1    1    0    1    0    0    1     1     0     1     1
+## [10,]    1    0    1    1    0    0    1    0    0     1     1     0     1
+##       y[14] y[15] y[16] y[17] y[18] y[19] y[20]
+##  [1,]     1     1     1     1     0     0     0
+##  [2,]     0     0     1     0     1     1     1
+##  [3,]     1     1     1     0     1     1     1
+##  [4,]     1     0     1     0     0     1     0
+##  [5,]     1     0     0     1     1     0     1
+##  [6,]     0     1     1     1     1     0     1
+##  [7,]     1     1     1     1     0     0     1
+##  [8,]     0     0     1     1     0     0     0
+##  [9,]     1     0     1     1     0     1     1
+## [10,]     1     0     0     0     0     0     1</code></pre>
+<p>Or we can compile and use it</p>
+<pre class="sourceCode r"><code class="sourceCode r">CsimManyGLM &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(simManyGLM, <span class="dt">project =</span> model)
+<span class="kw">set.seed</span>(<span class="dv">1</span>)
+CsimManyGLM$<span class="kw">run</span>(<span class="kw">c</span>(.<span class="dv">2</span>, .<span class="dv">8</span>), <span class="dv">10</span>)</code></pre>
+<pre><code>## NULL</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r">## Look at first 20 y's to keep this small
+<span class="kw">as.matrix</span>(CsimManyGLM$results)[, model$<span class="kw">expandNodeNames</span>(<span class="st">'y'</span>)[<span class="dv">1</span>:<span class="dv">20</span>]]</code></pre>
+<pre><code>##       y[1] y[2] y[3] y[4] y[5] y[6] y[7] y[8] y[9] y[10] y[11] y[12] y[13]
+##  [1,]    1    1    0    1    0    1    1    1    1     1     1     0     0
+##  [2,]    1    1    0    0    0    1    0    0    0     1     1     0     0
+##  [3,]    0    0    0    1    1    1    0    1    1     1     0     0     0
+##  [4,]    0    0    0    0    0    0    0    1    0     1     1     1     0
+##  [5,]    1    0    1    1    1    1    1    0    0     0     1     1     1
+##  [6,]    1    0    0    0    0    0    1    1    0     0     1     1     0
+##  [7,]    1    1    0    0    1    0    0    0    1     1     1     0     0
+##  [8,]    1    0    0    0    0    1    1    1    1     0     1     0     0
+##  [9,]    1    1    1    1    0    1    0    0    1     1     0     1     1
+## [10,]    1    0    1    1    0    0    1    0    0     1     1     0     1
+##       y[14] y[15] y[16] y[17] y[18] y[19] y[20]
+##  [1,]     1     1     1     1     0     0     0
+##  [2,]     0     0     1     0     1     1     1
+##  [3,]     1     1     1     0     1     1     1
+##  [4,]     1     0     1     0     0     1     0
+##  [5,]     1     0     0     1     1     0     1
+##  [6,]     0     1     1     1     1     0     1
+##  [7,]     1     1     1     1     0     0     1
+##  [8,]     0     0     1     1     0     0     0
+##  [9,]     1     0     1     1     0     1     1
+## [10,]     1     0     0     0     0     0     1</code></pre>
+<p>Results should be identical since we set the same seed.</p>
+<p>Note that a <code>modelValues</code> object cannot be passed as an argument or a return value. Instead it must be created or shared among nimbleFunctions via setup code and accessed from R as a member object.</p>
+<p>Actually NIMBLE already provides a nimbleFunction a lot like this, <code>simNodesMV</code>, but it is a slightly different.</p>
 </div>
 </body>
 </html>

@@ -31,7 +31,7 @@ Thus, a nimbleFunction has two parts:
 
 Setup code is written as a R function, using R code, usually including NIMBLE's special functions for querying the model structure (see the module *model_structure*). 
 
-Run code is written using the NIMBLE DSL. While this is formally a language distinct from R, you can just think of it as a subset of R, enhanced with some functions for operating on the model (see the module *operating_model*). 
+Run code is written using the NIMBLE *domain-specific language* (DSL). While this is formally a language distinct from R, you can just think of it as a subset of R, enhanced with some functions for operating on the model (see the module *operating_model*). 
 
 # Some syntax for nimbleFunctions
 
@@ -144,4 +144,63 @@ sampler_RW <- nimbleFunction(
 )
 ```
 
+
+# Using `modelValues` objects to store sets of node values for a model
+
+A common need is to store multiple sets of values for model variables, such as MCMC output, sets of particles for a particle filter, or an input sample for importance sampling.
+
+NIMBLE provides a `modelValues` class for this purpose.  A `modelValues` class can be created to hold the variables in a model or any other sets of variables you define.
+
+Like models and algorithms, modelValues objects have uncompiled and compiled versions that can be used in (mostly) the same ways.
+
+# Example: simulating many sets of data from a model
+
+Suppose we want a nimbleFunction to simulate multiple sets of data (and latent states, if wanted) from a model.  Arguments will be the parameter values and the number of samples wanted.
+
+Then we'll use it for the GLM model defined above.
+
+```{r}
+simMany <- nimbleFunction(
+    setup = function(model, parameters) {
+          calcNodes <- model$getDependencies(parameters, self = FALSE)
+          results <- modelValues(model)
+    },
+    run = function(p = double(1), m = integer()) {
+       values(model, parameters) <<- p
+       resize(results, m)
+       for(i in 1:m) {
+         model$simulate(calcNodes, includeData = TRUE)
+         copy(model, results, nodes = calcNodes,
+              logProb = FALSE, row = i)
+       }
+    }
+)
+```
+
+# Use the simulator with the GLM
+
+We can use it uncompiled:
+```{r}
+## Make a specialized case:
+simManyGLM <- simMany(model = model, c('b0','b1'))
+set.seed(1)
+simManyGLM$run(c(.2, .8), 10)
+## Look at first 20 y's to keep this small
+as.matrix(simManyGLM$results)[, model$expandNodeNames('y')[1:20]]
+```
+
+Or we can compile and use it
+```{r}
+CsimManyGLM <- compileNimble(simManyGLM, project = model)
+set.seed(1)
+CsimManyGLM$run(c(.2, .8), 10)
+## Look at first 20 y's to keep this small
+as.matrix(CsimManyGLM$results)[, model$expandNodeNames('y')[1:20]]
+```
+
+Results should be identical since we set the same seed.
+
+Note that a `modelValues` object cannot be passed as an argument or a return value.  Instead it must be created or shared among nimbleFunctions via setup code and accessed from R as a member object.
+
+Actually NIMBLE already provides a nimbleFunction a lot like this, `simNodesMV`, but it is a slightly different.
 
