@@ -1,0 +1,147 @@
+---
+title: "Running MCEM for likelihood maximization (state-space model example)"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r loadnimble, include=FALSE}
+library(nimble)
+```
+```{r chunksetup, include=FALSE} 
+# Following code is only needed for slide generation, not for using R code separately.
+library(methods)
+```
+
+# What is MCEM?
+
+MCEM is *Monte Carlo Expectation Maximization*. Many of you may be familiar with the EM (Expectation-Maximization) algorithm. EM is an algorithm that allows one to maximize a likelihood in the presence of missing data, integrating over the missing data.
+
+It maximizes $L(\theta|y) = f(y|\theta) = \int f(y,z|\theta)dz$ where $z$ is missing data. The basic algorithm is to iterate over:
+
+ - E step: Compute $Q(\theta | \theta_t) = E(\log L(\theta|y,z) | y,\theta_t)$
+ - M step: Maximize $Q(\theta | \theta_t)$ with respect to $\theta$ to compute $\theta_{t+1}$
+
+until convergence. 
+
+The nice thing is that the notion of missing data extends to latent states, so one can use EM for hierarchical models to maximize the marginal likelihood of the model, thereby finding MLEs for hyperparameters having integrated over the latent states. 
+
+In certain problems, the E step can be done analytically, in closed form, but in many, one cannot easily do the integral. Instead, one can use an MCMC to approximate the expectation. Note that this MCMC is an MCMC over the latent states, keeping the hyperparameters fixed at $\theta_t$, so the MCMC is often an easier MCMC than doing a full MCMC over the entire model. 
+
+# Why is MCEM a nice algorithm for NIMBLE?
+
+MCEM is used some, but not all the extensively, likely for several reasons. First, like EM, it can converge slowly, and in addition, having to use MCMC introduces additional computations and complexity in ensuring and determining convergence. Second, coding it requires coding both MCMC and optimization. 
+
+NIMBLE solves the second problem quite nicely, and implements an established approach to determining convergence so addresses part of the first problem.  We believe it is the first model-generic implementation of MCEM. 
+
+In particular, all a user need to do is provide the model and tell us which are the latent states over which to integrate (but NIMBLE can figure that out too...). 
+
+MCEM is an example of one goal of NIMBLE, which is to enable modular algorithms. We think of modular algorithms as algorithms that borrow components from various algorithms. Since we already had an MCMC engine, it was fairly easy to build a generic MCEM algorithm on top of that. 
+
+# Setting up the state-space model for MCEM
+
+
+We'll run the model on a revised version of the state-space model that has already integrated over the `r[t]` values by reparameterizing. 
+
+```{r, ssm-reparam}
+ssmCode <- nimbleCode({
+    # Priors and constraints
+    logN.est[1] ~ dnorm(5.6, 0.01)       # Prior for initial population size
+    mean.r ~ dnorm(1, 0.001)             # Prior for mean growth rate
+    sigma.proc ~ dunif(0, 1)             # Prior for sd of state process
+    sigma.obs ~ dunif(0, 1)              # Prior for sd of observation process
+
+   # State process
+    for (t in 1:(T-1)){
+#        r[t] ~ dnorm(mean.r, sd = sigma.proc)
+        logN.est[t+1] ~ dnorm(logN.est[t] + mean.r, sd = sigma.proc)
+    }
+    
+    # Observation process
+    for (t in 1:T) {
+        y[t] ~ dnorm(logN.est[t], sd = sigma.obs)
+    }
+})
+
+## @knitr ssm-model
+hm <- c(271, 261, 309, 318, 231, 216, 208, 226, 195, 226,
+        233, 209, 226, 192, 191, 225,
+        245, 205, 191, 174)
+year <- 1990:2009
+
+# Bundle data
+bugs.data <- list(y = log(hm), T = length(year))
+## NIMBLE will handle y as data, T as a constant
+
+# Initial values
+inits <- function(){list(sigma.proc = runif(1, 0, 1), mean.r = rnorm(1),
+                         sigma.obs = runif(1, 0, 1),
+                         logN.est = c(rnorm(1, 5.6, 0.1),
+                                      rep(NA, (length(year)-1))))}
+set.seed(1)
+ssm <- nimbleModel(ssmCode, constants = bugs.data, inits = inits()) 
+```
+
+# MCEM on the state-space model
+
+Here's how easy it is in NIMBLE. Note that we determine the latent nodes in a model-generic way. 
+
+Also note that to avoid numerical issues we did need to constrain the parameter space. 
+
+```{r, mcem, eval=FALSE}
+mcem = buildMCEM(ssm, ssm$getNodeNames(latentOnly = TRUE, stochOnly = TRUE),
+                 boxConstraints = list(list('mean.r', c(-1,1)),
+                                       list('sigma.proc', c(0, 1)),
+                                       list('sigma.obs', c(0, 1))))
+output <- mcem()
+```
+
+Here's the result. It ends up requiring a fairly large number of iterations and long MCMC chains, so it takes an hour or two, but given how easy it is to set up, in some circumstances that might not be a big drawback. 
+
+```
+Iteration Number: 1.
+Current number of MCMC iterations: 1000.
+Parameter Estimates: 
+logN.est[1]      mean.r  sigma.proc   sigma.obs 
+ 5.57909152 -0.06636695  0.25101326  0.48558561 
+Convergence Criterion: 1.001.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Iteration Number: 2.
+Current number of MCMC iterations: 3032.
+Parameter Estimates: 
+logN.est[1]      mean.r  sigma.proc   sigma.obs 
+ 5.60020741 -0.03328627  0.22693149  0.31649030 
+Convergence Criterion: 4.872376.
+Iteration Number: 3.
+Current number of MCMC iterations: 3032.
+Parameter Estimates: 
+logN.est[1]      mean.r  sigma.proc   sigma.obs 
+ 5.60644146 -0.02388938  0.22000422  0.25872187 
+Convergence Criterion: 0.7141183.
+
+Iteration Number: 52.
+Current number of MCMC iterations: 43766.
+Parameter Estimates: 
+logN.est[1]      mean.r  sigma.proc   sigma.obs 
+ 5.65820211 -0.02321252  0.05705867  0.08978119 
+Convergence Criterion: 0.001222698.
+Iteration Number: 53.
+Current number of MCMC iterations: 43766.
+Parameter Estimates: 
+logN.est[1]      mean.r  sigma.proc   sigma.obs 
+ 5.65779053 -0.02316583  0.05637935  0.09005694 
+Convergence Criterion: 0.004032972.
+Iteration Number: 54.
+Current number of MCMC iterations: 43766.
+Parameter Estimates: 
+logN.est[1]      mean.r  sigma.proc   sigma.obs 
+ 5.65777820 -0.02322100  0.05618467  0.09029783 
+Convergence Criterion: 0.0007054273.
+```
+
+You can compare that to the estimates from running MCMC on the state-space model. One possible use for MCEM here would be to provide starting values for MCMC. Or you could fix the hyperparameters and just use MCMC to get posterior draws of the latent states if those are of primary interest. 

@@ -1,3 +1,11 @@
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
 # Writing a model and operating it
 
 1) Write BUGS code for a normal random effects model with 6 groups and 10 observations in each group. 
@@ -23,7 +31,7 @@
 
 1) Let's consider using a nimbleFunction to replace a for loop that can't be avoided in R. Write a second order random walk using a nimbleFunction. Here's the code for the R version. 
 
-```{r, markov-exer}
+```{r, markov-exer, eval=FALSE}
 set.seed(0)
 n <- 1e6
 path <- rep(0, n)
@@ -55,10 +63,9 @@ system.time(path <- cmc(n, rho1, rho2))
 
 3) Use *nimStop()* as part of an error check that ensures that the length of the path to be sampled is longer than the order of the dependence. 
 
-
 # solution to problem 1
 
-```{r, solution}
+```{r, solution, eval=TRUE, fig.cap=""}
 set.seed(0)
 n <- 1e6
 path <- rep(0, n)
@@ -89,6 +96,15 @@ system.time(path <- cmc(n, rho1, rho2))
 
 Not bad: going to C++ gives us a speedup of approximately 40-fold. 
 
+# Compiling R code, part 2
+
+Consider the following vectorize R calculation:
+
+```{r, complicated-vec, eval=FALSE}
+out <- exp(cos(sin(x)) + x^3)
+```
+
+Rewrite this operation as a nimbleFunction, both using an explicit for loop and using vectorization in the nimbleFunction. Compare the speed of execution for `x` of length 1,000,000 or 10,000,000. 
 
 # User-defined distributions
 

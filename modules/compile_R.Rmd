@@ -79,6 +79,23 @@ benchmark(out0 <- exp(x),
                
 So that's not all that impressive as all we've done is match (well, not quite) the speed of the native R compiled code. The real benefit comes from code that one can't directly vectorize in R. 
 
+# A simple example where compilation helps
+
+Consider the following, fully-vectorized calculation in R:
+
+```{r, vec-multicalc}
+out <- exp(cos(sin(x)) + x^3)
+```
+
+While this is pretty quick in R, it does suffer somewhat from how the R interpreter evaluates code. Here the R interpreter parses this code and executes the following operations in order, with temporary variables created along the way:
+
+ - tmp1 <- sin(x)
+ - tmp2 <- cos(tmp1)
+ - tmp3 <- x^3
+ - tmp4 <- tmp2 + tmp3
+ - out <- exp(tmp4)
+
+We could write this using a nimbleFunction either using vectorized calculations or explicitly writing out the for loop. One of the [exercises](exercises.html) asks you to implement this. If you do this, you should find that using an explicit for loop in a nimbleFunction gives a fair amount of speedup compared to the original R code or to using vectorization in the nimbleFunction, because the loop doesn't require temporary variables to be created.  
 
 # A more involved example
 

@@ -131,13 +131,14 @@ $(document).ready(function () {
 <div id="a-very-basic-mcmc" class="section level1">
 <h1>A very basic MCMC</h1>
 <p>The steps of running an MCMC are as follows:</p>
-<ul>
+<ol style="list-style-type: decimal">
 <li>configure the MCMC</li>
 <li>build the MCMC</li>
 <li>create a compiled version of the MCMC</li>
 <li>run the MCMC</li>
 <li>assess and use the MCMC samples</li>
-</ul>
+</ol>
+<p>Note that we can combine steps 1 and 2, but if we want to modify the default MCMC configuration of samplers then we need to separate the steps.</p>
 </div>
 <div id="build-the-model" class="section level1">
 <h1>Build the model</h1>
@@ -179,15 +180,15 @@ pump &lt;- nimbleModel(pumpCode,
 <p>Setting up and running an MCMC in NIMBLE takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.</p>
 <p>First we <em>configure</em> the MCMC, which means setting up the samplers to be used for each node or group of nodes. NIMBLE provides a default configuration, but we’ll see shortly how you can modify that.</p>
 <pre class="r"><code>pumpConf &lt;- configureMCMC(pump, print = TRUE)</code></pre>
-<pre><code>## [1] RW sampler: alpha,  adaptive: TRUE,  adaptInterval: 200,  scale: 1
-## [2] conjugate_dgamma_dgamma sampler: beta,  dep_dgamma: theta[1], theta[2], theta[3], theta[4], theta[5], theta[6], theta[7], theta[8], theta[9], theta[10]
-## [3] conjugate_dgamma_dpois sampler: theta[1],  dep_dpois: x[1]
-## [4] conjugate_dgamma_dpois sampler: theta[2],  dep_dpois: x[2]
-## [5] conjugate_dgamma_dpois sampler: theta[3],  dep_dpois: x[3]
-## [6] conjugate_dgamma_dpois sampler: theta[4],  dep_dpois: x[4]
-## [7] conjugate_dgamma_dpois sampler: theta[5],  dep_dpois: x[5]
-## [8] conjugate_dgamma_dpois sampler: theta[6],  dep_dpois: x[6]
-## [9] conjugate_dgamma_dpois sampler: theta[7],  dep_dpois: x[7]
+<pre><code>## [1]  RW sampler: alpha
+## [2]  conjugate_dgamma_dgamma sampler: beta,  dep_dgamma: theta[1], theta[2], theta[3], theta[4], theta[5], theta[6], theta[7], theta[8], theta[9], theta[10]
+## [3]  conjugate_dgamma_dpois sampler: theta[1],  dep_dpois: x[1]
+## [4]  conjugate_dgamma_dpois sampler: theta[2],  dep_dpois: x[2]
+## [5]  conjugate_dgamma_dpois sampler: theta[3],  dep_dpois: x[3]
+## [6]  conjugate_dgamma_dpois sampler: theta[4],  dep_dpois: x[4]
+## [7]  conjugate_dgamma_dpois sampler: theta[5],  dep_dpois: x[5]
+## [8]  conjugate_dgamma_dpois sampler: theta[6],  dep_dpois: x[6]
+## [9]  conjugate_dgamma_dpois sampler: theta[7],  dep_dpois: x[7]
 ## [10] conjugate_dgamma_dpois sampler: theta[8],  dep_dpois: x[8]
 ## [11] conjugate_dgamma_dpois sampler: theta[9],  dep_dpois: x[9]
 ## [12] conjugate_dgamma_dpois sampler: theta[10],  dep_dpois: x[10]</code></pre>
@@ -199,6 +200,12 @@ pump &lt;- nimbleModel(pumpCode,
 <h1>Building the MCMC algorithm for the model</h1>
 <p>Next we’ll build the MCMC algorithm for the model under the default configuration. And we’ll create a compiled (i.e., C++) version of the MCMC that is equivalent in functionality but will run much faster.</p>
 <pre class="r"><code>pumpMCMC &lt;- buildMCMC(pumpConf)
+CpumpMCMC &lt;- compileNimble(pumpMCMC, project = pump)</code></pre>
+</div>
+<div id="building-the-default-mcmc-algorithm-shortcut" class="section level1">
+<h1>Building the default MCMC algorithm (shortcut)</h1>
+<p>Instead of running both <code>configureMCMC</code> and <code>buildMCMC</code>, if you are happy to just run our default MCMC configuration, you can simply do this:</p>
+<pre class="r"><code>pumpMCMC &lt;- buildMCMC(pump)  # note use of model not configuration as argument
 CpumpMCMC &lt;- compileNimble(pumpMCMC, project = pump)</code></pre>
 </div>
 <div id="running-the-mcmc" class="section level1">
@@ -237,13 +244,13 @@ print(system.time(pumpMCMC$run(5)))  # R version</code></pre>
 ## Warning in dgamma(model$theta[i], shape = model$alpha[1], scale = model
 ## $lifted_d1_over_beta[1], : NaNs produced</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.425   0.004   0.429</code></pre>
+##   0.492   0.000   0.492</code></pre>
 <pre class="r"><code>set.seed(0)
 print(system.time(
 CpumpMCMC$run(niter)
 ))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.024   0.000   0.024</code></pre>
+##   0.034   0.000   0.034</code></pre>
 </div>
 <div id="working-with-mcmc-output" class="section level1">
 <h1>Working with MCMC output</h1>

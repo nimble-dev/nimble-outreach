@@ -21,12 +21,13 @@ read_chunk("chunks.R")
 
 The steps of running an MCMC are as follows:
 
- - configure the MCMC
- - build the MCMC
- - create a compiled version of the MCMC
- - run the MCMC
- - assess and use the MCMC samples
+ 1. configure the MCMC
+ 2. build the MCMC
+ 3. create a compiled version of the MCMC
+ 4. run the MCMC
+ 5. assess and use the MCMC samples
 
+Note that we can combine steps 1 and 2, but if we want to modify the default MCMC configuration of samplers then we need to separate the steps.
 
 # Build the model
 
@@ -62,6 +63,15 @@ Next we'll build the MCMC algorithm for the model under the default configuratio
 
 ```{r build-mcmc}
 pumpMCMC <- buildMCMC(pumpConf)
+CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
+```
+
+# Building the default MCMC algorithm (shortcut)
+
+Instead of running both `configureMCMC` and `buildMCMC`, if you are happy to just run our default MCMC configuration, you can simply do this:
+
+```{r build-mcmc-shortcut, eval=FALSE}
+pumpMCMC <- buildMCMC(pump)  # note use of model not configuration as argument
 CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
 ```
 

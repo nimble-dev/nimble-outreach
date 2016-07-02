@@ -24,9 +24,10 @@ mcmc_concepts: mcmc_concepts.html
 model_structure: model_structure.html
 operating_model: operating_model.html
 run_mcmc: run_mcmc.html
+run_mcem: run_mcem.html
 user_sampler: user_sampler.html
 user_dist: user_dist.html
 user_function: user_function.html
 vectorizing: vectorizing.html
 nimbleFunctions: nimbleFunctions.html
-
+exercises: exercises.html
