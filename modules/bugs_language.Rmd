@@ -20,14 +20,30 @@ library(nimble)
 
 The BUGS language is described in detail in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.html). 
 
-Basically, one specifies the variables in the hierarchical model as lines of code:
+### Stochastic declarations:
 
-  - stochastic nodes (data and parameters) are indicated with `~`
-  - deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by `<-`.
+  - `x ~ dgamma(shape, scale)` (x follows a gamma distribution with parameters `shape` and `scale`)
 
-There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed NIMBLE R package or from the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).  Information about the models can be found in [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
+### Deterministic declarations
 
-Information on how NIMBLE's 'dialect' of BUGS differs from the original and information on the distributions and functions provided in NIMBLE can be found in Section 5 of the [NIMBLE Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+  - `y <- 2 * x`
+
+### For loops
+
+  - `for(i in 1:10) {x[i] <- exp(y[i])}`
+
+### Classic BUGS examples
+
+There are lots of example models originally provided by the BUGS project:
+
+  - included in NIMBLE or found here on the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).
+  - Information: [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
+
+### NIMBLE's dialect of BUGS :
+
+   - Differences between BUGS syntax for specifying models in NIMBLE and WinBUGS, OpenBUGS and/or JAGS will be covered later.
+   - Also described in Section 5 of the [NIMBLE Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+
 
 # A basic example
 

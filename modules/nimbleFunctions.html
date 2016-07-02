@@ -141,19 +141,21 @@ $(document).ready(function () {
 <li>run code: the guts of the algorithm, written generically so it will apply to any (appropriate) model</li>
 </ul>
 <p>Setup code is written as a R function, using R code, usually including NIMBLE’s special functions for querying the model structure (see the module <em>model_structure</em>).</p>
-<p>Run code is written using the NIMBLE DSL. While this is formally a language distinct from R, you can just think of it as a subset of R, enhanced with some functions for operating on the model (see the module <em>operating_model</em>).</p>
+<p>Run code is written using the NIMBLE <em>domain-specific language</em> (DSL). While this is formally a language distinct from R, you can just think of it as a subset of R, enhanced with some functions for operating on the model (see the module <em>operating_model</em>).</p>
 </div>
 <div id="some-syntax-for-nimblefunctions" class="section level1">
 <h1>Some syntax for nimbleFunctions</h1>
-<p>Here are some of the functions you may use in the <em>run</em> function of a nimbleFunction:</p>
+<p>Here are some of the functions you may use in the run function of a nimbleFunction:</p>
 <ul>
-<li><em>returnType</em>, e.g. <code>returnType(double(1))</code> for a vector of reals;</li>
-<li><em>length</em>, e.g., <code>length(x)</code> to determine the length of a run-time argument <em>x</em>;</li>
-<li><em>calculate</em>, <em>simulate</em>, <em>getLogProb</em> to manipulate the model;</li>
-<li><em>values</em> and <em>nimCopy</em> to copy values;</li>
-<li><em>print</em>;</li>
-<li>functions to declare multivariate variables such as <em>numeric</em>, <em>matrix</em>, and <em>array</em>; and</li>
-<li>random number generation functions, e.g., <code>rnorm(1, 100, 5)</code> (these must always only generate a single random variable).</li>
+<li><em>returnType</em>, e.g., <code>returnType(double(1))</code> for a vector of reals</li>
+<li><em>length</em>, e.g., <code>length(x)</code> to determine the length of a run-time argument <em>x</em></li>
+<li><em>numeric</em>, <em>matrix</em> and <em>array</em> e.g., <code>result &lt;- numeric(n, init = 1.0)</code> to create a vector of reals called <em>result</em> initialized with values of 1.0</li>
+<li>model member functions <em>calculate</em>, <em>simulate</em>, <em>getLogProb</em>, <em>calculateDiff</em> and <em>getParam</em> to manipulate the model</li>
+<li>direct access to nodes or variables in a model using typical R syntax, e.g., <code>model[[myNode]] &lt;- rnorm(1)</code></li>
+<li><em>values</em> and <em>copy</em> (or, equivalently, <em>nimCopy</em>) to copy values</li>
+<li><em>print</em></li>
+<li>basic math, including vectorized math and some linear algebra</li>
+<li>random number generation functions, e.g., <code>rnorm(1, 100, 5)</code> (these must always only generate a single random variable)</li>
 </ul>
 <p>Section 9 of the NIMBLE User Manual describes the syntax for <em>run</em> code in detail, including lots of neat functionality such as using nested nimbleFunctions and having multiple run-time functions (i.e., methods) as part of a nimbleFunction.</p>
 </div>
@@ -223,9 +225,10 @@ out$par</code></pre>
 <h1>Example of a simple MCMC sampler</h1>
 <p>Here’s a simplified version of the random walk sampler used for NIMBLE’s MCMC engine. Note that this simplification excludes the use of an adaptive algorithm that adjusts the proposal standard deviation to the acceptance rate as the MCMC iterations proceed.</p>
 <pre class="r"><code>sampler_RW &lt;- nimbleFunction(
-    contains = sampler_BASE,  # some object-oriented inheritance for MCMC samplers
+    contains = sampler_BASE,  # some object-oriented syntax for MCMC samplers
     setup = function(model, mvSaved, target, control) {
-        targetAsScalar &lt;- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        targetAsScalar &lt;- model$expandNodeNames(target, 
+                                                returnScalarComponents = TRUE)
         if(length(targetAsScalar) &gt; 1)   
            stop('cannot use RW sampler on more than one target; try RW_block sampler')
         if(model$isDiscrete(target))     

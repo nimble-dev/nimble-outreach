@@ -35,15 +35,18 @@ Run code is written using the NIMBLE *domain-specific language* (DSL). While thi
 
 # Some syntax for nimbleFunctions
 
-Here are some of the functions you may use in the *run* function of a nimbleFunction:
+Here are some of the functions you may use in the run function of a nimbleFunction:
 
- - *returnType*, e.g. ```returnType(double(1))``` for a vector of reals;
- - *length*, e.g., ```length(x)``` to determine the length of a run-time argument *x*;
- - *calculate*, *simulate*, *getLogProb* to manipulate the model;
- - *values* and *nimCopy* to copy values;
- - *print*;
- - functions to declare multivariate variables such as *numeric*, *matrix*, and *array*; and
- - random number generation functions, e.g., ```rnorm(1, 100, 5)``` (these must always only generate a single random variable).
+ - *returnType*, e.g., ```returnType(double(1))``` for a vector of reals
+ - *length*, e.g., ```length(x)``` to determine the length of a run-time argument *x*
+ - *numeric*, *matrix* and *array* e.g., ```result <- numeric(n, init = 1.0)``` to create a vector of reals called *result* initialized with values of 1.0
+ - model member functions *calculate*, *simulate*, *getLogProb*, *calculateDiff* and *getParam* to manipulate the model
+ - direct access to nodes or variables in a model using typical R syntax, e.g., ```model[[myNode]] <- rnorm(1)```
+ - *values* and *copy* (or, equivalently, *nimCopy*) to copy values
+ - *print*
+ - basic math, including vectorized math and some linear algebra
+ - random number generation functions, e.g., ```rnorm(1, 100, 5)``` (these must always only generate a single random variable)
+
 
 Section 9 of the NIMBLE User Manual describes the syntax for *run* code in detail, including lots of neat functionality such as using nested nimbleFunctions and having multiple run-time functions (i.e., methods) as part of a nimbleFunction.
 
@@ -114,9 +117,10 @@ Here's a simplified version of the random walk sampler used for NIMBLE's MCMC en
 
 ```{r, basic-sampler, eval=FALSE}
 sampler_RW <- nimbleFunction(
-    contains = sampler_BASE,  # some object-oriented inheritance for MCMC samplers
+    contains = sampler_BASE,  # some object-oriented syntax for MCMC samplers
     setup = function(model, mvSaved, target, control) {
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        targetAsScalar <- model$expandNodeNames(target, 
+                                                returnScalarComponents = TRUE)
         if(length(targetAsScalar) > 1)   
            stop('cannot use RW sampler on more than one target; try RW_block sampler')
         if(model$isDiscrete(target))     

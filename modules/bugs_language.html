@@ -131,13 +131,39 @@ $(document).ready(function () {
 <div id="the-bugs-language" class="section level1">
 <h1>The BUGS language</h1>
 <p>The BUGS language is described in detail in the <a href="http://www.openbugs.net/Manuals/ModelSpecification.html">relevant section of the BUGS manual</a>.</p>
-<p>Basically, one specifies the variables in the hierarchical model as lines of code:</p>
+<div id="stochastic-declarations" class="section level3">
+<h3>Stochastic declarations:</h3>
 <ul>
-<li>stochastic nodes (data and parameters) are indicated with <code>~</code></li>
-<li>deterministic nodes (which are deterministic functions of other nodes and of constants) are indicated by <code>&lt;-</code>.</li>
+<li><code>x ~ dgamma(shape, scale)</code> (x follows a gamma distribution with parameters <code>shape</code> and <code>scale</code>)</li>
 </ul>
-<p>There are lots of example models from the classic BUGS examples provided in the classic-bugs directory of the installed NIMBLE R package or from the <a href="https://sourceforge.net/projects/mcmc-jags/files/Examples/">JAGS website</a>. Information about the models can be found in <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf">Volume 1</a>, <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf">Volume 2</a>, and <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf">Volume 3</a> of the WinBUGS example manuals.</p>
-<p>Information on how NIMBLE’s ‘dialect’ of BUGS differs from the original and information on the distributions and functions provided in NIMBLE can be found in Section 5 of the <a href="http://r-nimble.org/manuals/NimbleUserManual.pdf">NIMBLE Users Manual</a>.</p>
+</div>
+<div id="deterministic-declarations" class="section level3">
+<h3>Deterministic declarations</h3>
+<ul>
+<li><code>y &lt;- 2 * x</code></li>
+</ul>
+</div>
+<div id="for-loops" class="section level3">
+<h3>For loops</h3>
+<ul>
+<li><code>for(i in 1:10) {x[i] &lt;- exp(y[i])}</code></li>
+</ul>
+</div>
+<div id="classic-bugs-examples" class="section level3">
+<h3>Classic BUGS examples</h3>
+<p>There are lots of example models originally provided by the BUGS project:</p>
+<ul>
+<li>included in NIMBLE or found here on the <a href="https://sourceforge.net/projects/mcmc-jags/files/Examples/">JAGS website</a>.</li>
+<li>Information: <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf">Volume 1</a>, <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf">Volume 2</a>, and <a href="http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf">Volume 3</a> of the WinBUGS example manuals.</li>
+</ul>
+</div>
+<div id="nimbles-dialect-of-bugs" class="section level3">
+<h3>NIMBLE’s dialect of BUGS :</h3>
+<ul>
+<li>Differences between BUGS syntax for specifying models in NIMBLE and WinBUGS, OpenBUGS and/or JAGS will be covered later.</li>
+<li>Also described in Section 5 of the <a href="http://r-nimble.org/manuals/NimbleUserManual.pdf">NIMBLE Users Manual</a>.</li>
+</ul>
+</div>
 </div>
 <div id="a-basic-example" class="section level1">
 <h1>A basic example</h1>
