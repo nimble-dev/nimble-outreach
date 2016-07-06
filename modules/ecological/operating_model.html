@@ -164,7 +164,8 @@ ssmCode &lt;- nimbleCode({
     sigma.proc ~ dunif(0, 1)             # Prior for sd of state process
     sigma.obs ~ dunif(0, 1)              # Prior for sd of observation process
 
-   # State process
+    # Likelihood
+    # State process
     for (t in 1:(T-1)){
         r[t] ~ dnorm(mean.r, sd = sigma.proc)
         logN.est[t+1] &lt;- logN.est[t] + r[t]

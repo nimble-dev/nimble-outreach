@@ -62,7 +62,8 @@ ssmCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
     sigma.proc ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)             <span class="co"># Prior for sd of state process</span>
     sigma.obs ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)              <span class="co"># Prior for sd of observation process</span>
 
-   <span class="co"># State process</span>
+    <span class="co"># Likelihood</span>
+    <span class="co"># State process</span>
     for (t in <span class="dv">1</span>:(T<span class="dv">-1</span>)){
         r[t] ~<span class="st"> </span><span class="kw">dnorm</span>(mean.r, <span class="dt">sd =</span> sigma.proc)
         logN.est[t<span class="dv">+1</span>] &lt;-<span class="st"> </span>logN.est[t] +<span class="st"> </span>r[t]

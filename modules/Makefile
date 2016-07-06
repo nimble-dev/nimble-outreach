@@ -1,4 +1,4 @@
-.PHONY: example_workshop_overview alt_param bugs_language build_model compile_R constants customizing_mcmc data_nodes indexing litters_example mcmc_concepts model_structure operating_model run_mcmc user_sampler vectorizing user_dist user_function nimbleFunctions
+.PHONY: example_workshop_overview alt_param bugs_language build_model compile_R constants customizing_mcmc data_nodes exercises indexing litters_example mcmc_concepts model_structure nimbleFunctions operating_model run_jags run_mcem run_mcmc user_dist user_function user_sampler vectorizing
 
 # all: clean example_workshop_overview build_model
 all: clean example alt_param bugs_language build_model compile_R constants customizing_mcmc data_nodes exercises indexing litters_example mcmc_concepts model_structure nimbleFunctions operating_model run_jags run_mcem run_mcmc user_dist user_function user_sampler vectorizing 

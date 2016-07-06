@@ -255,16 +255,16 @@ CssmMCMC &lt;- compileNimble(ssmMCMC, project = ssm)</code></pre>
 <pre class="r"><code>set.seed(0)
 print(system.time(ssmMCMC$run(10)))  # uncompiled version</code></pre>
 <pre><code>##    user  system elapsed 
-##  11.632   0.011  11.646</code></pre>
+##   9.519   0.004   9.519</code></pre>
 <pre class="r"><code>set.seed(0)
 print(system.time(CssmMCMC$run(10)))   # compiled version</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.003   0.000   0.003</code></pre>
+##   0.002   0.000   0.002</code></pre>
 <p>In this case the uncompiled MCMC generates a set of warnings (suppressed in these slides). These arise from the Metropolis-Hastings algorithm proposing negative values for standard deviations, which create NaNs in <code>dnorm</code> calculations. These are not a problem and could be removed by using a reflected sampler, a sampler on a log scale, or other customization.</p>
 <p>But now let’s run the compiled version for much longer:</p>
 <pre class="r"><code>print(system.time(CssmMCMC$run(10000)))</code></pre>
 <pre><code>##    user  system elapsed 
-##   1.769   0.000   1.768</code></pre>
+##   1.302   0.000   1.303</code></pre>
 </div>
 <div id="extracting-mcmc-output" class="section level1">
 <h1>Extracting MCMC output</h1>
