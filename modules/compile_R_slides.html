@@ -87,9 +87,9 @@ x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="fl">1
                <span class="dt">columns =</span> <span class="kw">c</span>(<span class="st">'test'</span>,<span class="st">'replications'</span>,<span class="st">'elapsed'</span>),
                <span class="dt">replications =</span> <span class="dv">10</span>)</code></pre>
 <pre><code>##                  test replications elapsed
-## 1      out0 &lt;- exp(x)           10   0.403
-## 2  out1 &lt;- cnimExp(x)           10   0.458
-## 3 out2 &lt;- cnimExp2(x)           10   0.432</code></pre>
+## 1      out0 &lt;- exp(x)           10   0.521
+## 2  out1 &lt;- cnimExp(x)           10   0.545
+## 3 out2 &lt;- cnimExp2(x)           10   0.388</code></pre>
 <p>So that's not all that impressive as all we've done is match (well, not quite) the speed of the native R compiled code. The real benefit comes from code that one can't directly vectorize in R.</p>
 </div>
 <div id="a-simple-example-where-compilation-helps" class="slide section level1">
@@ -165,7 +165,7 @@ M &lt;-<span class="st"> </span><span class="dv">1000000</span>
         props[<span class="kw">as.integer</span>(<span class="kw">names</span>(tbl))] &lt;-<span class="st"> </span>tbl /<span class="st"> </span>M
 })</code></pre>
 <pre><code>##    user  system elapsed 
-##   4.214   0.213   4.426</code></pre>
+##   5.018   0.172   5.195</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">mprobit &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(
          <span class="dt">run =</span> function(<span class="dt">alphas =</span> <span class="kw">double</span>(<span class="dv">1</span>), <span class="dt">M =</span> <span class="kw">double</span>(<span class="dv">0</span>)) {
              <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">1</span>))
@@ -196,7 +196,7 @@ cmprobit =<span class="st"> </span><span class="kw">compileNimble</span>(mprobit
 props2 &lt;-<span class="st"> </span><span class="kw">cmprobit</span>(alphas, M)
 )</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.637   0.000   0.640</code></pre>
+##   0.670   0.001   0.669</code></pre>
 <p>So we get a nice six-fold speedup, even though all of the R code was vectorized. In the exercises, you can practice with an example of replacing an explicit for loop in R.</p>
 </div>
 </body>

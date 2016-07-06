@@ -40,7 +40,7 @@ NIMBLE Development Team
 </div>
 <div id="introduction" class="slide section level1">
 <h1>Introduction</h1>
-<p>Here we'll work through an extended example of customizing an MCMC (and considering maximum likelihood via MCEM) for a tricky, but simple, example model.</p>
+<p>Here we'll work through an extended example of customizing an MCMC for a tricky, but simple, example model.</p>
 <p>The example is the <em>litters</em> example from the original BUGS examples, available with NIMBLE in the <em>classic-bugs/vol1/litters</em> directory of the installed package (call <code>searchpaths()</code> after loading the NIMBLE package to find where this directory is).</p>
 </div>
 <div id="litters-model" class="slide section level1">
@@ -102,7 +102,7 @@ niter &lt;-<span class="st"> </span><span class="dv">10000</span>
 <span class="kw">set.seed</span>(<span class="dv">0</span>)
 <span class="kw">system.time</span>(Cmcmc$<span class="kw">run</span>(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.653   0.000   0.653</code></pre>
+##   0.765   0.000   0.765</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">smp_basic &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc$mvSamples)
 
 tsplot &lt;-<span class="st"> </span>function(x, ...) <span class="kw">plot</span>(<span class="kw">seq_along</span>(x), x, <span class="dt">type =</span> <span class="st">'l'</span>, ...)
@@ -141,11 +141,10 @@ postBurn &lt;-<span class="st"> </span>(nBurn:niter) /<span class="st"> </span>t
 <h1>Blocking the hyperparameters</h1>
 <p>Given the posterior correlation between the hyperparameters for each group, an obvious first step is to try (separate) block samplers on <code>a[1],b[1]}</code> and <code>{a[2],b[2]}</code>.</p>
 <pre class="sourceCode r"><code class="sourceCode r">conf$<span class="kw">removeSamplers</span>(<span class="kw">c</span>(<span class="st">'a'</span>, <span class="st">'b'</span>))
-conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[1]'</span>, <span class="st">'b[1]'</span>), <span class="st">'RW_block'</span>)</code></pre>
-<pre><code>## [33] RW_block sampler: a[1], b[1],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[2]'</span>, <span class="st">'b[2]'</span>), <span class="st">'RW_block'</span>)</code></pre>
-<pre><code>## [34] RW_block sampler: a[2], b[2],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
+conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[1]'</span>, <span class="st">'b[1]'</span>), <span class="st">'RW_block'</span>)
+conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[2]'</span>, <span class="st">'b[2]'</span>), <span class="st">'RW_block'</span>)
+
+mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
 Cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcmc, <span class="dt">project =</span> model, <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)
 
 <span class="kw">nimCopy</span>(model, Cmodel)  <span class="co"># reinitialize</span>
@@ -154,7 +153,7 @@ niter &lt;-<span class="st"> </span><span class="dv">10000</span>
 <span class="kw">set.seed</span>(<span class="dv">0</span>)
 <span class="kw">system.time</span>(Cmcmc$<span class="kw">run</span>(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.562   0.000   0.563</code></pre>
+##   0.885   0.003   0.889</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">smp_hyp_block &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc$mvSamples)
 
 <span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>))
@@ -185,11 +184,10 @@ niter &lt;-<span class="st"> </span><span class="dv">10000</span>
 <pre class="sourceCode r"><code class="sourceCode r">conf$<span class="kw">removeSamplers</span>(<span class="kw">c</span>(<span class="st">'a'</span>, <span class="st">'b'</span>, <span class="st">'p'</span>))
 group1nodes &lt;-<span class="st"> </span>model$<span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">'a[1]'</span>, <span class="st">'b[1]'</span>), <span class="dt">stochOnly =</span> <span class="ot">TRUE</span>)
 group2nodes &lt;-<span class="st"> </span>model$<span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">'a[2]'</span>, <span class="st">'b[2]'</span>), <span class="dt">stochOnly =</span> <span class="ot">TRUE</span>)
-conf$<span class="kw">addSampler</span>(group1nodes, <span class="st">'RW_block'</span>)</code></pre>
-<pre><code>## [1] RW_block sampler: a[1], b[1], p[1, 1], p[1, 2], p[1, 3], p[1, 4], p[1, 5], p[1, 6], p[1, 7], p[1, 8], p[1, 9], p[1, 10], p[1, 11], p[1, 12], p[1, 13], p[1, 14], p[1, 15], p[1, 16],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">conf$<span class="kw">addSampler</span>(group2nodes, <span class="st">'RW_block'</span>)</code></pre>
-<pre><code>## [2] RW_block sampler: a[2], b[2], p[2, 1], p[2, 2], p[2, 3], p[2, 4], p[2, 5], p[2, 6], p[2, 7], p[2, 8], p[2, 9], p[2, 10], p[2, 11], p[2, 12], p[2, 13], p[2, 14], p[2, 15], p[2, 16],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
+conf$<span class="kw">addSampler</span>(group1nodes, <span class="st">'RW_block'</span>)
+conf$<span class="kw">addSampler</span>(group2nodes, <span class="st">'RW_block'</span>)
+
+mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
 Cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcmc, <span class="dt">project =</span> model, <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)
 
 niter &lt;-<span class="st"> </span><span class="dv">10000</span>
@@ -198,7 +196,7 @@ niter &lt;-<span class="st"> </span><span class="dv">10000</span>
 <span class="kw">set.seed</span>(<span class="dv">0</span>)
 <span class="kw">system.time</span>(Cmcmc$<span class="kw">run</span>(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.343   0.303   0.324</code></pre>
+##   0.529   0.544   0.592</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">smp_full_block &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc$mvSamples)
 
 <span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>))
@@ -219,13 +217,17 @@ niter &lt;-<span class="st"> </span><span class="dv">10000</span>
 <pre><code>## 
 ## Auto-Blocking summary:
 ##            mcmc    node     S    C Efficiency
-## 1    All Scalar    a[1] 17.27 0.44      39.33
-## 2 Auto-Blocking p[1, 7] 39.27 0.38     104.44
+## 1    All Scalar    a[1] 17.27 0.66      26.16
+## 2 Auto-Blocking p[1, 1] 44.06 0.60      73.68
 ## 
 ## Auto-Blocking converged on the node groupings:
 ## [1] a[1], b[1]
-## [2] a[2], b[2]
-## [3] p[1, 13], p[1, 15]</code></pre>
+## [2] a[2], b[2], p[2, 16]
+## [3] p[1, 10], p[1, 6]
+## [4] p[1, 11], p[1, 13], p[1, 15]
+## [5] p[1, 12], p[1, 8]
+## [6] p[1, 16], p[1, 5]
+## [7] p[1, 2], p[1, 7]</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">confAuto &lt;-<span class="st"> </span>auto$conf
 mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(confAuto)</code></pre>
 <p>Given how similar the blocking is to simply blocking the hyperparameters, we won't bother trying it here, but it's easy to do since <em>autoBlock()</em> returns an MCMC configuration argument that can be fed into buildMCMC.</p>
@@ -252,11 +254,10 @@ mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(confAuto)</
 <li>equivalent to analytically integrating over the dependent nodes</li>
 </ul>
 <pre class="sourceCode r"><code class="sourceCode r">conf$<span class="kw">removeSamplers</span>(<span class="kw">c</span>(<span class="st">'a'</span>, <span class="st">'b'</span>, <span class="st">'p'</span>))
-conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[1]'</span>, <span class="st">'b[1]'</span>), <span class="st">'crossLevel'</span>)</code></pre>
-<pre><code>## [1] crossLevel sampler: a[1], b[1],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[2]'</span>, <span class="st">'b[2]'</span>), <span class="st">'crossLevel'</span>)</code></pre>
-<pre><code>## [2] crossLevel sampler: a[2], b[2],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
+conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[1]'</span>, <span class="st">'b[1]'</span>), <span class="st">'crossLevel'</span>)
+conf$<span class="kw">addSampler</span>(<span class="kw">c</span>(<span class="st">'a[2]'</span>, <span class="st">'b[2]'</span>), <span class="st">'crossLevel'</span>)
+
+mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
 Cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcmc, <span class="dt">project =</span> model, <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)
 
 niter &lt;-<span class="st"> </span><span class="dv">10000</span>
@@ -264,7 +265,7 @@ niter &lt;-<span class="st"> </span><span class="dv">10000</span>
 <span class="kw">set.seed</span>(<span class="dv">0</span>)
 <span class="kw">system.time</span>(Cmcmc$<span class="kw">run</span>(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   1.747   0.001   1.746</code></pre>
+##   2.113   0.000   2.113</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">smp_cross &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cmcmc$mvSamples)
 
 <span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>))
@@ -286,63 +287,6 @@ niter &lt;-<span class="st"> </span><span class="dv">10000</span>
 ## 573.2685 824.7858 659.2545 598.9111 624.8026 651.9686 715.9955 645.9188 
 ## p[1, 15] p[2, 15] p[1, 16] p[2, 16] 
 ## 655.0746 630.3340 601.5058 510.7385</code></pre>
-</div>
-<div id="using-mcem" class="slide section level1">
-<h1>Using MCEM</h1>
-<p>We might also be interested in an empirical Bayes (maximum likelihood for the hyperparameters) analysis. This can be done by Monte Carlo Expectation Maximization, an algorithm that integrates over the random effects numerically using an MCMC sampler for the random effects embedded within an optimization over the hyperparameters.</p>
-<pre class="sourceCode r"><code class="sourceCode r"><span class="co"># currently an issue with running MCEM on the same model as an MCMC</span>
-<span class="co"># so create new copy of model</span>
-model2 &lt;-<span class="st"> </span>model$<span class="kw">newModel</span>()   </code></pre>
-<pre><code>## setting data and initial values...</code></pre>
-<pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre><code>## NAs were detected in model variables: p, logProb_p, logProb_r.</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">inits &lt;-<span class="st"> </span><span class="kw">list</span>( <span class="dt">a =</span> <span class="kw">c</span>(<span class="dv">12</span>, <span class="dv">12</span>), <span class="dt">b=</span><span class="kw">c</span>(<span class="dv">12</span>, <span class="dv">12</span>) )
-model2$<span class="kw">setInits</span>(inits)
-mcem &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(model2, <span class="dt">latentNodes =</span> <span class="st">'p'</span>, <span class="dt">burnIn =</span> <span class="dv">250</span>, 
-     <span class="dt">optimMethod =</span> <span class="st">'Nelder-Mead'</span>)
-<span class="kw">print</span>(<span class="kw">system.time</span>(   <span class="co"># takes a while:</span>
-        out &lt;-<span class="st"> </span><span class="kw">mcem</span>(<span class="dt">maxit =</span> <span class="dv">100</span>)
-))</code></pre>
-<pre><code>##    user  system elapsed 
-## 748.213   0.114 748.081</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">out </code></pre>
-<pre><code>##      a[1]      a[2]      b[1]      b[2] 
-## 46.384250  1.597070  5.296314  0.560738</code></pre>
-<p>The MCEM is converging quite slowly. In this case, since we can analytically integrate over <code>p</code>, we can directly maximize the marginal likelihood and see that the MLE for the first group is <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAAATCAIAAACm+jyqAAAABmJLR0QA/wD/AP+gvaeTAAAFSElEQVRIic1Xb0hTXRg/++dQtG24oYKy8kMUC1JGahNGZUZs0Z8t5ofEQJ2uWOA+qBHGbA0dUuyDdENGfUsyB0Uk4QKD0VoTppBJBU2HONxyLtnm7N5t97wfTu91bHNJr/X2+3R+z3mes+d3n+c8u5cGIQTb4Pv372w2m0ajbefwt4GZ1frhwwcMwz59+sTj8U6ePNnW1paXl/f7kvD7/R6Pp76+nrLE4/FQKJSXl8fj8bKGxONxkiTZbDaiiUQikUjQ0ipjs9nGxsb8fr9KpVIoFIuLi/fv3/d6vceOHdNoNBwO53eI6ezsZDAYGIYhOjo6Oj09zeVyP3/+zGKxbt++LRQK00JevXp169atioqK/Pz8eDy+urra19cHIIQQQoIgJiYmlEqlSqUaHR0lSRKmYGFhobe3t7GxUa/XLy8vw13F2NiYWCy+cuUKoh8/frxw4YLP54MQxuPxEydOtLe3Z0ZNTk7KZLLjx4/LZDKNRvPlyxcIIYAQRiKRc+fOXbp0aWpqKsevfvv2Ta/Xnz59+sGDB7ulZHNzs7W1VaFQXL16FVkwDKuqqjKZTIhevnxZIpFkBtpsNovFkmZkAgAKCgosFotAIEAVTCaTAAAGg5FWWS6X29/fj+N4LBbbrQYzGAytra1msxn+2+1qtZrFYp09exbRpaWlkpKSzEDUO2lGJgCATqcjJYFAwGg0MhiMWCxWU1OztrbW29ubFsBms6lrRyEajSYSiRxJM5nMwsLCNOPU1FR+fn59ff3du3dJkqQ829vb0dpqtcZisYGBgcwDaTRaKBTS6/XhcJggiGvXrh04cGBrmq2trbW0tCiVyo6ODhzH5XI5i8XKFJMVN27c8Pl8ORxKS0vv3buXaolEIhaL5dGjR1RyqbvDw8Nzc3Mej2dgYKCuri7zQAjh69evR0ZGhEKhy+XSaDTj4+OAariurq7GxkYcxxE9c+ZMd3f3bt2NTBiNxsnJSbS+ePEidWdS8eLFi4aGhpcvX2ZuhcPh1dVVisrl8uvXr9ORUJ/P9/bt25qaGvR/EggEvn79euTIEbSbTCbfvXvX0tIyOzu7k0L9FO/fvw+FQqdOnUp90plucrlcLBYbDIZgMJi2RafTmcyttuJwOG63+wd3OBwEQRw9ehRRp9NJkqRUKkXUarUGAgGv14vj+HbJRSKRHNkXFhYePnw41R/HcZ1Oh2gwGIxEIjqdTq1WT0xMLC0t3blzB93MvXv32my2x48fa7Xa1APPnz/P4XCsVitlSSQSP8TEYjGSJEtLSyltfD6/pKSkr6/PaDQ2NTUBAMbHx7M+PwDA06dPl5eXc4gpKytLFdPc3Nzc3ExRpVIpEAjMZjMAQKPRRKNRn89XWVkJAEgmkyRJFhcXAwBWVlYWFxclEgmy79+/nzphY2OjoqLihxiZTIZhGBrKdrvd4XCIRCK32502grZ7T9Pr9TmU/BSpc1Yikezbtw8pgRA6HI49e/bI5XIAgFar9Xg8IyMjtbW1tbW1CoUChczOzq6srNy8eXPrdebJkyfPnz/n8/l8Pr+6uvrhw4fl5eWDg4MFBQXIQSqVDg0NZZ0tvwy73Y6qymAwysrK1Gq1UCg0mUybm5uVlZVutzsYDBoMBlRVDMOcTufw8DCXy11fXx8cHOTz+QRBzMzMNDU1qVQqkDkotoNUKnU6nTv3/y8Ih8NOp3N+fj6329zcnMvlomj2t+as+JPfAkVFRTtpgUOHDqVS+m/L539A+idAVjx79uzNmzd2u10kEh08eLCnp+cPZPYL2JEYgiAIgkBrOp1OjYS/Df8AnnK1Fg8NAV4AAAAASUVORK5CYII=" alt="\hat{a_1}=43.5" title="\hat{a_1}=43.5" />, <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEUAAAAWCAIAAAAZ9cYnAAAABmJLR0QA/wD/AP+gvaeTAAAFQ0lEQVRYhc1XWUhbTRQ+11xNRAVjVDQS1LYuKBTEBXfUoKLQl9K64INgUQzYuEVUEEFUFKwGtBR8kpSKy4Pogw9dwBpFQ0SFEC2IuCsSkxjjEnNzk/kfrlwlJtFW/dvvac6ZLyfnu2dmzgyGEAJbOD8/d3V1dXJysjn7zwK3shFCs7Ozw8PDRqORJMn09PTCwkIXF5e/ktwfAKPrc35+Pjg4KJPJAgICioqKwsPDdTrdyMjI3NxcQEBARUUFl8v9u7neBxhCiCCItra2nZ2d+Pj4srIyqzWGEJqamhobGyMIQiQShYaG/q1c7wMMIUSS5PLycmxsrGPq1tYWk8n09/f/fzL7MzgBAI7jAPD+/fusrKwPHz7YowYFBT26GIvFIhAIpqam7BHOzs5aW1uFQmFTU9Px8bFNjlgs7unpocZXSys2Nra6uvro6MjT0/NxM3aMoaEhmUx2enpqc3ZnZ+ft27dhYWG9vb3Z2dklJSW3JSkUiuHhYZ1OR5nXW+X79+8AwOfznyZzG1Cr1ePj4wCAYZhNQkNDQ2BgYF5eHgCkpKT4+PjU1dXdJJjNZrFYjOM4HeFaz+LiIpvNDg4Ofqr0b6Gzs7OkpMTe7Pr6+traWkREBO2Jjo5WKpV6vZ72fP78OS4ujsVi0af0lR6z2byxsRESEjIzM9Pd3a1QKJ5GwjW+ffvG4XCioqLsFUelUlkslpvtnsvlEgSxtrZGmYeHhwsLCwKBAABo2lU/3d7e1mg07u7uCoUiKSmpqqqqsbExMzPzzrQkEolKpXLMeffunZeX103PycnJ6Ojop0+ftFotQsjmHeV2EzcYDAihlZWVmJgYi8XS3t5eU1NDTdEf5UrPjx8/AKC2tjYlJQUAgoKCJBIJrcdgMBgMBqucHoL29vbXr187vnbExMTweLzNzU3aMz09TY8HBwf9/f1fvHhBmdb1oTZPcnIy/QOTyQQAR0dHEolEKpVmZGRUVVXd/tfi4uLfFbO4uGgymXJzc+9kCoXCtra23d1dHo+nVCqpIiCENBrNz58/+/v7aaZ1fba2tkJCQmjv5uamj48PAOzt7WVkZMjlcnur/HeBEOrq6iotLZXL5QCg0+kwDNvd3V1YWLjd0Pl8vrOzc2dnJ4PBSEhIyMzMnJube/nyZUtLS1pa2tLSEkUzm80nJydyuTwyMhIHAK1Wq1ar6aNmaWlJr9e/efMGAKKiogDAwS27v7//zv0jEAi8vb1pMzExcWVlhRpfXl4ihDY2NhBCNi8oqampqamp1Li5uZnNZkdERCQmJqpUKplMRvlJklSr1TKZjMfj4QDAZDJdXFyYTCY1PTEx4eXlVVpaSgfFMMxefTw9PamV6QDU/YMOJRQKafPw8HBoaCgtLe3Vq1eUZ2BgwM/PLycnBwC6urqWl5c/fvxIbd3V1VU+n89isQoKCm7Gn5iYeP78ORUWBwA3N7dnz54dHBwAwNevX6VSaVNTk9VmtfdMys/PdyzGMahmcnZ2Rpm/fv3q6+tjsViUHqVSub+/TxAEAEgkEpPJVF1dbRWBIAiSJA0GA2VevRf0er1IJMJxnMFgiESiwMBAq6QTEhJsngcPQUdHx97entFodHZ2ZrFYYrHYbDa3tLRwudzy8nIAkEqlo6OjbDbbaDRqNJru7m6r69iXL1/kcvnFxQWDwWAymZWVlZi9D38TBQUF8fHxj67nPiBJUqvVurq6enh43Idv/T7914DjuK+v7/35d9Rnenp6cnJyfn6ew+GEhobW19dzOJwHJ/mEuEOPyWQyGo206ebm9liN6InwH1QdTYTVVUm+AAAAAElFTkSuQmCC" alt="\hat{b_1}=4.94" title="\hat{b_1}=4.94" />. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.</p>
-<p>One option would be to reparameterize the model from the <code>a,b</code> parameterization to the mean and standard deviation of the beta distribution. That's easy in NIMBLE, since we provide that parameterization as an alternative parameterization!</p>
-</div>
-<div id="mcem-with-reparameterization" class="slide section level1">
-<h1>MCEM with reparameterization</h1>
-<p>Here we use NIMBLE's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of <img style="vertical-align:middle" src="data:image/png;base64,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" alt="\hat\mu=0.898" title="\hat\mu=0.898" /> and <img style="vertical-align:middle" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE4AAAAPCAIAAADFzG6DAAAABmJLR0QA/wD/AP+gvaeTAAAFIUlEQVRIidVXT0gbSxj/3DVrjDUo1HgQoTYi0kMN6FqaS1QwpFEKUinR0qKNWFAaCpYae7D+OShSqRVTVAxetNX0IKSktFDbgzQRvWg8CNpoTA8WQ2203WWz7Do9zHvbaGL6nm0fvN9p5tvfNzO/+eab+TYBIQT/f7Asq1Ao4nMSY1r9fr/dbs/PzzeZTCRJ/oG1weTk5Nu3b+VyeWJi4t27d7Ozs2PSPn78+PDhQ0EQOI4rKyu7du1aNMflctlstpcvX+KuKIp2u93r9bIsSxCE1WrNzc0FAEAREATB5XI1NDQ0NDTMzc319vaaTKbe3t7NzU30WzE4OGgwGAKBAG6XlpYyDBNNYximtLR0cHAQIRQIBAwGA24f4ZSUlJSXl0uW1tbWmZkZQRAEQbBarTRNb2xsIIRAcujr66upqTkiDIs3m82NjY0ej+e36OQ4TqvVDg0NSVPodLqenp5oZk9Pj06nEwQBd4eGhrRaLcdxkZw7d+5UVFRIUr99+1ZUVGQ0GrHX2tpaQUFBW1sbQogAAI7jLBZLVlbW+Ph4a2vrmTNnpLNBkqTRaBwbG7t3797U1NTTp09//ejOzs4yDKPX66Up1Gq1x+OJZno8HrVaLWWQXq9nGGZ2djaSkJSUpFarJYtcLj9//nxOTg72Wl9fB4CEhATAuSqXy8fGxiLn8Pv9CwsLkZa8vLyBgYFf1wkAXq8XADIzMyXLqVOnVldXw+FwUlKSZAyHw8FgMHLfsYvX6zUajQDA8/zo6KjNZmtra5M4JEna7Xapu7y8TFGU2WyG6GuJ5/mWlpbl5WWFQrG7u3twcHD69GkAuHz5skajiV731NSU2+2Or02r1ZpMJqm7vb0dzWFZNloqy7LRTMm9u7u7uro65sUriiLLsjMzMy6X68GDB2fPnj0qVRTFuro6AHC5XKmpqXNzc7dv3+7s7Lxw4cJxMvLz8wmCiKsU8vLy4hNOAI/H8/nz54qKiphfV1ZWJiYmQqFQbm6uSqXCxkNSnz175vf737x5g7eqoKAAAD58+BBHqkajiRntPwr8nLS3tx9HkFb14sWLpqamrq6uS5cuHQqIw+EoLi6WjoQoigDw06D9W8QcEN8c/8RIEMTw8HBycvL8/LzD4XA4HMFgkOd5h8OxtLQEAF+/fpXIRqMxJSXl8ePHoij+iOr+/n4gELh69apkmZ6elslkxx0SjBPkKk3T796929nZUSqV2MIwjEqlkroYSqVSpVIxDCNZdnZ2sPu5c+cyMjJi7ojNZrPb7Wazubm5GQBIkqQo6tOnTwzD/JBKkqRMJpPcRFF8/fq1Xq8/soIjOEGuVlZWPnr0yO12/1XEAGxtbdE0jdtPnjwBgKamJgAoLCxcXFyUHN1ut0wmq6ysVCqVkVnz/v37YDCIg/T8+XMAQH9Xu6Io8jyfnp6ekpJyqFqyWCxWqxVXFPfv36+vrw+Hw7+lbDgCi8VSVVWFB3c6nTRN+3w+hNDe3h5Os729PYSQz+ejadrpdCKEwuFwVVWVxWKJHEcQhP39/Zs3b+p0ui9fvnAc5/P5bty4IdVeTqdTo9HgGisBRZT7PM93dHSEQiGKooqLi2tra+OH68TAT1ooFMrIyNjc3Lx165bBYIiOKgC8evVqZGQkJycnGAympaX19/dTFCWNs7S0NDExIQjCwcEBRVEXL168cuXK4uLi5OQkQRAsy25tbdXW1l6/fh0ADkn9j8GyrCiKCoUi/h8FfiRJkvzpv0v8wb8DpCv4wc3di8kAAAAASUVORK5CYII=" alt="\hat\sigma=0.043" title="\hat\sigma=0.043" />, but we'd need to investigate further. Also, at present NIMBLE's MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1).</p>
-<pre class="sourceCode r"><code class="sourceCode r">codeReparam &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
-  for (i in <span class="dv">1</span>:G) {
-     for (j in <span class="dv">1</span>:N) {
-        r[i,j] ~<span class="st"> </span><span class="kw">dbin</span>(p[i,j], n[i,j]);
-        p[i,j] ~<span class="st"> </span><span class="kw">dbeta</span>(<span class="dt">mean =</span> mu[i], <span class="dt">sd =</span> sigma[i]) 
-     }
-     mu[i] ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-     sigma[i] ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)
-   }
-})
-inits &lt;-<span class="st"> </span><span class="kw">list</span>( <span class="dt">mu =</span> <span class="kw">c</span>(.<span class="dv">5</span>, .<span class="dv">5</span>), <span class="dt">sigma =</span> <span class="kw">c</span>(.<span class="dv">1</span>, .<span class="dv">1</span>))
-modelReparam &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(codeReparam, <span class="dt">constants =</span> consts, <span class="dt">data =</span> data, 
-             <span class="dt">inits =</span> inits)</code></pre>
-<pre><code>## defining model...</code></pre>
-<pre><code>## building model...</code></pre>
-<pre><code>## setting data and initial values...</code></pre>
-<pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre><code>## NAs were detected in model variables: p, logProb_p, logProb_r.</code></pre>
-<pre><code>## model building finished</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">mcemReparam &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(modelReparam, <span class="dt">latentNodes =</span> <span class="st">'p'</span>, <span class="dt">burnIn =</span> <span class="dv">250</span>, 
-            <span class="dt">optimMethod =</span> <span class="st">'Nelder-Mead'</span>)
-<span class="kw">print</span>(<span class="kw">system.time</span>(
-        outReparam &lt;-<span class="st"> </span><span class="kw">mcemReparam</span>(<span class="dt">maxit =</span> <span class="dv">20</span>)
-))</code></pre>
-<pre><code>##    user  system elapsed 
-## 162.264   0.015 162.222</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">outReparam </code></pre>
-<pre><code>##      mu[1]      mu[2]   sigma[1]   sigma[2] 
-## 0.88962536 0.73966793 0.03887207 0.24748506</code></pre>
 </div>
 </body>
 </html>

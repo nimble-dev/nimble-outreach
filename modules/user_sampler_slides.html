@@ -292,9 +292,8 @@ NIMBLE Development Team
 conf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(model)
 conf$<span class="kw">removeSamplers</span>(<span class="st">'tau'</span>)
 <span class="co"># as baseline, use standard Metropolis for tau</span>
-conf$<span class="kw">addSampler</span>(<span class="st">'tau'</span>, <span class="dt">type =</span> <span class="st">'RW'</span>)</code></pre>
-<pre><code>## [47] RW sampler: tau,  adaptive: TRUE,  adaptInterval: 200,  scale: 1</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
+conf$<span class="kw">addSampler</span>(<span class="st">'tau'</span>, <span class="dt">type =</span> <span class="st">'RW'</span>)
+mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
 niter &lt;-<span class="st"> </span><span class="dv">25000</span>
 Cmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(model)
 cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcmc, <span class="dt">project =</span> model)
@@ -305,9 +304,8 @@ cmcmc$<span class="kw">run</span>(niter)</code></pre>
 <p>Now we'll try the reflection sampler instead.</p>
 <pre class="sourceCode r"><code class="sourceCode r">conf$<span class="kw">removeSamplers</span>(<span class="st">'tau'</span>)
 <span class="co"># for comparison, consider the reflection sampler</span>
-conf$<span class="kw">addSampler</span>(<span class="st">'tau'</span>, <span class="dt">type =</span> <span class="st">'RW_reflect'</span>)</code></pre>
-<pre><code>## [47] RW_reflect sampler: tau,  adaptive: TRUE,  adaptInterval: 200,  scale: 1</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
+conf$<span class="kw">addSampler</span>(<span class="st">'tau'</span>, <span class="dt">type =</span> <span class="st">'RW_reflect'</span>)
+mcmc &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(conf)
 cmcmc &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(mcmc, <span class="dt">project =</span> model, <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)
 
 <span class="kw">nimCopy</span>(model, Cmodel)

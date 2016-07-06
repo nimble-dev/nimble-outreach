@@ -130,7 +130,7 @@ $(document).ready(function () {
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>Here we’ll work through an extended example of customizing an MCMC (and considering maximum likelihood via MCEM) for a tricky, but simple, example model.</p>
+<p>Here we’ll work through an extended example of customizing an MCMC for a tricky, but simple, example model.</p>
 <p>The example is the <em>litters</em> example from the original BUGS examples, available with NIMBLE in the <em>classic-bugs/vol1/litters</em> directory of the installed package (call <code>searchpaths()</code> after loading the NIMBLE package to find where this directory is).</p>
 </div>
 <div id="litters-model" class="section level1">
@@ -192,7 +192,7 @@ niter &lt;- 10000
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.634   0.004   0.638</code></pre>
+##   0.838   0.000   0.837</code></pre>
 <pre class="r"><code>smp_basic &lt;- as.matrix(Cmcmc$mvSamples)
 
 tsplot &lt;- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
@@ -224,11 +224,10 @@ effectiveSize(as.mcmc(smp_basic[postBurn, ]))</code></pre>
 <h1>Blocking the hyperparameters</h1>
 <p>Given the posterior correlation between the hyperparameters for each group, an obvious first step is to try (separate) block samplers on <code>a[1],b[1]}</code> and <code>{a[2],b[2]}</code>.</p>
 <pre class="r"><code>conf$removeSamplers(c('a', 'b'))
-conf$addSampler(c('a[1]', 'b[1]'), 'RW_block')</code></pre>
-<pre><code>## [33] RW_block sampler: a[1], b[1],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="r"><code>conf$addSampler(c('a[2]', 'b[2]'), 'RW_block')</code></pre>
-<pre><code>## [34] RW_block sampler: a[2], b[2],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="r"><code>mcmc &lt;- buildMCMC(conf)
+conf$addSampler(c('a[1]', 'b[1]'), 'RW_block')
+conf$addSampler(c('a[2]', 'b[2]'), 'RW_block')
+
+mcmc &lt;- buildMCMC(conf)
 Cmcmc &lt;- compileNimble(mcmc, project = model, resetFunctions = TRUE)
 
 nimCopy(model, Cmodel)  # reinitialize
@@ -237,7 +236,7 @@ niter &lt;- 10000
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.564   0.000   0.564</code></pre>
+##   0.729   0.000   0.727</code></pre>
 <pre class="r"><code>smp_hyp_block &lt;- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1, 4))
@@ -266,11 +265,10 @@ tsplot(smp_hyp_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', 
 <pre class="r"><code>conf$removeSamplers(c('a', 'b', 'p'))
 group1nodes &lt;- model$getDependencies(c('a[1]', 'b[1]'), stochOnly = TRUE)
 group2nodes &lt;- model$getDependencies(c('a[2]', 'b[2]'), stochOnly = TRUE)
-conf$addSampler(group1nodes, 'RW_block')</code></pre>
-<pre><code>## [1] RW_block sampler: a[1], b[1], p[1, 1], p[1, 2], p[1, 3], p[1, 4], p[1, 5], p[1, 6], p[1, 7], p[1, 8], p[1, 9], p[1, 10], p[1, 11], p[1, 12], p[1, 13], p[1, 14], p[1, 15], p[1, 16],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="r"><code>conf$addSampler(group2nodes, 'RW_block')</code></pre>
-<pre><code>## [2] RW_block sampler: a[2], b[2], p[2, 1], p[2, 2], p[2, 3], p[2, 4], p[2, 5], p[2, 6], p[2, 7], p[2, 8], p[2, 9], p[2, 10], p[2, 11], p[2, 12], p[2, 13], p[2, 14], p[2, 15], p[2, 16],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="r"><code>mcmc &lt;- buildMCMC(conf)
+conf$addSampler(group1nodes, 'RW_block')
+conf$addSampler(group2nodes, 'RW_block')
+
+mcmc &lt;- buildMCMC(conf)
 Cmcmc &lt;- compileNimble(mcmc, project = model, resetFunctions = TRUE)
 
 niter &lt;- 10000
@@ -279,7 +277,7 @@ nimCopy(model, Cmodel)  # reinitialize
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.482   0.417   0.450</code></pre>
+##   0.391   0.339   0.372</code></pre>
 <pre class="r"><code>smp_full_block &lt;- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1,4))
@@ -297,14 +295,16 @@ tsplot(smp_full_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '',
 <pre class="r"><code>auto &lt;- autoBlock(model, autoIt = 10000, run = list())</code></pre>
 <pre><code>## 
 ## Auto-Blocking summary:
-##            mcmc    node     S    C Efficiency
-## 1    All Scalar    a[1] 17.27 0.43      39.87
-## 2 Auto-Blocking p[1, 7] 39.27 0.37     106.71
+##            mcmc     node     S    C Efficiency
+## 1    All Scalar     a[1] 17.27 0.63      27.32
+## 2 Auto-Blocking p[1, 11] 39.95 0.46      86.66
 ## 
 ## Auto-Blocking converged on the node groupings:
 ## [1] a[1], b[1]
-## [2] a[2], b[2]
-## [3] p[1, 13], p[1, 15]</code></pre>
+## [2] a[2], b[2], p[2, 15], p[2, 16]
+## [3] p[1, 14], p[1, 3]
+## [4] p[1, 1], p[1, 10], p[1, 11], p[1, 12], p[1, 13], p[1, 15], p[1, 16], p[1, 2], p[1, 5], p[1, 6], p[1, 7], p[1, 8]
+## [5] p[1, 4], p[1, 9]</code></pre>
 <pre class="r"><code>confAuto &lt;- auto$conf
 mcmc &lt;- buildMCMC(confAuto)</code></pre>
 <p>Given how similar the blocking is to simply blocking the hyperparameters, we won’t bother trying it here, but it’s easy to do since <em>autoBlock()</em> returns an MCMC configuration argument that can be fed into buildMCMC.</p>
@@ -331,11 +331,10 @@ mcmc &lt;- buildMCMC(confAuto)</code></pre>
 <li>equivalent to analytically integrating over the dependent nodes</li>
 </ul>
 <pre class="r"><code>conf$removeSamplers(c('a', 'b', 'p'))
-conf$addSampler(c('a[1]', 'b[1]'), 'crossLevel')</code></pre>
-<pre><code>## [1] crossLevel sampler: a[1], b[1],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="r"><code>conf$addSampler(c('a[2]', 'b[2]'), 'crossLevel')</code></pre>
-<pre><code>## [2] crossLevel sampler: a[2], b[2],  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 200,  scale: 1,  propCov: identity</code></pre>
-<pre class="r"><code>mcmc &lt;- buildMCMC(conf)
+conf$addSampler(c('a[1]', 'b[1]'), 'crossLevel')
+conf$addSampler(c('a[2]', 'b[2]'), 'crossLevel')
+
+mcmc &lt;- buildMCMC(conf)
 Cmcmc &lt;- compileNimble(mcmc, project = model, resetFunctions = TRUE)
 
 niter &lt;- 10000
@@ -343,7 +342,7 @@ nimCopy(model, Cmodel)  # reinitialize
 set.seed(0)
 system.time(Cmcmc$run(niter))</code></pre>
 <pre><code>##    user  system elapsed 
-##   1.739   0.000   1.738</code></pre>
+##   2.310   0.000   2.305</code></pre>
 <pre class="r"><code>smp_cross &lt;- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1,4))
@@ -363,63 +362,6 @@ tsplot(smp_cross[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim
 ## 573.2685 824.7858 659.2545 598.9111 624.8026 651.9686 715.9955 645.9188 
 ## p[1, 15] p[2, 15] p[1, 16] p[2, 16] 
 ## 655.0746 630.3340 601.5058 510.7385</code></pre>
-</div>
-<div id="using-mcem" class="section level1">
-<h1>Using MCEM</h1>
-<p>We might also be interested in an empirical Bayes (maximum likelihood for the hyperparameters) analysis. This can be done by Monte Carlo Expectation Maximization, an algorithm that integrates over the random effects numerically using an MCMC sampler for the random effects embedded within an optimization over the hyperparameters.</p>
-<pre class="r"><code># currently an issue with running MCEM on the same model as an MCMC
-# so create new copy of model
-model2 &lt;- model$newModel()   </code></pre>
-<pre><code>## setting data and initial values...</code></pre>
-<pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre><code>## NAs were detected in model variables: p, logProb_p, logProb_r.</code></pre>
-<pre class="r"><code>inits &lt;- list( a = c(12, 12), b=c(12, 12) )
-model2$setInits(inits)
-mcem &lt;- buildMCEM(model2, latentNodes = 'p', burnIn = 250, 
-     optimMethod = 'Nelder-Mead')
-print(system.time(   # takes a while:
-        out &lt;- mcem(maxit = 100)
-))</code></pre>
-<pre><code>##    user  system elapsed 
-## 752.670   0.106 752.527</code></pre>
-<pre class="r"><code>out </code></pre>
-<pre><code>##      a[1]      a[2]      b[1]      b[2] 
-## 46.384250  1.597070  5.296314  0.560738</code></pre>
-<p>The MCEM is converging quite slowly. In this case, since we can analytically integrate over <code>p</code>, we can directly maximize the marginal likelihood and see that the MLE for the first group is <span class="math">\(\hat{a_1}=43.5\)</span>, <span class="math">\(\hat{b_1}=4.94\)</span>. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.</p>
-<p>One option would be to reparameterize the model from the <code>a,b</code> parameterization to the mean and standard deviation of the beta distribution. That’s easy in NIMBLE, since we provide that parameterization as an alternative parameterization!</p>
-</div>
-<div id="mcem-with-reparameterization" class="section level1">
-<h1>MCEM with reparameterization</h1>
-<p>Here we use NIMBLE’s alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of <span class="math">\(\hat\mu=0.898\)</span> and <span class="math">\(\hat\sigma=0.043\)</span>, but we’d need to investigate further. Also, at present NIMBLE’s MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1).</p>
-<pre class="r"><code>codeReparam &lt;- nimbleCode({
-  for (i in 1:G) {
-     for (j in 1:N) {
-        r[i,j] ~ dbin(p[i,j], n[i,j]);
-        p[i,j] ~ dbeta(mean = mu[i], sd = sigma[i]) 
-     }
-     mu[i] ~ dunif(0, 1)
-     sigma[i] ~ dunif(0, 1)
-   }
-})
-inits &lt;- list( mu = c(.5, .5), sigma = c(.1, .1))
-modelReparam &lt;- nimbleModel(codeReparam, constants = consts, data = data, 
-             inits = inits)</code></pre>
-<pre><code>## defining model...</code></pre>
-<pre><code>## building model...</code></pre>
-<pre><code>## setting data and initial values...</code></pre>
-<pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre><code>## NAs were detected in model variables: p, logProb_p, logProb_r.</code></pre>
-<pre><code>## model building finished</code></pre>
-<pre class="r"><code>mcemReparam &lt;- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 250, 
-            optimMethod = 'Nelder-Mead')
-print(system.time(
-        outReparam &lt;- mcemReparam(maxit = 20)
-))</code></pre>
-<pre><code>##    user  system elapsed 
-## 162.388   0.000 162.333</code></pre>
-<pre class="r"><code>outReparam </code></pre>
-<pre><code>##      mu[1]      mu[2]   sigma[1]   sigma[2] 
-## 0.88962536 0.73966793 0.03887207 0.24748506</code></pre>
 </div>
 
 

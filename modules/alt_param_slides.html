@@ -97,8 +97,8 @@ precModel$<span class="kw">calculate</span>(precModel$<span class="kw">getDepend
 <pre class="sourceCode r"><code class="sourceCode r"><span class="co"># precModel$calculate() # would also work but recalculates entire model</span>
 precModel$<span class="kw">simulate</span>(<span class="st">'y'</span>)
 precModel$y</code></pre>
-<pre><code>##  [1]  -83.147869   -6.073013    5.063840  -30.357709   -6.658389
-##  [6]   19.588977 -264.390800  125.134262   12.426592   -1.373693</code></pre>
+<pre><code>##  [1] -86.87881 -16.77056  40.08108 -15.68286  44.90411  59.74362  36.10508
+##  [8] 160.33002 -50.10843  83.97004</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$lifted_d1_over_sqrt_oPtau_cP</code></pre>
 <pre><code>## [1] 100</code></pre>
 <p>If one skips the calculate step and assumes the nodes are only those that appear in the BUGS code, one may not get correct results.</p>
@@ -106,8 +106,8 @@ precModel$y</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$tau &lt;-<span class="st"> </span><span class="fl">0.0001</span>
 precModel$<span class="kw">simulate</span>(<span class="st">'y'</span>)
 precModel$y</code></pre>
-<pre><code>##  [1]    2.944390 -222.066839  -47.112695  118.765994  109.399946
-##  [6] -102.905877 -130.009652  107.476753   23.250553    3.017366</code></pre>
+<pre><code>##  [1]  -56.67939  178.74248   13.21548  -37.60421 -184.45425  -20.17793
+##  [7]  101.26480  -30.21557   76.63074  136.21033</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r">precModel$lifted_d1_over_sqrt_oPtau_cP <span class="co"># does not equal sqrt(1/precModel$tau)</span></code></pre>
 <pre><code>## [1] 100</code></pre>
 <p>Whoops, <em>y</em> was simulated based on the value of the lifted node, which was not updated based on the new value of <em>tau</em>. That's why the <em>y</em> values are close to their mean of zero even though <em>tau</em> is very small.</p>

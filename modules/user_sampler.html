@@ -382,9 +382,8 @@ $(document).ready(function () {
 conf &lt;- configureMCMC(model)
 conf$removeSamplers('tau')
 # as baseline, use standard Metropolis for tau
-conf$addSampler('tau', type = 'RW')</code></pre>
-<pre><code>## [47] RW sampler: tau,  adaptive: TRUE,  adaptInterval: 200,  scale: 1</code></pre>
-<pre class="r"><code>mcmc &lt;- buildMCMC(conf)
+conf$addSampler('tau', type = 'RW')
+mcmc &lt;- buildMCMC(conf)
 niter &lt;- 25000
 Cmodel &lt;- compileNimble(model)
 cmcmc &lt;- compileNimble(mcmc, project = model)
@@ -395,9 +394,8 @@ cmcmc$run(niter)</code></pre>
 <p>Now we’ll try the reflection sampler instead.</p>
 <pre class="r"><code>conf$removeSamplers('tau')
 # for comparison, consider the reflection sampler
-conf$addSampler('tau', type = 'RW_reflect')</code></pre>
-<pre><code>## [47] RW_reflect sampler: tau,  adaptive: TRUE,  adaptInterval: 200,  scale: 1</code></pre>
-<pre class="r"><code>mcmc &lt;- buildMCMC(conf)
+conf$addSampler('tau', type = 'RW_reflect')
+mcmc &lt;- buildMCMC(conf)
 cmcmc &lt;- compileNimble(mcmc, project = model, resetFunctions = TRUE)
 
 nimCopy(model, Cmodel)

@@ -117,18 +117,18 @@ Clogistic_obj &lt;-<span class="st"> </span><span class="kw">compileNimble</span
 <pre class="sourceCode r"><code class="sourceCode r">out &lt;-<span class="st"> </span><span class="kw">optim</span>(<span class="kw">c</span>(Cmodel$b0, Cmodel$b1), Clogistic_obj$run, 
     <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">fnscale =</span> -<span class="dv">1</span>))
 out$par</code></pre>
-<pre><code>## [1] -0.4741261  4.0212170</code></pre>
+<pre><code>## [1] -0.4007076  4.0245100</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">glm</span>(y ~<span class="st"> </span>x, <span class="dt">family =</span> <span class="st">'binomial'</span>)</code></pre>
 <pre><code>## 
 ## Call:  glm(formula = y ~ x, family = &quot;binomial&quot;)
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##      -0.474        4.021  
+##     -0.4007       4.0249  
 ## 
 ## Degrees of Freedom: 299 Total (i.e. Null);  298 Residual
-## Null Deviance:       408.2 
-## Residual Deviance: 225.3     AIC: 229.3</code></pre>
+## Null Deviance:       412 
+## Residual Deviance: 216.3     AIC: 220.3</code></pre>
 <p>Looks like it works.</p>
 </div>
 <div id="example-of-a-simple-mcmc-sampler" class="slide section level1">
@@ -201,27 +201,27 @@ simManyGLM$<span class="kw">run</span>(<span class="kw">c</span>(.<span class="d
 ## Look at first 20 y's to keep this small
 <span class="kw">as.matrix</span>(simManyGLM$results)[, model$<span class="kw">expandNodeNames</span>(<span class="st">'y'</span>)[<span class="dv">1</span>:<span class="dv">20</span>]]</code></pre>
 <pre><code>##       y[1] y[2] y[3] y[4] y[5] y[6] y[7] y[8] y[9] y[10] y[11] y[12] y[13]
-##  [1,]    1    1    1    1    1    1    0    1    1     1     1     1     0
-##  [2,]    0    1    1    0    1    1    1    0    0     1     1     1     0
-##  [3,]    0    0    1    1    0    1    1    1    1     1     0     1     1
-##  [4,]    0    0    1    0    1    0    1    1    0     1     1     0     0
-##  [5,]    1    0    0    1    0    1    0    0    0     1     1     0     1
-##  [6,]    1    0    1    0    1    0    0    1    0     1     1     0     0
-##  [7,]    1    1    1    0    1    0    1    0    1     1     1     1     0
-##  [8,]    1    1    1    0    1    1    0    1    1     0     1     1     0
-##  [9,]    1    1    0    1    1    0    1    0    1     1     0     0     1
-## [10,]    1    1    0    0    1    0    0    0    0     1     1     1     1
+##  [1,]    0    0    0    0    1    0    0    0    1     1     1     1     0
+##  [2,]    1    0    0    1    1    0    1    0    1     1     1     1     0
+##  [3,]    1    1    0    0    0    0    1    1    0     1     0     1     0
+##  [4,]    1    1    0    1    1    1    1    1    1     1     1     0     0
+##  [5,]    0    1    1    1    0    0    0    0    1     0     1     0     1
+##  [6,]    0    1    0    1    1    1    0    0    1     0     1     0     0
+##  [7,]    0    0    0    1    1    1    1    0    0     1     1     1     0
+##  [8,]    0    1    0    1    1    0    0    1    0     0     1     1     0
+##  [9,]    0    0    1    0    1    1    1    0    0     1     0     0     1
+## [10,]    0    1    1    1    1    1    0    0    1     1     1     1     1
 ##       y[14] y[15] y[16] y[17] y[18] y[19] y[20]
-##  [1,]     1     0     0     0     1     0     1
-##  [2,]     0     1     0     1     0     1     1
-##  [3,]     0     0     0     1     0     0     0
-##  [4,]     1     1     0     1     1     1     1
-##  [5,]     1     1     1     0     0     0     0
-##  [6,]     0     0     0     0     0     0     0
-##  [7,]     1     0     0     0     1     0     1
-##  [8,]     0     1     0     0     1     0     1
-##  [9,]     0     1     0     0     1     1     1
-## [10,]     0     1     1     1     1     0     0</code></pre>
+##  [1,]     1     1     1     0     1     1     0
+##  [2,]     0     0     1     1     0     0     1
+##  [3,]     1     1     1     1     0     1     1
+##  [4,]     1     0     1     1     1     0     0
+##  [5,]     1     0     0     0     0     1     1
+##  [6,]     0     1     1     0     0     1     1
+##  [7,]     1     1     1     0     1     1     1
+##  [8,]     0     0     1     0     1     1     0
+##  [9,]     0     0     1     0     1     0     1
+## [10,]     0     0     1     1     1     1     1</code></pre>
 <p>Or we can compile and use it</p>
 <pre class="sourceCode r"><code class="sourceCode r">CsimManyGLM &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(simManyGLM, <span class="dt">project =</span> model)
 <span class="kw">set.seed</span>(<span class="dv">1</span>)
@@ -230,27 +230,27 @@ CsimManyGLM$<span class="kw">run</span>(<span class="kw">c</span>(.<span class="
 <pre class="sourceCode r"><code class="sourceCode r">## Look at first 20 y's to keep this small
 <span class="kw">as.matrix</span>(CsimManyGLM$results)[, model$<span class="kw">expandNodeNames</span>(<span class="st">'y'</span>)[<span class="dv">1</span>:<span class="dv">20</span>]]</code></pre>
 <pre><code>##       y[1] y[2] y[3] y[4] y[5] y[6] y[7] y[8] y[9] y[10] y[11] y[12] y[13]
-##  [1,]    1    1    1    1    1    1    0    1    1     1     1     1     0
-##  [2,]    0    1    1    0    1    1    1    0    0     1     1     1     0
-##  [3,]    0    0    1    1    0    1    1    1    1     1     0     1     1
-##  [4,]    0    0    1    0    1    0    1    1    0     1     1     0     0
-##  [5,]    1    0    0    1    0    1    0    0    0     1     1     0     1
-##  [6,]    1    0    1    0    1    0    0    1    0     1     1     0     0
-##  [7,]    1    1    1    0    1    0    1    0    1     1     1     1     0
-##  [8,]    1    1    1    0    1    1    0    1    1     0     1     1     0
-##  [9,]    1    1    0    1    1    0    1    0    1     1     0     0     1
-## [10,]    1    1    0    0    1    0    0    0    0     1     1     1     1
+##  [1,]    0    0    0    0    1    0    0    0    1     1     1     1     0
+##  [2,]    1    0    0    1    1    0    1    0    1     1     1     1     0
+##  [3,]    1    1    0    0    0    0    1    1    0     1     0     1     0
+##  [4,]    1    1    0    1    1    1    1    1    1     1     1     0     0
+##  [5,]    0    1    1    1    0    0    0    0    1     0     1     0     1
+##  [6,]    0    1    0    1    1    1    0    0    1     0     1     0     0
+##  [7,]    0    0    0    1    1    1    1    0    0     1     1     1     0
+##  [8,]    0    1    0    1    1    0    0    1    0     0     1     1     0
+##  [9,]    0    0    1    0    1    1    1    0    0     1     0     0     1
+## [10,]    0    1    1    1    1    1    0    0    1     1     1     1     1
 ##       y[14] y[15] y[16] y[17] y[18] y[19] y[20]
-##  [1,]     1     0     0     0     1     0     1
-##  [2,]     0     1     0     1     0     1     1
-##  [3,]     0     0     0     1     0     0     0
-##  [4,]     1     1     0     1     1     1     1
-##  [5,]     1     1     1     0     0     0     0
-##  [6,]     0     0     0     0     0     0     0
-##  [7,]     1     0     0     0     1     0     1
-##  [8,]     0     1     0     0     1     0     1
-##  [9,]     0     1     0     0     1     1     1
-## [10,]     0     1     1     1     1     0     0</code></pre>
+##  [1,]     1     1     1     0     1     1     0
+##  [2,]     0     0     1     1     0     0     1
+##  [3,]     1     1     1     1     0     1     1
+##  [4,]     1     0     1     1     1     0     0
+##  [5,]     1     0     0     0     0     1     1
+##  [6,]     0     1     1     0     0     1     1
+##  [7,]     1     1     1     0     1     1     1
+##  [8,]     0     0     1     0     1     1     0
+##  [9,]     0     0     1     0     1     0     1
+## [10,]     0     0     1     1     1     1     1</code></pre>
 <p>Results should be identical since we set the same seed.</p>
 <p>Note that a <code>modelValues</code> object cannot be passed as an argument or a return value. Instead it must be created or shared among nimbleFunctions via setup code and accessed from R as a member object.</p>
 <p>Actually NIMBLE already provides a nimbleFunction a lot like this, <code>simNodesMV</code>, but it is a slightly different.</p>

@@ -172,15 +172,15 @@ pump &lt;- nimbleModel(pumpCode,
 <h1>NIMBLE’s default MCMC</h1>
 <p>Here are the results from running NIMBLE’s default MCMC:</p>
 <pre class="r"><code>pumpConf &lt;- configureMCMC(pump, print = TRUE)</code></pre>
-<pre><code>## [1] RW sampler: alpha,  adaptive: TRUE,  adaptInterval: 200,  scale: 1
-## [2] conjugate_dgamma_dgamma sampler: beta,  dep_dgamma: theta[1], theta[2], theta[3], theta[4], theta[5], theta[6], theta[7], theta[8], theta[9], theta[10]
-## [3] conjugate_dgamma_dpois sampler: theta[1],  dep_dpois: x[1]
-## [4] conjugate_dgamma_dpois sampler: theta[2],  dep_dpois: x[2]
-## [5] conjugate_dgamma_dpois sampler: theta[3],  dep_dpois: x[3]
-## [6] conjugate_dgamma_dpois sampler: theta[4],  dep_dpois: x[4]
-## [7] conjugate_dgamma_dpois sampler: theta[5],  dep_dpois: x[5]
-## [8] conjugate_dgamma_dpois sampler: theta[6],  dep_dpois: x[6]
-## [9] conjugate_dgamma_dpois sampler: theta[7],  dep_dpois: x[7]
+<pre><code>## [1]  RW sampler: alpha
+## [2]  conjugate_dgamma_dgamma sampler: beta,  dep_dgamma: theta[1], theta[2], theta[3], theta[4], theta[5], theta[6], theta[7], theta[8], theta[9], theta[10]
+## [3]  conjugate_dgamma_dpois sampler: theta[1],  dep_dpois: x[1]
+## [4]  conjugate_dgamma_dpois sampler: theta[2],  dep_dpois: x[2]
+## [5]  conjugate_dgamma_dpois sampler: theta[3],  dep_dpois: x[3]
+## [6]  conjugate_dgamma_dpois sampler: theta[4],  dep_dpois: x[4]
+## [7]  conjugate_dgamma_dpois sampler: theta[5],  dep_dpois: x[5]
+## [8]  conjugate_dgamma_dpois sampler: theta[6],  dep_dpois: x[6]
+## [9]  conjugate_dgamma_dpois sampler: theta[7],  dep_dpois: x[7]
 ## [10] conjugate_dgamma_dpois sampler: theta[8],  dep_dpois: x[8]
 ## [11] conjugate_dgamma_dpois sampler: theta[9],  dep_dpois: x[9]
 ## [12] conjugate_dgamma_dpois sampler: theta[10],  dep_dpois: x[10]</code></pre>
@@ -230,33 +230,33 @@ pumpConf$addMonitors(c('alpha', 'beta', 'theta'))</code></pre>
 <pre><code>## thin = 1: alpha, beta, theta</code></pre>
 <pre class="r"><code>pumpConf$getSamplers()</code></pre>
 <pre><code>## [[1]]
-## RW sampler acting on alpha
+## RW sampler: alpha
 ## [[2]]
-## conjugate_dgamma_dgamma sampler acting on beta
+## conjugate_dgamma_dgamma sampler: beta,  dep_dgamma: theta[1], theta[2], theta[3], theta[4], theta[5], theta[6], theta[7], theta[8], theta[9], theta[10]
 ## [[3]]
-## conjugate_dgamma_dpois sampler acting on theta[1]
+## conjugate_dgamma_dpois sampler: theta[1],  dep_dpois: x[1]
 ## [[4]]
-## conjugate_dgamma_dpois sampler acting on theta[2]
+## conjugate_dgamma_dpois sampler: theta[2],  dep_dpois: x[2]
 ## [[5]]
-## conjugate_dgamma_dpois sampler acting on theta[3]
+## conjugate_dgamma_dpois sampler: theta[3],  dep_dpois: x[3]
 ## [[6]]
-## conjugate_dgamma_dpois sampler acting on theta[4]
+## conjugate_dgamma_dpois sampler: theta[4],  dep_dpois: x[4]
 ## [[7]]
-## conjugate_dgamma_dpois sampler acting on theta[5]
+## conjugate_dgamma_dpois sampler: theta[5],  dep_dpois: x[5]
 ## [[8]]
-## conjugate_dgamma_dpois sampler acting on theta[6]
+## conjugate_dgamma_dpois sampler: theta[6],  dep_dpois: x[6]
 ## [[9]]
-## conjugate_dgamma_dpois sampler acting on theta[7]
+## conjugate_dgamma_dpois sampler: theta[7],  dep_dpois: x[7]
 ## [[10]]
-## conjugate_dgamma_dpois sampler acting on theta[8]
+## conjugate_dgamma_dpois sampler: theta[8],  dep_dpois: x[8]
 ## [[11]]
-## conjugate_dgamma_dpois sampler acting on theta[9]
+## conjugate_dgamma_dpois sampler: theta[9],  dep_dpois: x[9]
 ## [[12]]
-## conjugate_dgamma_dpois sampler acting on theta[10]</code></pre>
+## conjugate_dgamma_dpois sampler: theta[10],  dep_dpois: x[10]</code></pre>
 <pre class="r"><code>pumpConf$removeSamplers('alpha')
-pumpConf$addSampler(target = c('alpha'), type = 'slice')</code></pre>
-<pre><code>## [12] slice sampler: alpha,  adaptive: TRUE,  adaptInterval: 200,  sliceWidth: 1,  sliceMaxSteps: 100</code></pre>
-<pre class="r"><code>pumpMCMC &lt;- buildMCMC(pumpConf)
+pumpConf$addSampler(target = c('alpha'), type = 'slice')
+
+pumpMCMC &lt;- buildMCMC(pumpConf)
 CpumpMCMC &lt;- compileNimble(pumpMCMC, project = pump, resetFunctions = TRUE)
 
 Cpump$setInits(pumpInits)
@@ -297,34 +297,34 @@ plot(samples2[ , 'theta[1]'], type = 'l', xlab = 'iteration',
 <p>We’ll try that here for <code>alpha</code> and <code>beta</code>.</p>
 <pre class="r"><code>pumpConf$getSamplers()</code></pre>
 <pre><code>## [[1]]
-## conjugate_dgamma_dgamma sampler acting on beta
+## conjugate_dgamma_dgamma sampler: beta,  dep_dgamma: theta[1], theta[2], theta[3], theta[4], theta[5], theta[6], theta[7], theta[8], theta[9], theta[10]
 ## [[2]]
-## conjugate_dgamma_dpois sampler acting on theta[1]
+## conjugate_dgamma_dpois sampler: theta[1],  dep_dpois: x[1]
 ## [[3]]
-## conjugate_dgamma_dpois sampler acting on theta[2]
+## conjugate_dgamma_dpois sampler: theta[2],  dep_dpois: x[2]
 ## [[4]]
-## conjugate_dgamma_dpois sampler acting on theta[3]
+## conjugate_dgamma_dpois sampler: theta[3],  dep_dpois: x[3]
 ## [[5]]
-## conjugate_dgamma_dpois sampler acting on theta[4]
+## conjugate_dgamma_dpois sampler: theta[4],  dep_dpois: x[4]
 ## [[6]]
-## conjugate_dgamma_dpois sampler acting on theta[5]
+## conjugate_dgamma_dpois sampler: theta[5],  dep_dpois: x[5]
 ## [[7]]
-## conjugate_dgamma_dpois sampler acting on theta[6]
+## conjugate_dgamma_dpois sampler: theta[6],  dep_dpois: x[6]
 ## [[8]]
-## conjugate_dgamma_dpois sampler acting on theta[7]
+## conjugate_dgamma_dpois sampler: theta[7],  dep_dpois: x[7]
 ## [[9]]
-## conjugate_dgamma_dpois sampler acting on theta[8]
+## conjugate_dgamma_dpois sampler: theta[8],  dep_dpois: x[8]
 ## [[10]]
-## conjugate_dgamma_dpois sampler acting on theta[9]
+## conjugate_dgamma_dpois sampler: theta[9],  dep_dpois: x[9]
 ## [[11]]
-## conjugate_dgamma_dpois sampler acting on theta[10]
+## conjugate_dgamma_dpois sampler: theta[10],  dep_dpois: x[10]
 ## [[12]]
-## slice sampler acting on alpha</code></pre>
+## slice sampler: alpha</code></pre>
 <pre class="r"><code>pumpConf$removeSamplers(c('alpha', 'beta'))
 pumpConf$addSampler(target = c('alpha','beta'), type = 'RW_block', 
-control = list(adaptInterval = 100))</code></pre>
-<pre><code>## [11] RW_block sampler: alpha, beta,  adaptive: TRUE,  adaptScaleOnly: FALSE,  adaptInterval: 100,  scale: 1,  propCov: identity</code></pre>
-<pre class="r"><code>pumpMCMC &lt;- buildMCMC(pumpConf)
+control = list(adaptInterval = 100))
+
+pumpMCMC &lt;- buildMCMC(pumpConf)
 CpumpMCMC &lt;- compileNimble(pumpMCMC, project = pump, resetFunctions = TRUE)
 
 Cpump$setInits(pumpInits)

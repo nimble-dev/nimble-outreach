@@ -18,7 +18,7 @@ library(nimble)
 
 # Introduction
 
-Here we'll work through an extended example of customizing an MCMC (and considering maximum likelihood via MCEM) for a tricky, but simple, example model.
+Here we'll work through an extended example of customizing an MCMC for a tricky, but simple, example model.
 
 The example is the *litters* example from the original BUGS examples, available with NIMBLE in the *classic-bugs/vol1/litters* directory of the installed package (call ```searchpaths()``` after loading the NIMBLE package to find where this directory is).
 
@@ -219,53 +219,4 @@ tsplot(smp_cross[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim
 
 effectiveSize(as.mcmc(smp_cross[postBurn, ]))
 ```
-
-# Using MCEM 
-
-We might also be interested in an empirical Bayes (maximum likelihood for the hyperparameters) analysis. This can be done by Monte Carlo Expectation Maximization, an algorithm that integrates over the random effects numerically using an MCMC sampler for the random effects embedded within an optimization over the hyperparameters. 
-
-```{r, mcem}
-# currently an issue with running MCEM on the same model as an MCMC
-# so create new copy of model
-model2 <- model$newModel()   
-inits <- list( a = c(12, 12), b=c(12, 12) )
-model2$setInits(inits)
-mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 250, 
-     optimMethod = 'Nelder-Mead')
-print(system.time(   # takes a while:
-        out <- mcem(maxit = 100)
-))
-out 
-```
-
-The MCEM is converging quite slowly. In this case, since we can analytically integrate over ```p```, we can directly maximize the marginal likelihood and see that the MLE for the first group is $\hat{a_1}=43.5$, $\hat{b_1}=4.94$. Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
-
-One option would be to reparameterize the model from the ```a,b``` parameterization to the mean and standard deviation of the beta distribution. That's easy in NIMBLE, since we provide that parameterization as an alternative parameterization!
-
-# MCEM with reparameterization 
-
-Here we use NIMBLE's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of $\hat\mu=0.898$ and $\hat\sigma=0.043$, but we'd need to investigate further. Also, at present NIMBLE's MCEM does not handle stopping criteria, but there will be enhancements in the next release (0.5-1). 
-
-```{r, mcem-reparam}
-codeReparam <- nimbleCode({
-  for (i in 1:G) {
-     for (j in 1:N) {
-        r[i,j] ~ dbin(p[i,j], n[i,j]);
-        p[i,j] ~ dbeta(mean = mu[i], sd = sigma[i]) 
-     }
-     mu[i] ~ dunif(0, 1)
-     sigma[i] ~ dunif(0, 1)
-   }
-})
-inits <- list( mu = c(.5, .5), sigma = c(.1, .1))
-modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, 
-             inits = inits)
-mcemReparam <- buildMCEM(modelReparam, latentNodes = 'p', burnIn = 250, 
-            optimMethod = 'Nelder-Mead')
-print(system.time(
-        outReparam <- mcemReparam(maxit = 20)
-))
-outReparam 
-```
-
 
