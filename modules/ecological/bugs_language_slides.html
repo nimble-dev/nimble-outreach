@@ -175,7 +175,7 @@ ssmCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sink</span>()</code></pre>
 <p>This can be read into NIMBLE using <code>readBUGSmodel</code>:</p>
 <pre class="sourceCode r"><code class="sourceCode r">ssmCode &lt;-<span class="st"> </span><span class="kw">readBUGSmodel</span>(<span class="st">'ssm.bug'</span>, <span class="dt">dir =</span><span class="st">&quot;&quot;</span>, 
-                         <span class="dt">returnModelComponentsOnly =</span> <span class="ot">TRUE</span>)$model
+                         <span class="dt">returnComponents =</span> <span class="ot">TRUE</span>)$code
 <span class="kw">file.remove</span>(<span class="st">'ssm.bug'</span>)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
 </div>

@@ -137,7 +137,7 @@ This can be read into NIMBLE using `readBUGSmodel`:
 
 ```{r read-bugs-model}
 ssmCode <- readBUGSmodel('ssm.bug', dir ="", 
-                         returnModelComponentsOnly = TRUE)$model
+                         returnComponents = TRUE)$code
 file.remove('ssm.bug')
 ```
 

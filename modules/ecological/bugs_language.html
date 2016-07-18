@@ -279,7 +279,7 @@ for (t in 1:T) {
 <pre class="r"><code>sink()</code></pre>
 <p>This can be read into NIMBLE using <code>readBUGSmodel</code>:</p>
 <pre class="r"><code>ssmCode &lt;- readBUGSmodel('ssm.bug', dir =&quot;&quot;, 
-                         returnModelComponentsOnly = TRUE)$model
+                         returnComponents = TRUE)$code
 file.remove('ssm.bug')</code></pre>
 <pre><code>## [1] TRUE</code></pre>
 </div>
