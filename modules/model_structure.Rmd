@@ -64,9 +64,78 @@ pump$getDependencies(latents, determOnly = TRUE)
 pump$getNodeNames(dataOnly = TRUE)
 ```
 
+# Inspecting the model: variables
+
 What are the variables in the model? What information is available about them?
 
 ```{r, model-vars}
 pump$getVarNames()
 pump$getVarInfo('theta')
 ```
+
+As of the current version of NIMBLE, information about
+variables is not competely nicely arranged for a user (there aren't as
+many query functions), but it is available.
+
+This variable has 1 dimension (`nDim`), and its size is 10 (`maxs`).  Currently `mins` is always 1.  If at least one node within the variable is stochastic, then `anyStoch` will be `TRUE`.
+
+
+# The importance of querying a model: lifted nodes
+
+You may have noticed a strangely-named node, *lifted_d1_over_beta*, in the pump model. NIMBLE implements some features by inserting its own nodes.
+*You should never assume you know what nodes are in a model simply
+because you wrote the BUGS code.*
+
+Let's look at the two main ways this happens:
+
+```{r, fig.cap=""}
+m1 <- nimbleModel(
+    nimbleCode({
+        tau ~ dunif(0, 100)
+        x ~ dnorm(0, tau) #by default, tau is a precision
+    }))
+plot(m1$getGraph())
+m1$getNodeNames()
+```
+The node `lifted_d1_over_sqrt_oPtau_cP` has been inserted between
+`tau` and `x`.   The resulting model would equivalently have been
+created by this BUGS code:
+
+```{r, eval = FALSE}
+nimbleCode({
+    tau ~ dunif(0, 100)
+    lifted_d1_over_sqrt_oPtau_cP <- 1/sqrt(tau)
+    x ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP) #by default, tau is a precision
+}))
+```
+
+NIMBLE has *lifted* the calculation of standard deviation from
+precision so that it is part of the model's graph.  Therefore *you
+will make a mistake if you assume that the dependencies of `tau`
+include only `x`*:
+
+```{r, eval = FALSE}
+m1$tau <- 3
+m1$calculate(c('tau','x')) ## Wrong: the lifted node is being neglected
+```
+
+The correct way to do this is with model-generic programming:
+```{r}
+m1$getDependencies('tau')
+m1$calculate( m1$getDependencies('tau') )
+```
+
+The second common situation that creates lifted nodes is:
+```{r, fig.cap=""}
+m2 <- nimbleModel(
+    nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dnorm(a + 1, 1)
+    }))
+plot(m2$getGraph())
+m2$getNodeNames()
+```
+
+In this case, NIMBLE lifted the expression `a+1` and created a node
+for it.   Again the correct way to program is to query a model to
+learn about its nodes.  Do not assume you know what the nodes are.
