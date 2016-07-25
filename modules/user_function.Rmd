@@ -156,15 +156,14 @@ samples <- as.matrix(Cmcmc$mvSamples)
 And let's look at the MCMC performance and the model fit.
 
 ```{r output-mcmc, fig.height=5, fig.width=12}
-tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
 par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
-tsplot(samples[ , 'rho'], xlab = 'iteration',
+ts.plot(samples[ , 'rho'], xlab = 'iteration',
      ylab = expression(rho), main = expression(rho))
-tsplot(samples[ , 'tau'], xlab = 'iteration',
+ts.plot(samples[ , 'tau'], xlab = 'iteration',
      ylab = expression(tau), main = expression(tau))
-tsplot(samples[ , 'tau'], xlab = 'iteration',
+ts.plot(samples[ , 'tau'], xlab = 'iteration',
      ylab = expression(sigma), main = expression(sigma))
-tsplot(samples[ , 'b[40]'], xlab = 'iteration',
+ts.plot(samples[ , 'b[40]'], xlab = 'iteration',
      ylab = expression(b[40]), main = expression(b[40]))
 ```
 

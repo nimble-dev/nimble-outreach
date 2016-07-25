@@ -103,16 +103,14 @@ identical(Rsamples, samples[1:5, ])
 Now let's look at the MCMC performance
 
 ```{r output-mcmc, fig.height=5, fig.width=12}
-tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
-
 par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
-tsplot(samples[ , 'alpha'], xlab = 'iteration',
+ts.plot(samples[ , 'alpha'], xlab = 'iteration',
      ylab = expression(alpha), main = expression(alpha))
-tsplot(samples[ , 'beta'], xlab = 'iteration',
+ts.plot(samples[ , 'beta'], xlab = 'iteration',
      ylab = expression(beta), main = expression(beta))
 plot(samples[ , 'alpha'], samples[ , 'beta'], xlab = expression(alpha),
      ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
-tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
+ts.plot(samples[ , 'theta[1]'], xlab = 'iteration',
      ylab = expression(theta[1]), main = expression(theta[1]))
 ```
 
@@ -161,7 +159,7 @@ Considerations: you'll want to think about how to set up the over-dispersed star
 smp <- do.call(mcmc.list, out)
 gelman.diag(smp)
 # and here's a graphical representation of the information
-tsplot(out[[1]][ , 'alpha'], xlab = 'iteration',
+ts.plot(out[[1]][ , 'alpha'], xlab = 'iteration',
      ylab = expression(alpha), main = expression(alpha))
 sq <- seq_along(out[[1]][ , 'alpha'])
 for(i in 2:3)

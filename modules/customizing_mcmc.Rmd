@@ -55,13 +55,13 @@ crosscorr(mcmc[ , c('alpha', 'beta', 'theta[1]', 'theta[2]', 'theta[3]')])
 effectiveSize(mcmc)
 
 par(mfrow = c(1, 4), mai = c(.6, .5, .1, .2))
-tsplot(samples[ , 'alpha'], xlab = 'iteration',
+ts.plot(samples[ , 'alpha'], xlab = 'iteration',
      ylab = expression(alpha), main = expression(alpha))
-tsplot(samples[ , 'beta'], xlab = 'iteration',
+ts.plot(samples[ , 'beta'], xlab = 'iteration',
      ylab = expression(beta), main = expression(beta))
 plot(samples[ , 'alpha'], samples[ , 'beta'], xlab = expression(alpha),
      ylab = expression(beta), main = paste(expression(alpha), expression(beta), "dependence"))
-tsplot(samples[ , 'theta[1]'], xlab = 'iteration',
+ts.plot(samples[ , 'theta[1]'], xlab = 'iteration',
      ylab = expression(theta[1]), main = expression(theta[1]))
 ```
 

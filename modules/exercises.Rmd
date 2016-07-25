@@ -56,7 +56,7 @@ print(system.time(
 for(i in 3:n)
       path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
 ))
-tsplot(path[1:5000])
+ts.plot(path[1:5000])
 ```
 
 Now fill out the nimbleFunction version and test the timing.
@@ -90,7 +90,7 @@ print(system.time(
 for(i in 3:n)
       path[i] <- rho1*path[i-1] + rho2*path[i-2] + rnorm(1)
 ))
-tsplot(path[1:5000])
+ts.plot(path[1:5000])
 
 
 mc <- nimbleFunction(

@@ -83,13 +83,11 @@ system.time(Cmcmc$run(niter))
 
 smp_basic <- as.matrix(Cmcmc$mvSamples)
 
-tsplot <- function(x, ...) plot(seq_along(x), x, type = 'l', ...)
-
 par(mfrow = c(1, 4))
-tsplot(smp_basic[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
-tsplot(smp_basic[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
-tsplot(smp_basic[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
-tsplot(smp_basic[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
+ts.plot(smp_basic[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
+ts.plot(smp_basic[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
+ts.plot(smp_basic[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
+ts.plot(smp_basic[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 
 library(coda)
 nBurn <- niter / 5
@@ -119,10 +117,10 @@ system.time(Cmcmc$run(niter))
 smp_hyp_block <- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1, 4))
-tsplot(smp_hyp_block[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
-tsplot(smp_hyp_block[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
-tsplot(smp_hyp_block[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
-tsplot(smp_hyp_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
+ts.plot(smp_hyp_block[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
+ts.plot(smp_hyp_block[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
+ts.plot(smp_hyp_block[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
+ts.plot(smp_hyp_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 
 effectiveSize(as.mcmc(smp_hyp_block[postBurn, ]))
 ```
@@ -150,10 +148,10 @@ system.time(Cmcmc$run(niter))
 smp_full_block <- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1,4))
-tsplot(smp_full_block[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
-tsplot(smp_full_block[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
-tsplot(smp_full_block[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
-tsplot(smp_full_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
+ts.plot(smp_full_block[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
+ts.plot(smp_full_block[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
+ts.plot(smp_full_block[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
+ts.plot(smp_full_block[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 ```
 
 More generally, in any model, we might ask if we have the ideal blocking structure? Even in simple models, there is a combinatorial explosion of possible blocks. Sometimes we have some intuition and can do this manually, but sometimes that is a lot of work.
@@ -212,10 +210,10 @@ system.time(Cmcmc$run(niter))
 smp_cross <- as.matrix(Cmcmc$mvSamples)
 
 par(mfrow = c(1,4))
-tsplot(smp_cross[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
-tsplot(smp_cross[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
-tsplot(smp_cross[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
-tsplot(smp_cross[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
+ts.plot(smp_cross[ , 'a[1]'], main = expression(a[1]), xlab = '', ylab = 'default')
+ts.plot(smp_cross[ , 'b[1]'], main = expression(b[1]), xlab = '', ylab = '')
+ts.plot(smp_cross[ , 'a[2]'], main = expression(a[2]), xlab = '', ylab = '', ylim = c(0,20))
+ts.plot(smp_cross[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', ylim = c(0,6))
 
 effectiveSize(as.mcmc(smp_cross[postBurn, ]))
 ```
