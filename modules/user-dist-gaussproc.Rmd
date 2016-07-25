@@ -1,0 +1,213 @@
+---
+title: "User-defined distributions"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+NIMBLE provides a variety of distributions, as seen in Section 5.2.3 of the [NIMBLE manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
+
+However, there are lots of other probability distributions out there that you might want to use. So NIMBLE allows you to code up your own distribution and then use it in BUGS code.
+
+Furthermore, in some cases one can use a user-defined distribution as a way to reduce computation by analytically integrating over a component of the model.
+
+# Basic example
+
+To illustrate, suppose that NIMBLE did not provide an exponential distribution. Here's what you would do to code up your own exponential distribution and make it available in BUGS code.
+
+First we write nimbleFunctions for the density and simulation functions. Note the naming is analogous to how probability distributions are handled in R. 
+
+  - The 'd' function should have *log* as its last argument, a binary argument for whether the log density is returned or not. 
+  - The 'r' function should have *n* as its first argument but need only work for ```n=1```.
+
+```{r, dmyexp}
+dmyexp <- nimbleFunction(
+    run = function(x = double(0), rate = double(0, default = 1), 
+        log = integer(0, default = 0)) {
+        returnType(double(0))
+        logProb <- log(rate) - x*rate
+        if(log) return(logProb)
+        else return(exp(logProb)) 
+    })
+
+rmyexp <- nimbleFunction(
+    run = function(n = integer(0), rate = double(0, default = 1)) {
+        returnType(double(0))
+        if(n != 1) print("rmyexp only allows n = 1; using n = 1.")
+        dev <- runif(1)
+        return(-log(1-dev) / rate)
+    })
+```
+
+```{r, scopefix, echo=FALSE}
+# not clear why dmyexp() not being put into global
+# if this isn't done, registerDistributions fails to find dmyexp in knitr
+assign('dmyexp', dmyexp, .GlobalEnv)
+assign('rmyexp', rmyexp, .GlobalEnv)
+```
+
+The User Manual also shows how you could write CDF ('p') and inverse CDF ('q') such that you could make use of truncation with your distribution, but for standard usage all you need is the density ('d') and simulation ('r') functions.
+
+# Registering your new distribution
+
+```{r, register-dist}
+registerDistributions(list(
+        dmyexp = list(
+               BUGSdist = "dmyexp(rate, scale)",
+               Rdist = "dmyexp(rate = 1/scale)",
+               altParams = c("scale = 1/rate", "mean = 1/rate"),
+               pqAvail = FALSE,
+               range = c(0, Inf)
+               )))
+```
+
+This makes NIMBLE aware of the distribution as a BUGS distribution. 
+
+Comments: 
+
+  - If you want to allow users to use different parameterizations for the distribution, you can do this via the *Rdist* element. Here we allow use of *scale*, with the conversion from *scale* to the canonical *rate* specified.
+  - The *altParams* information can be used in NIMBLE's MCMC conjugacy system and sequential Monte Carlo system but is not required.
+
+# Using the distribution
+
+```{r, use-dist}
+code <- nimbleCode({
+y ~ dmyexp(scale = mu)
+mu ~ dunif(0, 10)
+})
+m <- nimbleModel(code, data = list(y = 1.2))
+mcmcConf <- configureMCMC(m)
+mcmcConf$getSamplers()
+mcmc <- buildMCMC(mcmcConf)
+niter <- 100
+mcmc$run(niter)
+plot(seq_len(niter), as.matrix(mcmc$mvSamples)[,1], type = 'l')
+```
+
+# A more interesting example
+
+While educational, the exponential example is not particularly interesting given NIMBLE already provides that distribution.  Let's consider an example where using a user-defined distribution can improve MCMC performance (run time and sampling efficiency).
+
+Consider a basic Gaussian process model for spatial smoothing and prediction.
+
+$$
+y_i \sim N(g_i, \tau^2)
+$$
+$$
+g \sim \mbox{MVN}(\mu 1, \sigma^2 C(\rho))
+$$
+$$
+C_{i,j} = \sigma^2 \exp\left(-\frac{\|x_i - x_j\|}{\rho}\right)
+$$
+
+
+# Integrating out the unknown process
+
+In this case we can analytically integrate over the random process because we have normal data and a normal prior (i.e., we could do conjugate sampling for *g*). 
+
+Doing this integral gives us a multivariate normal density for the data with a particular structured covariance. 
+
+$$
+y \sim \mbox{MVN}(\mu 1, \tau^2 I + \sigma^2 C(\rho))
+$$
+
+This eliminates a layer in the model and should improve MCMC performance by reducing dependence amongst the model parameters and by simply reducing the number of parameters needing to be sampled. 
+
+# Gaussian process nimbleFunctions
+
+Here's how we'd write the density ('d') and simulation ('r') nimbleFunctions for this distribution. 
+
+Note that in this example we have that the random variable and the parameter are one-dimensional arrays (vectors), so we need to indicate that.
+
+```{r, dirchmulti}
+dgp <- nimbleFunction(
+            run = function(x = double(1), dists = double(2), mu = double(0), 
+                             tau = double(0), sigma = double(0), rho = double(0), 
+                             log = integer(0, default = 0)) {
+                returnType(double(0))
+
+                C <- sigma^2 * exp(-dists/rho)
+                p <- length(x)
+
+                for(i in 1:p) 
+                      C[i,i] <- C[i,i] + tau^2
+
+                U <- chol(C)
+                x <- x - mu
+                tmp <- forwardsolve(t(U), x)
+                out <- -p*log(2*3.1415926)/2
+                for(i in 1:p)
+                      out <- out - log(U[i,i]) - 0.5*tmp[i]^2  
+                if(log) return(out) else return(exp(out))
+})
+
+rgp <- nimbleFunction(
+            run = function(n = integer(0), dists = double(2), mu = double(0), 
+                           tau = double(0), sigma = double(0), rho = double(0)) {
+                returnType(double(1))
+                if(n != 1) print("rgp only allows n = 1; using n = 1.")
+                C <- sigma^2 * exp(-dists/rho)
+                p <- dim(dists)[1]
+                devs <-numeric(p, init = FALSE)
+                for(i in 1:p) {
+                      C[i,i] <- C[i,i] + tau^2
+                      devs[i] <- rnorm(1)
+                }
+                U <- chol(C)
+                out <- mu + t(U) %*% devs
+                return(out[,1])
+})
+```
+
+```{r, scopefix2, echo=FALSE}
+# not clear why ddirchmulti() not being put into global
+# if this isn't done, registerDistributions fails to find ddirchmulti in knitr
+assign('dgp', dgp, .GlobalEnv)
+assign('rgp', rgp, .GlobalEnv)
+```
+
+```{r, register-gp}
+registerDistributions(list(
+        dgp = list(
+            BUGSdist = "dgp(dists, mu, tau, sigma, rho)",
+            types = c('value = double(1)', 'dists = double(2)', 'mu = double(0)',
+              'tau = double(0)', 'sigma = double(0)', 'rho = double(0)')
+              )
+))
+```
+
+
+# Using the user-defined distribution
+
+We can now write the model for data as follows. We won't apply this to a real dataset, but one could now use this rewritten model in an algorithm such as MCMC. Or we could maximize the marginal likelihood -- recall the optimization example when we [first talked about nimbleFunctions](nimbleFunctions_slides.html).
+
+```{r, gp-example}
+code <- nimbleCode({
+     y[1:n] ~ dgp(dists[1:n,1:n], mu, tau, sigma, rho)
+     mu ~ dnorm(0, sd = 100)
+     tau ~ dunif(0, 10)
+     sigma ~ dunif(0, 1)
+     rho ~ dunif(-10, 10)
+})
+
+n <- 50
+locs <- cbind(runif(n), runif(n))
+library(fields, quietly = TRUE)
+dd <- rdist(locs)
+m <- nimbleModel(code, constants = list(n = n,dists = dd), 
+                       inits = list(mu = 0, tau = 1, sigma = 1, rho = 0.5))
+```
+
+
