@@ -37,6 +37,11 @@ Here we set up the pump model.
 
 Here are the results from running NIMBLE's default MCMC:
 
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('pump') || !exists('Cpump')) source('chunks.R')
+```                   
+
 ```{r, pump-default, fig.height=5, fig.width=12}
 pumpConf <- configureMCMC(pump, print = TRUE)
 pumpConf$addMonitors(c('alpha', 'beta', 'theta'))

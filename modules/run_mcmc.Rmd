@@ -48,6 +48,11 @@ Setting up and running an MCMC in NIMBLE takes a few more steps than in BUGS or 
 
 First we *configure* the MCMC, which means setting up the samplers to be used for each node or group of nodes. NIMBLE provides a default configuration, but we'll see shortly how you can modify that. 
 
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('pump') || !exists('Cpump')) source('chunks.R')
+```                   
+
 ```{r, conf}
 pumpConf <- configureMCMC(pump, print = TRUE)
 ```

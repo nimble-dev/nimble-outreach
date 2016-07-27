@@ -14,7 +14,6 @@ output:
 if(!('modules' %in% unlist(strsplit(getwd(), split = '/')))) setwd('modules')
 library(methods)  # otherwise new() not being found - weird
 library(nimble)
-read_chunk('chunks.R')
 ```
 
 # Data nodes and constants
@@ -33,7 +32,23 @@ Here's the pump model, also used in some of the other modules.
 
 <center><img src="figures/pumpDAG.jpg"></center>
 
-```{r, pump-code}
+```{r, model-code}
+pumpCode <- nimbleCode({ 
+  for (i in 1:N){
+
+      # likelihood (data model)
+      x[i] ~ dpois(lambda[i])
+
+      # latent process (random effects)
+      # linear predictor      
+      lambda[i] <- theta[i]*t[i]
+      # random effects distribution
+      theta[i] ~ dgamma(alpha,beta)
+  }
+  # priors on hyperparameters
+  alpha ~ dexp(1.0)
+  beta ~ dgamma(0.1,1.0)
+})
 ```
 
 # Setting data via *nimbleModel()*

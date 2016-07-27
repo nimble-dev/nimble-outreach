@@ -44,6 +44,11 @@ The parameters and data in a model are represented as nodes in a graph. Here we 
 
 What's the current value in a node or the value of the log probability density for that node?
 
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('pump') || !exists('Cpump')) source('chunks.R')
+```                   
+
 ```{r, model-values}
 pump$x  
 pump$logProb_x  # log-likelihood components

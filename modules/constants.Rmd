@@ -48,6 +48,11 @@ When a variable is specified only on the right-hand side of expression(s) in the
 
 Let's see this with the pump model. First note that ```pump$t``` does not exist because *t* was given as a constant.
 
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('pump') || !exists('Cpump')) source('chunks.R')
+```                   
+
 ```{r, rhs-constant}
 try(pump$t)
 pump$getNodeNames()

@@ -45,6 +45,11 @@ NIMBLE provides users and programmers with the ability to get information about 
 
 What are the nodes in the model? What are the dependencies of a given node (this is information used in many algorithms)?
 
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('pump') || !exists('Cpump')) source('chunks.R')
+```                   
+
 ```{r, model-nodes}
 pump$getNodeNames()
 hypers <- pump$getNodeNames(topOnly = TRUE)

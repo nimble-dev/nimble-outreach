@@ -58,6 +58,11 @@ Here's how easy it is in NIMBLE. Note that we determine the latent nodes in a mo
 
 Also note that to avoid numerical issues we did need to constrain the parameter space. 
 
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('pump')) source('chunks.R')
+```                   
+
 ```{r, mcem, eval=FALSE}
 mcem = buildMCEM(pump, pump$getNodeNames(latentOnly = TRUE, stochOnly = TRUE),
                  boxConstraints = list(list('alpha', c(0, 100)),
