@@ -218,3 +218,134 @@ ts.plot(smp_cross[ , 'b[2]'], main = expression(b[2]), xlab = '', ylab = '', yli
 effectiveSize(as.mcmc(smp_cross[postBurn, ]))
 ```
 
+# Using MCEM 
+
+We might also be interested in an empirical Bayes (maximum likelihood for the hyperparameters) analysis. This can be done by Monte Carlo Expectation Maximization, an algorithm that integrates over the random effects numerically using an MCMC sampler for the random effects embedded within an optimization over the hyperparameters. 
+
+```{r, mcem, eval=FALSE}
+# currently an issue with running MCEM on the same model as an MCMC
+# so create new copy of model
+model2 <- model$newModel()   
+inits <- list( a = c(12, 12), b=c(12, 12) )
+model2$setInits(inits)
+mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 250)
+print(system.time(   # takes a while:
+        out <- mcem()
+))
+out 
+```
+
+```
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 1.
+Current number of MCMC iterations: 1000.
+Parameter Estimates: 
+     a[1]      a[2]      b[1]      b[2] 
+17.128379 10.119031 10.728973  7.596986 
+Convergence Criterion: 1.001.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 2.
+Current number of MCMC iterations: 1938.
+Parameter Estimates: 
+     a[1]      a[2]      b[1]      b[2] 
+16.493028  8.285654  8.668640  5.351970 
+Convergence Criterion: 5.153947.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+
+...
+
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 100.
+Current number of MCMC iterations: 43516.
+Parameter Estimates: 
+      a[1]       a[2]       b[1]       b[2] 
+54.3247654  1.5847327  6.1643360  0.5571288 
+Convergence Criterion: 0.0004288356.
+    user   system  elapsed 
+4735.884  465.087 4689.447 
+```
+
+
+The MCEM is converging quite slowly. With tightened convergence criteria relative to the default values, it reports convergence, but it hasn't actually converged to the true MLE (In this case, since we can analytically integrate over ```p```, we can directly maximize the marginal likelihood and see that the MLE for the first group is $\hat{a_1}=43.5$, $\hat{b_1}=4.94$). Basically, slow convergence in the optimization is caused by the same issue as the strong dependence in the posterior.
+
+One option  to reparameterize the model from the ```a,b``` parameterization to the mean and standard deviation of the beta distribution. That's easy in NIMBLE, since we provide that parameterization as an alternative parameterization!
+
+# MCEM with reparameterization 
+
+Here we use NIMBLE's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence is slow but it does seem to converge to the MLE of $\hat\mu=0.898$ and $\hat\sigma=0.043$.
+
+```{r, mcem-reparam, eval=FALSE}
+codeReparam <- nimbleCode({
+  for (i in 1:G) {
+     for (j in 1:N) {
+        r[i,j] ~ dbin(p[i,j], n[i,j]);
+        p[i,j] ~ dbeta(mean = mu[i], sd = sigma[i]) 
+     }
+     mu[i] ~ dunif(0, 1)
+     sigma[i] ~ dunif(0, 1)
+   }
+})
+inits <- list( mu = c(.5, .5), sigma = c(.1, .1))
+modelReparam <- nimbleModel(codeReparam, constants = consts, data = data, 
+             inits = inits)
+latents <- modelReparam$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+mcemReparam <- buildMCEM(modelReparam, latentNodes = latents,
+            alpha=.01,beta=.01,gamma=.01)
+print(system.time(
+        outReparam <- mcemReparam()
+))
+outReparam 
+```
+
+```
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 1.
+Current number of MCMC iterations: 1000.
+Parameter Estimates: 
+     mu[1]      mu[2]   sigma[1]   sigma[2] 
+0.61492694 0.57155388 0.08993834 0.11355390 
+Convergence Criterion: 1.001.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 2.
+Current number of MCMC iterations: 2188.
+Parameter Estimates: 
+     mu[1]      mu[2]   sigma[1]   sigma[2] 
+0.66645160 0.61640212 0.08979572 0.12815343 
+Convergence Criterion: 6.423049.
+
+...
+
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 208.
+Current number of MCMC iterations: 219536.
+Parameter Estimates: 
+     mu[1]      mu[2]   sigma[1]   sigma[2] 
+0.89746995 0.73982716 0.04305452 0.24714564 
+Convergence Criterion: 8.970094e-05.
+     user    system   elapsed 
+13857.238     2.437 13856.241 
+```

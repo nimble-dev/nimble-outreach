@@ -1,5 +1,3 @@
-Reparameterized version not working - giving Inf values in l-bfgs-b; need to figure out what is going on - Cmodel seems to be getting rep(.99999,4) as vals for maxNodes somehow
-
 # Using MCEM 
 
 We might also be interested in an empirical Bayes (maximum likelihood for the hyperparameters) analysis. This can be done by Monte Carlo Expectation Maximization, an algorithm that integrates over the random effects numerically using an MCMC sampler for the random effects embedded within an optimization over the hyperparameters. 
@@ -10,10 +8,9 @@ We might also be interested in an empirical Bayes (maximum likelihood for the hy
 model2 <- model$newModel()   
 inits <- list( a = c(12, 12), b=c(12, 12) )
 model2$setInits(inits)
-mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 250, 
-     optimMethod = 'Nelder-Mead')
+mcem <- buildMCEM(model2, latentNodes = 'p', burnIn = 250)
 print(system.time(   # takes a while:
-        out <- mcem(maxit = 100)
+        out <- mcem()
 ))
 out 
 ```
@@ -24,7 +21,7 @@ One option would be to reparameterize the model from the ```a,b``` parameterizat
 
 # MCEM with reparameterization 
 
-Here we use NIMBLE's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence appears to be faster to the MLE of $\hat\mu=0.898$ and $\hat\sigma=0.043$, but we'd need to investigate further. 
+Here we use NIMBLE's alternative parameterizations to directly represent the beta distribution in terms of mean and standard deviation. Convergence is slow but it does seem to converge to the MLE of $\hat\mu=0.898$ and $\hat\sigma=0.043$.
 
 ```{r, mcem-reparam}
 codeReparam <- nimbleCode({
@@ -42,9 +39,7 @@ modelReparam <- nimbleModel(codeReparam, constants = consts, data = data,
              inits = inits)
 latents <- modelReparam$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
 mcemReparam <- buildMCEM(modelReparam, latentNodes = latents,
-                         boxConstraints = list(list(c('mu[1]', 
-                                        'mu[2]', 'sigma[1]', 'sigma[2]'),
-                                        c(0, 1))))
+            alpha=.01,beta=.01,gamma=.01)
 print(system.time(
         outReparam <- mcemReparam()
 ))
