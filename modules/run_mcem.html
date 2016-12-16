@@ -178,62 +178,64 @@ pump &lt;- nimbleModel(pumpCode,
 <pre><code>## defining model...</code></pre>
 <pre><code>## building model...</code></pre>
 <pre><code>## setting data and initial values...</code></pre>
-<pre><code>## checking model...   (use nimbleModel(..., check = FALSE) to skip model check)</code></pre>
-<pre><code>## model building finished</code></pre>
+<pre><code>## running calculate on model (any error reports that follow may simply
+## reflect missing values in model variables) ...</code></pre>
+<pre><code>## </code></pre>
+<pre><code>## checking model sizes and dimensions...</code></pre>
+<pre><code>## </code></pre>
+<pre><code>## model building finished.</code></pre>
 </div>
 <div id="mcem-on-the-pump-model" class="section level1">
 <h1>MCEM on the pump model</h1>
 <p>Here’s how easy it is in NIMBLE. Note that we determine the latent nodes in a model-generic way.</p>
-<p>Also note that to avoid numerical issues we did need to constrain the parameter space.</p>
 <pre class="r"><code>mcem = buildMCEM(pump, pump$getNodeNames(latentOnly = TRUE, stochOnly = TRUE),
                  boxConstraints = list(list('alpha', c(0, 100)),
                                        list('beta', c(0, 100))))
 output &lt;- mcem()</code></pre>
-<p>Here’s the result. It ends up requiring a fairly large number of iterations and long MCMC chains, so it takes about 20 minutes for what is a pretty simple model, but given how easy it is to set up, in some circumstances that might not be a big drawback.</p>
-<pre><code>Iteration Number: 1.
+<p>Here’s the result.</p>
+<pre><code>|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 1.
 Current number of MCMC iterations: 1000.
 Parameter Estimates: 
     alpha      beta 
-0.8160911 1.1304447 
+0.8188408 1.1320542 
 Convergence Criterion: 1.001.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
 Iteration Number: 2.
-Current number of MCMC iterations: 2188.
+Current number of MCMC iterations: 1000.
 Parameter Estimates: 
     alpha      beta 
-0.8207239 1.1982456 
-Convergence Criterion: 0.01686425.
+0.8041004 1.0848407 
+Convergence Criterion: 0.005272755.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
 Iteration Number: 3.
+Current number of MCMC iterations: 1000.
+Parameter Estimates: 
+    alpha      beta 
+0.8111566 1.2155763 
+Convergence Criterion: 0.03279659.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Monte Carlo error too big: increasing MCMC sample size.
+|-------------|-------------|-------------|-------------|
+|-------------------------------------------------------|
+Iteration Number: 4.
 Current number of MCMC iterations: 2188.
 Parameter Estimates: 
     alpha      beta 
-0.8167346 1.2295619 
-Convergence Criterion: 0.005174657.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Iteration Number: 4.
-Current number of MCMC iterations: 9046.
-Parameter Estimates: 
-    alpha      beta 
-0.8194561 1.2504181 
-Convergence Criterion: 0.001349063.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Iteration Number: 5.
-Current number of MCMC iterations: 97849.
-Parameter Estimates: 
-   alpha     beta 
-0.821782 1.257252 
-Convergence Criterion: 9.446297e-05.</code></pre>
+0.8120085 1.2291558 
+Convergence Criterion: 0.0008324096.</code></pre>
 <p>You can compare that to the estimates from running MCMC on the pump model. One possible use for MCEM here would be to provide starting values for MCMC. Or you could fix the hyperparameters and just use MCMC to get posterior draws of the latent states if those are of primary interest.</p>
+<p>In this simple problem, we know that the estimates above are off by about 0.01 for alpha and about 0.025 for beta. In a real application, we would probably want to tighten the convergence criteria. With tightened convergence criteria (not shown), it ends up requiring a fairly large number of iterations and long MCMC chains, so it takes about 20 minutes for what is a pretty simple model, but given how easy it is to set up, in some circumstances that might not be a big drawback.</p>
 </div>
 
 
