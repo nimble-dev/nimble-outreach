@@ -1,0 +1,46 @@
+CE Course Proposal Summary
+Presenters
+Presenter Name 	Presenter Order 	Course Contact?
+Broderick, Tamara - Massachusetts Institute of Technology 	1 	Yes 	 
+Paciorek, Christopher - Department of Statistics, University of California, Berkeley 	2 	No 	 
+ 
+Course Length:
+1 Day Course (7 contact hours) 	 
+ 
+Co-sponsorship:
+Co-sponsor: 	Section on Bayesian Statistical Science 	 
+ 
+Course Information:
+Course Title: 	Nonparametric Bayesian data analysis: models, computation, and applications 	 
+ 
+Abstract: 	In this short course we will introduce nonparametric Bayes (BNP) as a tool for modern data analysis and machine learning. BNP methods are useful in a variety of data analyses---including density estimation without parametric assumptions and clustering models that adaptively determine the number of clusters. We will demonstrate that BNP allows the data analyst to learn more from a data set as the size of the data set grows, and how this feat is accomplished. We will describe popular BNP models such as the Dirichlet process, Chinese restaurant process, Indian buffet process, and hierarchical BNP models---and how they relate to each other. We will provide hands-on experience using BNP methods with the NIMBLE platform within R (http://r-nimble.org). Students will engage with a variety of applications, with an emphasis on biostatistical and machine learning applications---such as semiparametric random effects models, nonparametric estimation of ROC curves, clustering models for patient outcomes, nonparametric pharmacokinetic/pharmacodynamic analysis, and topic modeling.
+
+Prerequisites: Working knowledge of Bayesian data analysis. Know how to use Bayes' Theorem to calculate a posterior for both discrete and continuous parametric distributions. Have a basic knowledge of Markov chain Monte Carlo (especially Gibbs) sampling for posterior approximation.
+
+Outline: 	The course is split into four segments. We will teach it as a 1 day short course.
+
+I. Introduction and clustering
+
+We start by motivating BNP from a number of applications in machine learning and statistics---including biostatistics, health care, and text analysis. We also motivate BNP from a theoretical perspective via de Finetti's theorem. We then focus on clustering as a motivating data analytics problem. We build up to the cornerstone model of BNP, the Dirichlet process (DP), by examining a clustering application in depth.
+
+II. Inference and Markov Chain Monte Carlo (MCMC)
+
+Once we have defined and understood BNP generative models, we examine the challenges of inference in BNP models. We develop algorithms for inference and provide intuition for how they work. We discuss practicalities such as initialization and running time. Along the way, we introduce the Chinese restaurant process (CRP) as a useful representation for inference. We introduce the NIMBLE platform for flexible specification of Bayesian models and algorithms and demonstrate MCMC algorithms in action using NIMBLE.
+
+III. Applications
+
+We apply the basic BNP models in the context of common statistical methods, including semiparametric mixed models (GLMMs with flexible random effects distributions) and clustering models. Biostatistical and machine learning applications include meta-analysis, nonparametric estimation of ROC curves, clustering models for patient outcomes, non-parametric analysis for population analysis of pharmacokinetic/pharmacodynamic models, and topic modeling. All applications will be developed and implemented using NIMBLE with hands-on work by participants.
+
+IV. Extensions
+
+We discuss further applications and extensions and how they are easily constructed from the framework established with the DP and CRP. In particular, we discuss how BNP is particularly appropriate for modern, large-data applications. We consider extensions of clustering to feature allocations and network-valued data. We illustrate a subset of the extensions using NIMBLE and assess computational performance.
+
+Learning Objectives: 	(a) Learning outcomes: * Students should be able to recognize problems that can meaningfully be approached by BNP methods, and should recognize a range of widely used BNP models. * Students should understand the challenges of BNP inference as well as principles for overcoming these challenges in practice. * Students should understand how to use the NIMBLE computational platform to apply these ideas to real data analysis. * Students should understand how BNP extensions build on the basic framework and develop intuition for how different extensions allow for borrowing of strength and could be applied to real problems.
+
+(b) Content and instructional methods: The desired learning outcomes will be achieved by structuring the course around important data analysis problems. We will include several examples that provide good case studies to motivate the discussed modeling and inference principles. We will encourage student participation in particular in discussing the features and limitations of the introduced models and in implementing the methods for the applications. The material will be at the level of Gelman et al. (2013) Bayesian Data Analysis, Third Edition, although material is drawn from a variety of sources.
+
+Presenter Background: 	Both presenters have a long track record of research and instruction in BNP and Bayesian methods. Broderick has given a number of invited short courses introducing Nonparametric Bayes---including at multiple Machine Learning Summer Schools (MLSSs) as well as at the International Society for Bayesian Analysis (ISBA) world meeting, UC Berkeley, Princeton University, and the Broad Institute. Broderick has a long-standing interest and research record in fast, reliable posterior computation at big data scales, including a particular emphasis on BNP. Broderick is the ITT Career Development Assistant Professor at MIT, where she is a member of the Statistics and Data Science Center; the Institute for Data, Systems, and Society; and the Computer Science and Artificial Intelligence Laboratory.
+
+Paciorek has extensive experience in research and teaching around Bayesian methods and Bayesian computation, including co-teaching a short course on Applied Bayesian Computational Methods at JSM 2017. He is one of the core developers and co-PI of the NIMBLE project, and has presented various short courses and tutorials on NIMBLE, including at the ISBA 2016 world meeting, an SBSS webinar (2016), and the International Statistical Ecology meeting (2016). Paciorek is an Adjunct Professor and the Statistical Computing Consultant in the Department of Statistics at UC Berkeley.
+
+AV Request: 	Students are expected to use their laptops during the session, so enough power outlets would likely be helpful. 
