@@ -1,0 +1,79 @@
+---
+title: "The BUGS language"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+
+# The BUGS language
+
+The BUGS language is described in detail in the NIMBLE manual and in the [relevant section of the BUGS manual](http://www.openbugs.net/Manuals/ModelSpecification.html). 
+
+### Stochastic declarations
+
+  - `x ~ dgamma(shape, scale)` (`x` follows a gamma distribution with parameters `shape` and `scale`)
+
+### Deterministic declarations
+
+  - `y <- 2 * x`
+
+### For loops
+
+  - `for(i in 1:10) {x[i] <- exp(y[i])}`
+
+### Classic BUGS examples
+
+There are lots of example models originally provided by the BUGS project:
+
+  - included in NIMBLE or found here on the [JAGS website](https://sourceforge.net/projects/mcmc-jags/files/Examples/).
+  - Information: [Volume 1](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol1.pdf), [Volume 2](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol2.pdf), and [Volume 3](http://www.mrc-bsu.cam.ac.uk/wp-content/uploads/WinBUGS_Vol3.pdf) of the WinBUGS example manuals.
+
+### NIMBLE's dialect of BUGS
+
+   - The BUGS syntax used in NIMBLE has minor differences from that used in WinBUGS, OpenBUGS and/or JAGS. We'll see some of this as we go along.
+   - Also described in Section 5 of the [NIMBLE Users Manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+
+
+# A basic example
+
+
+We'll use the *litters* model example from the original BUGS examples, available with NIMBLE in the *classic-bugs/vol1/litters* directory of the installed package (call ```searchpaths()``` after loading the NIMBLE package to find where this directory is). The data set describes the survival rates of rat pups in an experiment.
+
+<center><img src="littersDAG.jpg"></center>
+
+Here's the original litters model. There are ```G=2``` groups of rat litters, with ```N=16```  litters (i.e., mothers) in each group, and a variable number of pups in each litter. Survival of the pups in a litter is governed by a survival probability for each litter, ```p[i,j]```, but the probabilities for the litters within a group are considered to come from a common distribution, thereby borrowing strength across the litters in a group. The common distributions are $p_{1,j} \sim \mbox{Beta(a_1, b_1)}$ for group 1 and $p_{2,j} \sim \mbox{Beta(a_2, b_2)}$ for group 2.
+
+# Specifying the BUGS code for a model
+
+Here we specify the litters model code directly in R. We can walk through some of details via the comments in the BUGS code.
+
+
+```{r, model-code}
+library(nimble)
+littersCode <- nimbleCode({
+  for (i in 1:G) {
+     for (j in 1:N) {
+     	# likelihood (data model)
+        r[i,j] ~ dbin(p[i,j], n[i,j])
+	# latent process (random effects)
+        p[i,j] ~ dbeta(a[i], b[i]) 
+     }
+     # prior for hyperparameters
+     # such gamma priors are not generally recommended, but
+     # these are the priors from the original example
+     a[i] ~ dgamma(1, .001)
+     b[i] ~ dgamma(1, .001)
+   }
+})
+```
+

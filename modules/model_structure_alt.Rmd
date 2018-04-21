@@ -1,0 +1,186 @@
+---
+title: "Programming with models (2): Inspecting model structure"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+read_chunk("chunks.R")
+```
+
+# Running example: the AFT model
+
+Now let's explore how to understand the dependence structure of a model. After all the model is a directed acyclic graph, so we should be able to work with that graph structure.
+
+We first need to build the model.
+
+```{r, aft-code}
+codeAFT <- nimbleCode({
+    for(i in 1:n) {
+        x[i] ~ dweib(alpha, lambda[i])
+        is_cens[i] ~ dinterval(x[i], c[i])  ## right-censoring
+        lambda[i] <- exp(eta[i] + Z[i,1]*delta[1] + Z[i,2]*delta[2])
+        eta[i] <- etaTilde[xi[i]]  ## mix over eta; mu = exp(eta)
+    }
+    xi[1:n] ~ dCRP(conc, size = n) ## CRP for mixture components
+    conc ~ dgamma(1, 1)
+    for(i in 1:nSub)
+        etaTilde[i] ~ dunif(b0, B0) ## base measure H_b
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p)
+        delta[j] ~ dflat()
+})
+```
+
+```{r, aft-setup}
+library(emplik, quietly = TRUE, warn.conflicts = FALSE)
+data(myeloma)
+
+n <- nrow(myeloma)
+time <-  myeloma[ , 1]    ## survival or censoring time
+vstatus <- myeloma[ , 2]  ##  0 = alive (i.e., censored)
+alive <- vstatus == 0
+cens_time <- rep(NA, n)
+cens_time[alive] <- time[alive]
+cens_time[!alive] <- Inf
+time[alive] <- NA
+## covariates:
+logBUN <- myeloma[ , 3]
+HGB <- myeloma[ , 4]
+logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+HGB <- (HGB - mean(HGB)) / sd(HGB)
+
+nSub = 15
+constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
+                 c = cens_time, Z = cbind(logBUN, HGB), nSub = nSub)
+data = list(is_cens = as.numeric(alive), x = time)
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+inits = list(alpha = 1, delta = c(0, 0), conc = 1,
+             etaTilde = runif(nSub, constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+```
+
+
+# Nodes and variables
+
+The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
+
+ - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. `alpha` in the AFT model
+ - data: a known quantity in a model, also represented as a random variable, e.g., `x[,1], x[2], ...` in the AFT model
+ - constants: other fixed quantities involved in the model, e.g., `n` in the AFT model
+ - node: an element in the model representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., `delta[2]` or`xi[1:n]` in the AFT model
+ - variable: a collection of one or more nodes with the same name, e.g., `delta` or `xi` in the AFT model 
+
+NIMBLE provides users and programmers with the ability to get information about the nodes and variables in the model and the relationships amongst them.
+
+What are the nodes in the model? What are the dependencies of a given node (this is information used in many algorithms)?
+
+
+```{r, model-nodes}
+model$getNodeNames()
+hypers <- model$getNodeNames(topOnly = TRUE)
+hypers
+model$getDependencies('conc')
+```
+
+# More details on querying model structure
+
+There are a variety of options to `getNodeNames()` and `getDependencies` that allow you to fine-tune the information you get.
+
+```{r, get-info}
+args(model$getDependencies)
+args(model$getNodeNames)
+
+latents <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+latents
+model$getDependencies(latents, determOnly = TRUE)
+model$getNodeNames(dataOnly = TRUE)
+```
+
+# Inspecting the model: variables
+
+What are the variables in the model? What information is available about them?
+
+```{r, model-vars}
+model$getVarNames()
+model$getVarInfo('xi')
+```
+
+As of the current version of NIMBLE, information about
+variables is not competely nicely arranged for a user (there aren't as
+many query functions), but it is available.
+
+This variable has 1 dimension (`nDim`), and its size is 65 (`maxs`).  Currently `mins` is always 1.  If at least one node within the variable is stochastic, then `anyStoch` will be `TRUE`.
+
+
+# The importance of querying a model: lifted nodes
+
+You may have noticed a strangely-named node, "lifted_lambda_oBi_cB_tothe__oP_minus_1_over_alpha_cP_L2", in the model. NIMBLE implements some features by inserting its own nodes.
+*You should never assume you know what nodes are in a model simply
+because you wrote the BUGS code.*
+
+Let's look at the two main ways this happens:
+
+```{r, lifted-1, fig.cap=""}
+m1 <- nimbleModel(
+    nimbleCode({
+        tau ~ dunif(0, 100)
+        x ~ dnorm(0, tau) #by default, tau is a precision
+    }))
+plot(m1$getGraph())
+m1$getNodeNames()
+```
+The node `lifted_d1_over_sqrt_oPtau_cP` has been inserted between
+`tau` and `x`.   The resulting model would equivalently have been
+created by this BUGS code:
+
+```{r, lifted-2, eval = FALSE}
+nimbleCode({
+    tau ~ dunif(0, 100)
+    lifted_d1_over_sqrt_oPtau_cP <- 1/sqrt(tau)
+    x ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP) # override and make 2nd arg the SD
+})
+```
+
+NIMBLE has *lifted* the calculation of standard deviation from
+precision so that it is part of the model's graph.  Therefore *you
+will make a mistake if you assume that the dependencies of `tau`
+include only `x`*:
+
+```{r, bad}
+m1$tau <- 3
+m1$x <- 1
+m1$calculate(c('tau','x')) ## Wrong: the lifted node is being neglected
+```
+
+The correct way to do this is with model-generic programming:
+```{r, model-generic}
+m1$getDependencies('tau')
+m1$calculate( m1$getDependencies('tau') )
+```
+
+In the AFT model, NIMBLE reparameterized the Weibull distribution.
+
+The second common situation that creates lifted nodes is:
+```{r, fig.cap="", fig.width=5, fig.height=5}
+m2 <- nimbleModel(
+    nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dnorm(a + 1, 1)
+    }))
+plot(m2$getGraph())
+m2$getNodeNames()
+```
+
+In this case, NIMBLE lifted the expression `a+1` and created a node
+for it.   Again the correct way to program is to query a model to
+learn about its nodes.  Do not assume you know what the nodes are.

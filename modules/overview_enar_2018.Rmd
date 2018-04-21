@@ -1,0 +1,196 @@
+---
+title: "Programming with Hierarchical Statistical Models: An Intro to the BUGS-compatible NIMBLE system"
+subtitle: "ENAR webinar"
+author: "Chris Paciorek, Department of Statistics, UC Berkeley"
+output:
+  html_document:
+    code_folding: show
+---
+
+# A few administrative things
+
+## Where to find stuff
+
+The Github site ([https://github.com/paciorek/nimble-enar-2018](https://github.com/paciorek/nimble-enar-2018)) is the master repository for materials for the modules; you can also get the individual files from Github. 
+
+To get the materials look ahead to slide 6 for instructions. Alternatively, simply go to [https://github.com/paciorek/nimble-enar-2018](https://github.com/paciorek/nimble-enar-2018) and click on the 'Download ZIP' button in the right side of the window or simply click [here](https://github.com/paciorek/nimble-enar-2018/archive/master.zip).
+
+
+
+## Asking questions and making comments
+
+Please ask questions and make comments as we go through the material via the online question or chat feature in the webinar. One of my colleagues, Nick Michaud, can answer them while I am talking. We will also have a shared document (Etherpad) at [https://etherpad.net/p/nimble-enar-2018](https://etherpad.net/p/nimble-enar-2018) where you can more easily post longer code snippets or error messages.
+
+Note the etherpad URL is new as of yesterday evening, so make sure you are using the right URL.
+
+# How we'll operate
+
+The webinar will be organized in modules, each of which will be a combination of lecture/demo presentation. Given the webinar format, we won't have breakout sessions, as we might in an in-person format, but I sprinkle some questions/exercises in the modules that you could work on on your own time. 
+
+# Suggestions on how to get the most out of the webinar
+
+I encourage you to:
+
+- try out the code as we walk through it
+-  keep your eyes open! -- We'll illustrate a lot of syntax and concepts by example
+- try to guess what the syntax means in cases we haven't yet seen that syntax
+- play with it and try variations and try to break it and see what happens
+- post a comment on the Etherpad if something interesting happens as you experiment
+- ask questions through the webinar question forum or on Etherpad
+
+
+A few additional thoughts on my pedagogical philosophy here:
+
+- I want to expose you to a lot of tools and ideas that you can come back to when you need them and when you have time for more depth.
+- My aim is not to show you how to use specific statistical methods or analysis techniques. My goal is to get you up to speed generally in NIMBLE.
+- It can be hard to absorb everything in such a concentrated situation. Hopefully the material presented will be useful to you over the longer-term as you do more work with NIMBLE.
+
+# RStudio and R Markdown
+
+We'll present most of the material from within RStudio, using R Markdown documents with embedded R code. R Markdown is an extension to the Markdown markup language that makes it easy to write HTML in a simple plain text format.  This allows us to both run the R/NIMBLE code directly as well as compile on-the-fly to an HTML file that can be used for presentation. All files will be available on [Github](https://github.com/paciorek/nimble-enar-2018).  
+
+Note: The files named *foo_slides.html* have individual slides, while the files named *foo.html* have the same content but all on one page.
+
+Warning: in some cases the processing of the R code in the R Markdown is screwy and the slides have error messages that do not occur if you just run the code directly in R or RStudio. 
+
+# Getting the webinar materials
+
+To download the files, you can do any of the following. 
+
+## From a browser
+
+Simply go to [https://github.com/paciorek/nimble-enar-2018](https://github.com/paciorek/nimble-enar-2018) and click on the 'Download ZIP' button in the right side of the window or simply click [here](https://github.com/paciorek/nimble-enar-2018/archive/master.zip).
+
+## Within RStudio
+
+Within RStudio go to File->New Project->Version Control->Git and enter:
+
+- "Repository URL": https://github.com/paciorek/nimble-enar-2018
+- "Project Directory Name": nimble-enar-2018 (or something else of your choosing)
+- "Directory": ~/Desktop (or somewhere of your choosing)
+
+Then to update from the repository to get any changes we've made, you can select (from within RStudio):
+Tools->Version Control->Pull Branches
+
+or from the Environment/History/Git window, click on the Git tab and then on the blue down arrow.
+
+Be warned that you probably do not want to make your own notes or changes to the files we are providing. Because if you do, and you then do a "Git Pull" to update the materials, you'll have to deal with the conflict between your local version and our version. You probably will want to make a personal copy of such files in another directory or by making copies of files with new names.
+
+## From a terminal window
+
+Run the following commands:
+
+- `cd /directory/where/you/want/repository/located`
+- `git clone https://github.com/paciorek/nimble-enar-2018`
+
+Then to update from the repository to get any changes we've made:
+
+- `cd /directory/where/you/put/the/repository/nimble-enar-2018`
+- `git pull`
+
+# Installing NIMBLE
+
+NIMBLE is on CRAN, so in general it will be straightforward to install, but you do need a compiler and related tools on your system.  
+
+In summary, here are the steps.
+
+1. Install compiler tools on your system. [https://r-nimble.org/download](https://r-nimble.org/download) has more details on how to install *Rtools* on Windows and how to install the
+command line tools of *Xcode* on a Mac.
+2. install the *nimble* package from CRAN. 
+
+More details can also be found in Section 4 of the [NIMBLE manual](http://r-nimble.org/manuals/NimbleUserManual.pdf).
+
+For the Bayesian nonparametrics we'll discuss in the meta-analysis and survival model examples, you'll need a newer version of NIMBLE from our development website. You can obtain this by running the following code from within R:
+
+```
+library(devtools)
+install_github('nimble-dev/nimble/packages/nimble', ref = 'BNP')
+```
+
+
+# What is NIMBLE?
+
+- A flexible extension of the BUGS and JAGS systems
+- A system for using algorithms on hierarchical statistical models
+- A system for programming algorithms to be used on hierarchical models
+- A partial compiler for math, flow control, and related syntax in R
+
+
+We have an extensive website ([r-nimble.org](r-nimble.org)) with fairly comprehensive User Manual, examples, and other information. 
+
+# Why NIMBLE?
+
+Here are some of the features you can do in NIMBLE that we are most excited about and that distinguish NIMBLE from other software:
+
+- customize your MCMCs, including choosing what parameters to block
+- define your own distributions and functions for use in BUGS code
+- use a variety of algorithms on your model, including MCMC, sequential Monte Carlo (particle filtering), and MCEM
+- write an algorithm in our system for easy dissemination to others, including your own MCMC sampler
+- compile mathematical operations in R without needing to know or write C or C++
+
+# Why Not NIMBLE?
+
+* For MCMCs that rely heavily on Gibbs sampling, JAGS may be a bit faster because of more efficient internal implementation of the calculations.
+* For certain model structures, Hamiltonian Monte Carlo, such as implemented in Stan, may work better than the default MCMC samplers in NIMBLE (but in a number of examples we've tried we've been able to achieve comparable or better performance either out-of-the-box or with some relatively simple modifications to the model or the MCMC samplers).
+* NIMBLE can take a long time to build models that have tens of thousands or more nodes (though once built, the algorithm run times can be quite good). We anticipate big improvements in future versions of NIMBLE.
+
+# What are my other options? 
+
+* For MCMC:
+  1. [JAGS](http://mcmc-jags.sourceforge.net)
+  2. [Stan](http://mc-stan.org)
+  3. [PyMC](https://pymcmc.readthedocs.org/en/latest/)
+* various sequential Monte Carlo packages
+  1. [POMP](http://kingaa.github.io/pomp)
+  2. [LibBI](http://libbi.org)
+  3. [BIIPS](https://alea.bordeaux.inria.fr/biips/doku.php?id=home)
+  4. [SMC](https://cran.r-project.org/web/packages/SMC/index.html)
+* various tools for a variety of algorithms in R, Python, Matlab, etc.
+
+# Getting help with NIMBLE
+
+* Post to the [NIMBLE user group](https://groups.google.com/forum/#!forum/nimble-users)
+* Email [nimble.stats@gmail.com](the NIMBLE development team)
+* Follow announcements via the [NIMBLE announcements list](https://groups.google.com/forum/#!forum/nimble-announce)
+
+And you can feel free to email Chris Paciorek directly given your participation in this webinar. However I do encourage you to post to the user group as any of the NIMBLE developers or other users can then help you out.
+
+# Participating in NIMBLE
+
+* File bug reports or feature requests as [Github issues](https://github.com/nimble-dev).
+* Email [nimble.stats@gmail.com](the NIMBLE development team) if you're interested in participating in the development of NIMBLE. 
+* We have an NSF grant for further software development of the NIMBLE core code, and we're looking for a good programmer or postdoc.
+* Develop an algorithm using NIMBLE and either share it with us (e.g., by a Git pull request or more informally) or develop an R package that depends on NIMBLE.
+* We have funding to bring selected users to Berkeley for intensive collaboration; contact us if you have an interesting use for NIMBLE in mind and want to explore possibilities with us.
+
+# The Legal Stuff
+
+- This material was created by the NIMBLE development team and is licensed under a Creative Commons Attribution 3.0 Unported License. You are free to use, modify, and redistribute any of this material with attribution.
+
+# Modules
+
+Here are the modules we'll work through for this webinar, though we probably won't get to all of them.
+
+update modules in outreach repository
+
+ - Introduction to NIMBLE
+    1. [The BUGS language](bugs_language_slides.html)
+    2. [Building a model in NIMBLE](build_model_slides.html)
+    3. [Running an MCMC](run_mcmc_slides.html) 
+ - Customization
+    4. [Customizing an MCMC](customizing_mcmc_slides.html)
+    5. [User-defined distributions](user_dist_slides.html) 
+ - Biostatistics Applications (Bayesian nonparametrics)
+    6. [Case study: Meta-analysis with nonparametric random effects](meta_analysis_slides.html)
+    7. [Case study: Survival analysis via a semiparametric Accelerated Failure Time (AFT) model](survival_analysis_slides.html)
+    8. [Specifying data](data_constants_slides.html)
+ - Programming in NIMBLE
+    9. [Operating a NIMBLE model](operating_model_slides.html)
+    10. [Inspecting model structure](model_structure_slides.html)
+    11. [Writing an algorithm using nimbleFunctions](nimbleFunctions_slides.html)
+    12. [Writing your own MCMC sampler](user_sampler_slides.html) 
+    13. [Case study: Variable selection via reversible jump](reversible_jump_slides.html)
+
+
+
+

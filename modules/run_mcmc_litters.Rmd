@@ -1,0 +1,142 @@
+---
+title: "Running an MCMC"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+read_chunk("chunks.R")
+```
+
+
+# A very basic MCMC
+
+The steps of running an MCMC are as follows:
+
+ 1. configure the MCMC
+ 2. build the MCMC
+ 3. create a compiled version of the MCMC
+ 4. run the MCMC
+ 5. assess and use the MCMC samples
+
+Note that we can combine steps 1-4 by using `nimbleMCMC()` (which in fact does not even require you to create the model), but if we want to modify the default MCMC configuration of samplers then we need to separate the steps. We'll see `nimbleMCMC()` a bit later.
+
+# Build the model
+
+We first need to build the model.
+
+```{r, litters-code}
+```
+
+```{r, litters-model}
+```
+
+```{r, litters-compile}
+```
+
+# Configuring a basic MCMC
+
+Setting up and running an MCMC in NIMBLE in this way takes a few more steps than in BUGS or JAGS, but with the benefit of giving the user much more control of how the MCMC operates.
+
+First we *configure* the MCMC, which means setting up the samplers to be used for each node or group of nodes. NIMBLE provides a default configuration, but we'll see shortly how you can modify that. 
+
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('littersModel') || !exists('cLittersModels')) source('chunks.R')
+```                   
+
+```{r, conf}
+littersConf <- configureMCMC(littersModel, print = TRUE)
+```
+You also specify the nodes for which you'd like to get the MCMC samples as output.
+
+```{r, monitor}
+littersConf$addMonitors(c('a', 'b', 'p'))
+```
+
+# Building the MCMC algorithm for the model 
+
+Next we'll build the MCMC algorithm for the model under the default configuration. And we'll create a compiled (i.e., C++) version of the MCMC that is equivalent in functionality but will run much faster.
+
+```{r build-mcmc}
+littersMCMC <- buildMCMC(littersConf)
+cLittersMCMC <- compileNimble(littersMCMC, project = littersModel)
+```
+
+
+# Running the MCMC
+
+Now let's run the MCMC. We don't recommend running the R version of the MCMC for very many iterations - it's really slow - in part because iterating in R is slow and in part because iterating with a model in NIMBLE requires even more overhead. 
+
+```{r run-mcmc}
+niter <- 1000
+nburn <- 100
+set.seed(1)
+inits <- function() {
+      a <- runif(G, 1, 20)
+      b <- runif(G, 1, 20)
+      p <- rbind(rbeta(N, a[1], b[1]), rbeta(N, a[2], b[2]))
+      return(list(a = a, b = b, p = p))
+}             
+print(system.time(samples <- runMCMC(cLittersMCMC, niter = niter, nburnin = nburn,
+                          inits = inits, nchains = 3, samplesAsCodaMCMC = TRUE)))
+```
+
+# Working with MCMC output
+
+The R and C MCMC samples are the same, so you can use the R MCMC for debugging. It's possible to step through the code line by line using R's debugging capabilities (not shown).
+
+Now let's look at the MCMC performance from one of the chains.
+
+```{r output-mcmc, fig.height=6, fig.width=12, fig.cap=''}
+samples1 <- samples[[1]]
+par(mfrow = c(2, 2), mai = c(.6, .5, .4, .1), mgp = c(1.8, 0.7, 0))
+ts.plot(samples1[ , 'a[1]'], xlab = 'iteration',
+     ylab = expression(a[1]), main = expression(a[1]))
+ts.plot(samples1[ , 'b[1]'], xlab = 'iteration',
+     ylab = expression(b[1]), main = expression(b[1]))
+ts.plot(samples1[ , 'a[2]'], xlab = 'iteration',
+     ylab = expression(a[2]), main = expression(a[2]))
+ts.plot(samples1[ , 'b[2]'], xlab = 'iteration',
+     ylab = expression(b[2]), main = expression(b[2]))
+```
+
+Not good. We'll explore different sampling strategies that fix the problems in the next module.
+
+# Using CODA
+
+NIMBLE does not provide any MCMC diagnostics. (At least not yet; there's no reason one couldn't write code for various diagnostics using the NIMBLE system.)  But one can easily use CODA or other R packages with the MCMC output from a NIMBLE MCMC.
+
+```{r coda}
+library(coda, warn.conflicts = FALSE)
+crosscorr(samples1[ , c('a[1]', 'b[1]', 'a[2]', 'b[2]')])
+effectiveSize(samples1)  ## ESS
+```
+
+To apply the commonly used Gelman-Rubin potential scale reduction factor diagnostic, we'll need the multiple chains.
+
+Considerations: you'll want to think about how to set up the over-dispersed starting points and the number of iterations to use for burn-in.
+
+# Assessing MCMC performance from multiple chains
+
+```{r, gelman-rubin, fig.cap='', fig.height=5, fig.width=5}
+par(mfrow = c(1,1))
+gelman.diag(samples)
+## and here's a graphical representation of the information
+ts.plot(samples[[1]][ , 'a[1]'], xlab = 'iteration',
+     ylab = expression(a[1]), main = expression(a[1]))
+sq <- seq_along(samples[[1]][ , 'a[1]'])
+for(i in 2:3)
+      lines(sq, samples[[i]][ , 'a[1]'], col = i)
+```
+
+
+
+

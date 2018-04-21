@@ -1,0 +1,365 @@
+---
+title: "User-defined MCMC samplers"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+NIMBLE's MCMC system was designed to be extensible - it's easy for users to add samplers and use them right away for their models.
+
+Here we'll see a pretty easy extension of one of NIMBLE's built-in samplers.
+
+In many cases you might want to do some very specific sampling approach for one or a few parameters in your model and rely on NIMBLE's built-in samplers for the rest of the model. This module illustrates how you could do that.
+
+# The reflection sampler
+
+Suppose you have a parameter with a finite domain, in particular a fixed lower bound, such as a gamma distribution, a uniform distribution, or a lognormal distribution.
+
+A standard Metropolis sampler could propose a value that is below the lower bound. This would give a probability density for the proposed value that is `0` so the proposal would be rejected. That's fine, but it wastes the computation involved in proposing the value and determining that it should be rejected. If the current value of the parameter under consideration is near the bound, this will happen nearly 50% of the time. 
+
+Instead, we can use *reflection*. If the proposed $\theta^\prime < b$ where $b$ is the bound, simply set $\theta^\prime$ to $b + (b-\theta^\prime)$
+
+<center><img src="reflection.jpg"></center>
+
+# NIMBLE's built-in random walk sampler
+
+Here's a simplified version of the random walk sampler used for NIMBLE's MCMC engine. Note that this simplification excludes the use of an adaptive algorithm that adjusts the proposal standard deviation to the acceptance rate as the MCMC iterations proceed.
+
+```{r, basic-sampler, eval=FALSE}
+sampler_RW <- nimbleFunction(
+    contains = sampler_BASE,  # some object-oriented syntax for MCMC samplers
+    setup = function(model, mvSaved, target, control) {
+        targetAsScalar <- model$expandNodeNames(target, 
+                                                returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)   
+           stop('cannot use RW sampler on more than one target; try RW_block sampler')
+        if(model$isDiscrete(target))     
+           stop('cannot use RW sampler on discrete-valued target; try slice sampler')
+        ###  control list extraction  ###
+        scale <- control$scale
+        ###  node list generation  ###
+        calcNodes  <- model$getDependencies(target)
+    },
+
+    run = function() {
+        currentValue <- model[[target]]
+        # note that scale is available because created in setup code
+        propValue <- rnorm(1, mean = currentValue,  sd = scale)
+        model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes) 
+        jump <- decide(logMHR)
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, 
+                         nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, 
+                         nodes = calcNodes, logProb = TRUE)
+    },
+    
+    where = getLoadingNamespace()
+)
+```
+
+# Writing a nimbleFunction for the reflection sampler
+
+The *run* function for the reflection sampler needs to check the proposed value against the distribution bounds and modify the proposal as needed.
+
+However, we first need to modify the *setup* function to check if the distribution has finite lower or upper bounds and only consider scalar parameters, thereby avoiding some computation at run-time. 
+
+```{r, reflect-sampler}
+RW_reflect <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        dist <- model$getDistribution(target)
+        targetComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        if(length(targetComponents) > 1)
+                stop("RW_reflect: cannot use univariate RW sampler on multivariate target, try RW_block sampler.")
+        rg <- getDistribution(dist)$range
+        if(rg[1] > -Inf || rg[2] < Inf)
+                  reflect <- TRUE else reflect <- FALSE
+
+        calcNodes  <- model$getDependencies(target)
+    },
+    
+    run = function() {
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+
+        if(reflect) {
+            lower <- model$getBound(target, 'lower')
+            upper <- model$getBound(target, 'upper')
+             if(propValue < lower) propValue <- 2*lower - propValue
+             if(propValue > upper) propValue <- 2*upper - propValue
+        }
+ 
+        model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+    },
+    methods = list(
+            reset = function () {}
+            )
+)
+```
+
+
+Comment: We used some functionality that may not be fully explained in NIMBLE's documentation. For this sort of thing, you can always ask a question in the NIMBLE user Google group. 
+
+# NIMBLE's Metropolis sampler
+
+Often it's easiest when writing a new sampler that is similar to an existing NIMBLE sampler to just modify the code for the existing sampler. In this case, NIMBLE's existing random walk sampler has some nice additional functionality that we can include in our reflection sampler, specifically the ability to adapt the proposal variance. 
+
+Let's look at the code for the Metropolis sampler. You can find this in the file *R/MCMC_samplers.R* in the source code for the NIMBLE package (note that ```nimble:::sampler_RW``` is not useful to look at, as it shows a modified version of this, namely the nimbleFunction after it has been built).
+
+```{r, Metr}
+sampler_RW <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ###  control list extraction - not yet finalized, so have placeholders ###
+        adaptive      <- TRUE ## control$adaptive
+        adaptInterval <- 100  ## control$adaptInterval
+        scale         <- 1    ## control$scale
+        ###  node list generation  ###
+        targetAsScalar <- model$expandNodeNames(target, 
+                       returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     
+                        stop('more than one target; cannot use RW sampler, try RW_block sampler')
+        calcNodes  <- model$getDependencies(target)
+        ###  numeric value generation  ###
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        scaleHistory          <- c(0, 0)
+        acceptanceRateHistory <- c(0, 0)
+        ## variables previously inside of nested functions:
+        optimalAR <- 0.44
+        gamma1    <- 0
+    },
+    
+    run = function() {
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+     	model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    
+    methods = list(
+        
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                setSize(scaleHistory,          timesAdapted)
+                setSize(acceptanceRateHistory, timesAdapted)
+                scaleHistory[timesAdapted] <<- scale
+                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            scaleHistory          <<- scaleHistory          * 0
+            acceptanceRateHistory <<- acceptanceRateHistory * 0
+            gamma1 <<- 0
+        }
+        
+    ), where = getLoadingNamespace()
+)
+
+```
+
+Much of that code has to do with making the sampler adaptive, so that the proposal scale adapts so that a good acceptance rate is achieved.
+
+# The full reflection sampler function
+
+Below is the full new reflection sampler, building on NIMBLE's baseline random walk sampler to include adaptation.
+
+
+```{r, newSampler}
+RW_reflect <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ###  control list extraction - not yet set up ###
+        adaptive      <- TRUE ## control$adaptive
+        adaptInterval <- 100  ## control$adaptInterval
+        scale         <- 1    ##control$scale
+        ###  node list generation  ###
+        targetAsScalar <- model$expandNodeNames(target, 
+                       returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     
+                       stop('more than one target; cannot use RW sampler, try RW_block sampler')
+
+        ### ADDED code ############################################
+        dist <- model$getDistribution(target)
+        rg <- getDistributionInfo(dist)$range
+        if(rg[1] > -Inf || rg[2] < Inf)
+                  reflect <- TRUE else reflect <- FALSE
+        ###########################################################
+
+        calcNodes  <- model$getDependencies(target)
+        ###  numeric value generation  ###
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        scaleHistory          <- c(0, 0)
+        acceptanceRateHistory <- c(0, 0)
+        ## variables previously inside of nested functions:
+        optimalAR <- 0.44
+        gamma1    <- 0
+    },
+    
+    run = function() {
+        propValue <- rnorm(1, mean = model[[target]], sd = scale)
+
+        ### ADDED code ############################################
+        if(reflect) {
+            lower <- model$getBound(target, 'lower')
+            upper <- model$getBound(target, 'upper')
+             if(propValue < lower) propValue <- 2*lower - propValue
+             if(propValue > upper) propValue <- 2*upper - propValue
+        }
+        ###########################################################
+
+        model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, 
+                         logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    
+    methods = list(
+        
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                setSize(scaleHistory,          timesAdapted)
+                setSize(acceptanceRateHistory, timesAdapted)
+                scaleHistory[timesAdapted] <<- scale
+                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            scaleHistory          <<- scaleHistory          * 0
+            acceptanceRateHistory <<- acceptanceRateHistory * 0
+            gamma1 <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+```
+
+# Using the sampler
+
+Using the sampler is simple. Just modify the default MCMC configuration for a model to use the new sampler on a node of interest.
+
+Let's try this with the *blocker* model, which is a random effects meta-analysis of clinical trial data. 
+
+
+In this case, we could use a conjugate sampler, which would automatically respect the lower bound of zero, but for illustration let's compare a standard Metropolis sampler with the new reflection sampler. 
+
+```{r, blocker}
+model <- readBUGSmodel('blocker', dir = system.file('classic-bugs',
+      'vol1','blocker', package = 'nimble'))
+model$tau
+model$tau <- 0.01
+conf <- configureMCMC(model)
+conf$removeSamplers('tau')
+# as baseline, use standard Metropolis for tau
+conf$addSampler('tau', type = 'RW')
+mcmc <- buildMCMC(conf)
+niter <- 25000
+cmodel <- compileNimble(model)
+cmcmc <- compileNimble(mcmc, project = model)
+set.seed(1)
+smp1 <- runMCMC(cmcmc, niter = 25000)
+```
+
+```{r, scopefix, echo=FALSE, fig.cap='', fig.width=5, fig.height=5}
+# not clear why RW_reflect() not being put into global
+# if this isn't done, configureMCMC fails to find sampler_RW_reflect in knitr
+assign('RW_reflect', RW_reflect, .GlobalEnv)
+```
+
+Now we'll try the reflection sampler instead. We can just assign it as a sampler
+in the way we've seen before.
+
+```{r, add-reflect}
+conf$removeSamplers('tau')
+# for comparison, consider the reflection sampler
+conf$addSampler('tau', type = 'RW_reflect')
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = model, resetFunctions = TRUE)
+
+nimCopy(model, cmodel)  # initialize 2nd MCMC same as 1st MCMC
+set.seed(1)
+smp2 <- runMCMC(cmcmc, niter = 25000)
+
+nplot <- 300
+burnin <- 1000
+plot(seq_len(nplot), smp1[seq_len(nplot), 'tau'], type = 'l', 
+                     xlab = 'iteration', ylab=expression(tau))
+lines(seq_len(nplot), smp2[seq_len(nplot), 'tau'], col = 'red')
+library(coda, quietly = TRUE)
+effectiveSize(log(smp1[(burnin+1):niter , 'tau']))
+effectiveSize(log(smp2[(burnin+1):niter , 'tau']))
+```
+
+So we see that the sampler escaped from near zero more quickly. However, even with a run of 25000 iterations, the effective sample size is still small for both samplers.
+
+Side note: the random effects variance component in this model is given a gamma prior on the precision scale, but best practices for random effects variance components, including a strong argument against the gamma/inverse-gamma prior, can be found in Gelman (2006, Bayesian Analysis 1:515-534).
+
+

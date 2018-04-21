@@ -1,0 +1,156 @@
+---
+title: "User-defined distributions"
+subtitle: "NIMBLE training materials module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+NIMBLE provides a variety of distributions, as seen in Section 5.2.3 of the [NIMBLE manual](http://r-nimble.org/manuals/NimbleUserManual.pdf). 
+
+However, there are lots of other probability distributions out there that you might want to use. So NIMBLE allows you to code up your own distribution and then use it in BUGS code.
+
+Furthermore, in some cases one can use a user-defined distribution as a way to reduce computation by analytically integrating over a component of the model.
+
+# Litters example context
+
+In the litters example, we know that if we marginalize over the random probabilities (which are beta distributed) we induce a compound distribution for the data given the hyperparameters -- a beta-binomial distribution.
+
+NIMBLE does not provide the beta-binomial distribution, but we make it easy for you to create your own distributions. 
+
+# Writing your own distribution 
+
+ Here's what you would do to code up your own beta-binomial distribution and make it available in BUGS code.
+
+First we write nimbleFunctions for the density and simulation functions. Note the naming is analogous to how probability distributions are handled in R. 
+
+  - The 'd' function should have *log* as its last argument, a binary argument for whether the log density is returned or not. 
+  - The 'r' function should have *n* as its first argument but need only work for ```n=1```.
+
+```{r, dbetabin}
+dbetabin <- nimbleFunction(
+    run = function(x = double(0), alpha = double(0), beta = double(0), size = double(0), 
+        log = integer(0, default = 0)) {
+        
+        returnType(double(0))
+        logProb <- lgamma(size+1) - lgamma(x+1) - lgamma(size - x + 1) +
+            lgamma(alpha + beta) - lgamma(alpha) - lgamma(beta) +
+            lgamma(x + alpha) + lgamma(size - x + beta) - lgamma(size + alpha + beta)
+        if(log) return(logProb)
+        else return(exp(logProb))
+    })
+
+rbetabin <- nimbleFunction(
+    run = function(n = integer(0), alpha = double(0), beta = double(0), size = double(0)) {
+        returnType(double(0))
+        if(n != 1) print("rbetabin only allows n = 1; using n = 1.")
+        p <- rbeta(1, alpha, beta)
+        return(rbinom(1, size = size, prob = p))
+    })
+```
+
+The functions are written as nimbleFunctions. These are functions that NIMBLE can translate into C++ and use in conjunction with models. In later modules we'll see more about this, but for now a few comments:
+
+  - nimbleFunctions are written using a subset of R syntax: not all R syntax is allowed.
+  - We require information about the types and sizes of arguments and return values.
+  - nimbleFunctions can call out to arbitrary R or C/C++ code that you write for full customizability.
+
+# Additional comments on user-defined distributions
+
+```{r, scopefix, echo=FALSE}
+# not clear why dbetabin() not being put into global
+# if this isn't done, registerDistributions fails to find dbetabin in knitr
+assign('dbetabin', dbetabin, .GlobalEnv)
+assign('rbetabin', rbetabin, .GlobalEnv)
+```
+
+The User Manual also shows how you could write CDF ('p') and inverse CDF ('q') such that you could make use of truncation with your distribution, but for standard usage all you need is the density ('d') and simulation ('r') functions.
+
+If you'd like to allow for different parameterizations for your distribution, and other advanced features you can `register` the distribution with NIMBLE via `registerDistributions()` but in many cases (including this one) that is not necessary. NIMBLE will just find the distribution automatically.
+
+# Using the distribution
+
+```{r, litters-marginalized}
+littersCode <- nimbleCode({
+  for (i in 1:G) {
+     for (j in 1:N) {
+     	 # (marginal) likelihood (data model)
+        r[i,j] ~ dbetabin(a[i], b[i], n[i,j])
+     }
+     # prior for hyperparameters
+     a[i] ~ dgamma(1, .001)
+     b[i] ~ dgamma(1, .001)
+   }
+})
+```
+
+Now we'll try it out. Given the skewed, positive-valued distributions, we'll make a tweak to the samplers to do a random walk on the log-scale.
+
+```{r, litters-setup, include=FALSE}
+G <- 2
+N <- 16
+n <- matrix(c(13, 12, 12, 11, 9, 10, 
+              9, 9, 8, 11, 8, 10, 13, 10, 12, 9, 10, 9, 10, 5, 9, 9, 13, 
+              7, 5, 10, 7, 6, 10, 10, 10, 7), nrow = 2)
+r <- matrix(c(13, 12, 12, 11, 9, 10, 9, 9, 8, 10, 8, 9, 
+     12, 9, 11, 8, 9, 8, 9, 4, 8, 7, 11, 4, 4, 5, 5, 3, 7, 3, 7, 0), 
+     nrow = 2)
+              
+littersConsts <- list(G = G, N = N, n = n)
+littersData <- list(r = r)
+littersInits <- list( a = c(2, 2), b=c(2, 2) )
+```
+
+```{r, use-dist, fig.width=12, fig.height=6, fig.cap=''}
+littersModel <- nimbleModel(littersCode, 
+          data = littersData, constants = littersConsts, inits = littersInits)
+cLittersModel <- compileNimble(littersModel)
+littersConf <- configureMCMC(littersModel, print = TRUE)
+hypers <- c('a[1]', 'b[1]', 'a[2]', 'b[2]')
+for(h in hypers) {
+      littersConf$removeSamplers(h)
+      littersConf$addSampler(target = h, type = 'RW', control = list(log = TRUE))
+}
+littersConf$printSamplers()
+
+littersMCMC <- buildMCMC(littersConf)
+cLittersMCMC <- compileNimble(littersMCMC, project = littersModel)
+niter <- 5000
+nburn <- 1000
+set.seed(1)
+samples <- runMCMC(cLittersMCMC, niter = niter, nburnin = nburn,
+        inits = littersInits, nchains = 1, samplesAsCodaMCMC = TRUE)
+```
+
+# Using the distribution: results
+
+```{r, use-dist-results, fig.width=12, fig.height=6, fig.cap=''}
+par(mfrow = c(2, 2), mai = c(.6, .5, .4, .1), mgp = c(1.8, 0.7, 0))
+ts.plot(samples[ , 'a[1]'], xlab = 'iteration',
+     ylab = expression(a[1]), main = expression(a[1]))
+ts.plot(samples[ , 'b[1]'], xlab = 'iteration',
+     ylab = expression(b[1]), main = expression(b[1]))
+ts.plot(samples[ , 'a[2]'], xlab = 'iteration',
+     ylab = expression(a[2]), main = expression(a[2]))
+ts.plot(samples[ , 'b[2]'], xlab = 'iteration',
+     ylab = expression(b[2]), main = expression(b[2]))
+```
+
+That's not quite as good as the cross-level sampler, almost certainly because the cross-level sampler is blocking each pair of hyperparameters. We could easily do that here.
+
+*Exercise*: run the MCMC with multiple chains and judge convergence based on the Gelman-Rubin diagnostic.
+
+*Exercise*: try blocking the hyperparameters for each group, following the syntax in the previous model. See if that improves mixing. 
+
+Of course if you wanted samples from `p`, you'd need to write a separate R function (or a nimbleFunction) to do the post-hoc sampling given the posterior samples of `a` and `b`. 

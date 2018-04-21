@@ -1,0 +1,199 @@
+---
+title: "Customizing an MCMC"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+read_chunk('chunks.R')
+```
+
+# The litters model
+
+Here's the graph of the litters model.
+
+<center><img src="littersDAG.jpg"></center>
+
+Here we set up the litters model.
+
+```{r, litters-code}
+```
+```{r, litters-model}
+```
+```{r, litters-compile}
+```
+
+# NIMBLE's default MCMC
+
+Here are the results from running NIMBLE's default MCMC:
+
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+if(!exists('littersModel') || !exists('cLittersModel')) source('chunks.R')
+```                   
+
+```{r, litters-default, fig.height=6, fig.width=12, fig.cap=''}
+littersConf <- configureMCMC(littersModel, monitors = c('a', 'b', 'p'))
+littersMCMC <- buildMCMC(littersConf)
+cLittersMCMC <- compileNimble(littersMCMC, project = littersModel)
+niter <- 5000
+nburn <- 1000
+set.seed(1)
+samples <- runMCMC(cLittersMCMC, niter = niter, nburnin = nburn,
+        inits = littersInits, nchains = 1, samplesAsCodaMCMC = TRUE)
+
+makePlot <- function(smp) {
+    par(mfrow = c(2, 2), mai = c(.6, .5, .4, .1), mgp = c(1.8, 0.7, 0))
+    ts.plot(smp[ , 'a[1]'], xlab = 'iteration',
+        ylab = expression(a[1]), main = expression(a[1]))
+    ts.plot(smp[ , 'b[1]'], xlab = 'iteration',
+        ylab = expression(b[1]), main = expression(b[1]))
+    ts.plot(smp[ , 'a[2]'], xlab = 'iteration',
+        ylab = expression(a[2]), main = expression(a[2]))
+    ts.plot(smp[ , 'b[2]'], xlab = 'iteration',
+        ylab = expression(b[2]), main = expression(b[2]))
+}
+
+makePlot(samples)
+```
+
+# Customizing samplers
+
+As those who've worked with MCMC before know, MCMC is a family of algorithms and there are many ways to run an MCMC for any given model, including the choice of the kind of sampler used for each parameter in the model. 
+
+One of NIMBLE's most important features is that users can easily modify the MCMC algorithm used for their model. The easiest thing to do is to start with NIMBLE's default MCMC and then make modifications. 
+
+```{r customize-mcmc}
+littersConf$printSamplers()
+hypers <- c('a[1]', 'b[1]', 'a[2]', 'b[2]')
+for(h in hypers) {
+      littersConf$removeSamplers(h)
+      littersConf$addSampler(target = h, type = 'slice')
+}
+littersConf$printSamplers()
+
+littersMCMC <- buildMCMC(littersConf)
+## we need 'resetFunctions' because we are rebuilding the MCMC for an existing model
+cLittersMCMC <- compileNimble(littersMCMC, project = littersModel, resetFunctions = TRUE)
+
+set.seed(1)
+samplesSlice <- runMCMC(cLittersMCMC, niter = niter, nburnin = nburn,
+             inits = littersInits, nchains = 1, samplesAsCodaMCMC = TRUE)
+```
+
+# Customizing samplers: Initial results
+
+We can look at diagnostics and see if the change in samplers had an effect. Interestingly, despite the posterior correlation between ```alpha``` and ```beta```, a simple change just to the univariate sampler for ```alpha``` has had some effect on MCMC performance.
+
+Caveat: the real question is the effective sample size per unit of computation time, but we don't assess that here.
+
+```{r output-slice, fig.height=6, fig.width=12, fig.cap=''}
+library(coda, warn.conflicts = FALSE)
+effectiveSize(samplesSlice)
+makePlot(samplesSlice)
+```
+
+# Blocking parameters
+
+Often a key factor that reduces MCMC performance is dependence between parameters that limits the ability of univariate samplers to move very far. A standard strategy is to sample correlated parameters in blocks. Unlike many other MCMC engines, NIMBLE makes it easy for users to choose what parameters to sample in blocks.
+
+We'll try that here for ```a``` and ```b```.
+
+
+```{r customize-mcmc2}
+for(h in hypers) {
+      littersConf$removeSamplers(h)
+}
+littersConf$addSampler(target = c('a[1]','b[1]'), type = 'RW_block', 
+                              control = list(adaptInterval = 100))
+littersConf$addSampler(target = c('a[2]','b[2]'), type = 'RW_block', 
+                              control = list(adaptInterval = 100))
+
+littersMCMC <- buildMCMC(littersConf)
+cLittersMCMC <- compileNimble(littersMCMC, project = littersModel, resetFunctions = TRUE)
+
+set.seed(1)
+samplesBlock <- runMCMC(cLittersMCMC, niter = niter, nburnin = nburn,
+             inits = littersInits, nchains = 1, samplesAsCodaMCMC = TRUE)
+```
+
+```{r output-block, fig.height=6, fig.width=12, fig.cap=''}
+effectiveSize(samplesBlock)
+makePlot(samplesBlock)
+```
+
+The block sampler seems to help some but hopefully we can do better. Often block sampling gives bigger improvements.
+
+
+# Blocking the random effects too
+
+But perhaps we should have blocked the hyperparameters with their dependent random effects. This is how one could do that, though ```a```, ```b```, and ```p``` are on very different scales, which may cause problems, particularly at the start of an adaptive sampler. As we see in the trace plots, this strategy is not working at all.
+
+```{r, effects-block, fig.height=6, fig.width=12, fig.cap=''}
+littersConf$removeSamplers(c('a', 'b', 'p'))
+group1nodes <- littersModel$getDependencies(c('a[1]', 'b[1]'), stochOnly = TRUE)
+group2nodes <- littersModel$getDependencies(c('a[2]', 'b[2]'), stochOnly = TRUE)
+group1nodes
+propCov <- diag(c(.5, .5, rep(.01, 16)))
+littersConf$addSampler(group1nodes, 'RW_block', control =
+                       list(adaptInterval = 100, propCov = propCov))
+littersConf$addSampler(group2nodes, 'RW_block', control =
+                       list(adaptInterval = 100, propCov = propCov))
+
+littersMCMC <- buildMCMC(littersConf)
+cLittersMCMC <- compileNimble(littersMCMC, project = littersModel, resetFunctions = TRUE)
+
+set.seed(1)
+samplesSuperblock <- runMCMC(cLittersMCMC, niter = niter, nburnin = nburn,
+                  inits = littersInits, nchains = 1, samplesAsCodaMCMC = TRUE)
+```
+
+```{r output-superblock, fig.height=6, fig.width=12, fig.cap=''}
+effectiveSize(samplesSuperblock)
+makePlot(samplesSuperblock)
+```
+
+I suspect that more time for adaptation is needed (and perhaps better initialization of the proposal covariance).
+
+# Implicitly integrating over the random effects: cross-level sampler
+
+Note that in this model, one could analytically integrate over the random effects (necessarily so since we have conjugacy). In NIMBLE this is pretty easy to do using user-defined distributions (next module), though it requires some technical knowledge of working with distributions.
+
+An easier alternative to analytically integrating over the random effects is to use a computational trick that mathematically achieves the same result.
+
+That is NIMBLE's *cross-level sampler*. Here's what it does:
+
+  -  do a blocked Metropolis random walk on one or more hyperparameters and then a conjugate update of the dependent nodes conditional on the proposed hyperparameters, accepting/rejecting everything together
+  - this amounts to a joint update of the hyperparameters and their dependent nodes
+  - equivalent to analytically integrating over the dependent nodes
+
+```{r, cross-level, fig.height=6, fig.width=12, fig.cap=''}
+littersConf$removeSamplers(c('a', 'b', 'p'))
+littersConf$addSampler(c('a[1]', 'b[1]'), 'crossLevel')
+littersConf$addSampler(c('a[2]', 'b[2]'), 'crossLevel')
+
+littersMCMC <- buildMCMC(littersConf)
+cLittersMCMC <- compileNimble(littersMCMC, project = littersModel, resetFunctions = TRUE)
+
+set.seed(1)
+samplesCross <- runMCMC(cLittersMCMC, niter = niter, nburnin = nburn,
+             inits = littersInits, nchains = 1, samplesAsCodaMCMC = TRUE)
+```
+
+# Cross-level sampler results
+
+```{r output-cross-level, fig.height=6, fig.width=12, fig.cap=''}
+effectiveSize(samplesCross)
+makePlot(samplesCross)
+```
+
+Much better, though we'd still want to look into the lack of movement for `a[1], b[1]` in the initial non-burnin samples -- this could probably be improved with better initialization of the top-level block sampler. 
+
+*Exercise*: try modifying the scale or propCov arguments to the cross-level sampler (see how we did this for the standard block sampler) and see if that eliminates the initial stickiness of the sampler.

@@ -1,0 +1,130 @@
+---
+title: "Programming with models (1): Operating a model"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+read_chunk("chunks.R")
+```
+
+# Overview
+
+In the remaining modules, we'll cover the basics of programming your own algorithms in NIMBLE.
+
+We'll start with how one can treat the model as an object that you can manipulate. Even without further NIMBLE programming this can be useful for exploring a model or for setting up simulations with a model.
+
+# Running example: the litters model
+
+We first need to build the model as usual.
+
+```{r, litters-code}
+littersCode <- nimbleCode({
+  for (i in 1:G) {
+     for (j in 1:N) {
+        # likelihood (data model)
+        r[i,j] ~ dbin(p[i,j], n[i,j])
+        # latent process (random effects)
+        p[i,j] ~ dbeta(a[i], b[i]) 
+     }
+     # prior for hyperparameters
+     a[i] ~ dgamma(1, .001)
+     b[i] ~ dgamma(1, .001)
+   }
+})
+```
+
+```{r, litters-model}
+```
+
+```{r, litters-compile}
+```
+
+# Nodes and variables
+
+The parameters and data in a model are represented as nodes in a graph. Here we define some terms:
+
+ - parameter: an unknown quantity in the model that is represented as a random variable and will generally be estimated in an algorithm, e.g. `a[1]` in the litters model
+ - data: a known quantity in a model, also represented as a random variable, e.g., `r[1,1], r[1,2], ...` in the litters model
+ - constants: other fixed quantities involved in the model, e.g., `N` in the litters model
+ - node: an element in the model graph representing data, parameter, or a deterministic quantity that is a function of other quantities in the model, e.g., `lambda[3]` or `xi[1:65]` in the AFT model
+ - variable: a collection of one or more nodes with the same name, e.g., `lambda` or `xi` in the AFT model 
+
+```{r, AFT-code, eval=FALSE}
+codeAFT <- nimbleCode({
+    for(i in 1:n) {
+        x[i] ~ dweib(alpha, lambda[i])
+        is_cens[i] ~ dinterval(x[i], c[i])  ## right-censoring
+        lambda[i] <- exp(eta[i] + Z[i,1]*delta[1] + Z[i,2]*delta[2])
+        eta[i] <- etaTilde[xi[i]]  ## mix over eta; mu = exp(eta)
+    }
+    xi[1:n] ~ dCRP(conc, size = n) ## CRP for mixture components
+    conc ~ dgamma(1, 1)
+    for(i in 1:nSub)
+        etaTilde[i] ~ dunif(b0, B0) ## base measure H_b
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p)
+        delta[j] ~ dflat()
+})
+```
+
+# Values in the model
+
+What's the current value in a node?
+
+
+```{r, model-values}
+littersModel$r  
+littersModel$a[1]
+littersModel$p
+```
+
+Setting values:
+
+```{r, model-set-values}
+littersModel$a[1] <- 2  
+littersModel$a[1]
+```
+
+
+# Operating the model: *simulate()*
+ 
+We have control over the model. In particular, for every node, NIMBLE provides *calculate()* and *simulate()* functions that calculate the current probability density value for the node and simulate a new value for the node from its distribution (given only parent nodes). These operations lie at the heart of many algorithms.
+
+If we want to simulate (from the prior), we can do that too. *simulate()* puts new values into the model; if you want to see those values, you need to look into the model.
+
+```{r, model-simulate}
+set.seed(1)  # so the calculations are reproducible
+littersModel$simulate('p')  # simulate from prior
+littersModel$p
+littersModel$getLogProb('p')  # log prob not yet updated!
+littersModel$calculate('p')   # update it
+littersModel$getLogProb('p')  # now we're good
+```
+
+**Question**: The NIMBLE developers chose to not automatically recalculate density values when a node's value changes nor deterministic dependent nodes when a parent node changes. We can discuss the the design considerations in making that choice and the advantages and disadvantages of the choice.
+
+# Operating the model: *calculate()* 
+
+
+Let's change values in the model and recalculate the density values. NIMBLE sometimes introduces hidden nodes not specified in the model, so when calculating model density values, it's best to ask NIMBLE to do so based on the dependencies of the altered node.
+
+```{r, model-operate}
+littersModel$getLogProb('p')
+littersModel$a[1] <- 1
+littersModel$b[1] <- 3
+littersModel$getLogProb('p')  # recall why this hasn't changed yet
+littersModel$calculate(littersModel$getDependencies(c('a[1]','b[1]')))
+## or we could just update the entire model to be safe:
+## littersModel$calculate()
+littersModel$getLogProb('p')
+```
+

@@ -1,0 +1,190 @@
+---
+title: "Data and Constants"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+read_chunk('chunks.R')
+```
+
+
+# Data nodes and constants
+
+In BUGS and JAGS, constants such as the number of observations or groups, fixed covariate values, fixed indices for vectors, and data are all set as 'data'. 
+
+In NIMBLE, we distinguish between true constants, which are quantities that are never changed, and must be provided when the model is defined, from *data* which is a label for the role a node plays in a model.
+
+What about predictors or covariates? NIMBLE sometimes refers to these as *right-hand-side-only* variables because they are fixed (no prior distribution) but not part of the likelihood. One can specify these as *inits* or *constants*. (They can also be specified as *data* though they do not play the role of data in terms of the likelihood.)
+
+Let's work through an example using the AFT myeloma model.
+
+# AFT model
+
+Here's the AFT model, also used previously.
+
+```{r, aft-setup}
+library(emplik, quietly = TRUE, warn.conflicts = FALSE)
+data(myeloma)
+
+n <- nrow(myeloma)
+time <-  myeloma[ , 1]    ## survival or censoring time
+vstatus <- myeloma[ , 2]  ##  0 = alive (i.e., censored)
+alive <- vstatus == 0
+cens_time <- rep(NA, n)
+cens_time[alive] <- time[alive]
+cens_time[!alive] <- Inf
+time[alive] <- NA
+## covariates:
+logBUN <- myeloma[ , 3]
+HGB <- myeloma[ , 4]
+logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+HGB <- (HGB - mean(HGB)) / sd(HGB)
+
+codeAFT <- nimbleCode({
+    for(i in 1:n) {
+        x[i] ~ dweib(alpha, lambda[i])
+        is_cens[i] ~ dinterval(x[i], c[i])  ## right-censoring
+        lambda[i] <- exp(eta[i] + Z[i,1]*delta[1] + Z[i,2]*delta[2])
+        eta[i] <- etaTilde[xi[i]]  ## mix over eta; mu = exp(eta)
+    }
+    xi[1:n] ~ dCRP(conc, size = n) ## CRP for mixture components
+    conc ~ dgamma(1, 1)
+    for(i in 1:nSub)
+        etaTilde[i] ~ dunif(b0, B0) ## base measure H_b
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p)
+        delta[j] ~ dflat()
+})
+```
+
+# Constants vs. right-hand side nodes
+
+Regression predictors (i.e., covariates or independent variables) can be treated either as constants or as nodes in the model. The latter allows one to change the values after the model is built. 
+
+When a variable is specified only on the right-hand side of expression(s) in the model, it does not become a node in the model because it is not a parameter or data, but it is a variable in the model that can be assigned new values. 
+
+Let's see this with the AFT model. First note that ```model$Z``` does not exist because *Z* was given as a constant.
+
+
+```{r, rhs-constant}
+nSub <- 10
+constants <- list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
+                 c = cens_time, Z = cbind(logBUN, HGB), nSub = nSub)
+data <- list(is_cens = as.numeric(alive), x = time)
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+inits <- list(alpha = 1, delta = c(0, 0), conc = 1,
+             etaTilde = runif(nSub, constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+try(model$Z)
+model$getVarNames()
+```
+
+# Setting right-hand side nodes
+
+Now note that ```model$Z``` does exist when *Z* is not specified as a constant.
+
+```{r, rhs-var}
+constants <- list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
+                 c = cens_time, nSub = nSub)
+Z <- cbind(logBUN, HGB)                 
+data <- list(is_cens = as.numeric(alive), x = time)
+inits <- list(alpha = 1, delta = c(0, 0), conc = 1,
+             etaTilde = runif(nSub, constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+try(head(model$Z))
+model$Z <- Z
+head(model$Z)
+model$getVarNames()       ## Z is a variable
+## model$getNodeNames()   ## there are no Z nodes
+model$calculate()         ## update model given new Z values
+```
+
+# Working with data nodes
+
+As discussed, we can set data values, but we cannot simulate into a data node. 
+
+```{r, data-manip}
+model$isData('x[1]')
+model$x[1]
+model$simulate('x[1]')
+model$x[1]
+```
+
+In the censored data case, some of the x's are data and some are not.
+```{r, censored-data}
+data$x
+model$isData('x')
+model$x
+model$simulate('x')
+model$x
+```
+
+Note: because the interval censoring is downstream of the 'x' values, simulating from the prior does not enforce the constraint...
+
+# Setting data with *setData()*
+
+We can also use *setData()* to set the data values after the model is build.
+
+```{r, setdata}
+constants <- list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
+                 c = cens_time, nSub = nSub)
+Z <- cbind(logBUN, HGB)                 
+data <- list(is_cens = as.numeric(alive), x = time)
+inits <- list(alpha = 1, delta = c(0, 0), conc = 1,
+             etaTilde = runif(nSub, constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE))
+model <- nimbleModel(codeAFT, constants = constants, inits = inits)
+model$x
+model$isData('x')
+model$setData(data)
+model$x
+model$isData('x')
+```
+
+
+# Data nodes and missing values
+
+Now let's see how missing values can be handled. In the usual Bayesian paradigm, missing data are just considered to be parameters.
+
+Values that are NA when passed in as data are not treated as data in the sense that they are not fixed. They can (and often should since they will be sampled in an MCMC) be initialized. Recall from above that simulating from the prior in this case wouldn't work well.
+
+Instead let's initialize them deterministically:
+
+```{r, init-censored}
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+inits <- list(alpha = 1, delta = c(0, 0), conc = 1,
+             etaTilde = runif(nSub, constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+data$x
+inits$x
+```
+
+It's clearest to set the known 'x' values to NA in the initialization since those have already been via *data*, but it's ok to put initial values in for those as NIMBLE will just ignore them.
+
+If we set up an MCMC, we see that samplers are assigned to the censored 'x' values. 
+
+```{r, missing}
+model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+model$x
+model$isData('x')
+conf <- configureMCMC(model)
+conf$printSamplers('x')
+```
+
+In this case we'd probably want to tell NIMBLE to use the 'reflective' version of the random walk Metropolis-Hastings sampler so that we don't reject a lot simply because of the censoring constraint (see `help(samplers)` for more info).
+
+
+

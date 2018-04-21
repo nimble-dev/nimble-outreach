@@ -1,0 +1,271 @@
+---
+title: "nimbleFunction programming example: Reversible jump"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+Here we'll program another sampler using nimbleFunctions, this time applying reversible jump (RJ) MCMC for variable selection in the AFT survival model example. The nice thing about RJ for variable selection is that it is a fairly straightforward implementation of RJ.
+
+Recall that we had two covariates in the AFT model - blood urea nitrogen and hemoglobin. Let's see if hemoglobin is needed in the model using Bayesian variable selection. 
+
+```{r, aft-setup}
+library(emplik, quietly = TRUE, warn.conflicts = FALSE)
+data(myeloma)
+
+n <- nrow(myeloma)
+time <-  myeloma[ , 1]    ## survival or censoring time
+vstatus <- myeloma[ , 2]  ##  0 = alive (i.e., censored)
+alive <- vstatus == 0
+cens_time <- rep(NA, n)
+cens_time[alive] <- time[alive]
+cens_time[!alive] <- Inf
+time[alive] <- NA
+## covariates:
+logBUN <- myeloma[ , 3]
+HGB <- myeloma[ , 4]
+logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+HGB <- (HGB - mean(HGB)) / sd(HGB)
+```
+
+# BUGS code for reversible jump version of semiparametric AFT model
+
+Here's the BUGS code that implements the model specified earlier, modified slightly to allow for variable selection by adding an indicator that will "turn on" or "turn off" the hemoglobin coefficient.
+
+```{r, aft-bugs}
+codeAFTsel <- nimbleCode({
+    for(i in 1:n) {
+        x[i] ~ dweib(alpha, lambda[i])
+        is_cens[i] ~ dinterval(x[i], c[i])  ## right-censoring
+        lambda[i] <- exp(eta[i] + Z[i,1]*delta[1] + indic*Z[i,2]*delta[2])
+        eta[i] <- etaTilde[xi[i]]  ## mix over eta; mu = exp(eta)
+    }
+    indic ~ dbern(0.5)             ## turns Z2 on and off
+    xi[1:n] ~ dCRP(conc, size = n) ## CRP for mixture components
+    conc ~ dgamma(1, 1)
+    for(i in 1:nSub)
+        etaTilde[i] ~ dunif(b0, B0) ## base measure H_b
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p)
+        delta[j] ~ dflat()
+})
+```
+
+# Overall strategy for variable selection via RJ
+
+We won't go into all the details, but by looking at the rules for how to set up a valid RJ sampler, one can see that in the simple variable selection case, they simplify to straightforward calculations.
+
+To go from the reduced model, $M^r$, to full model, $M^f$, we need to propose an auxiliary variable, $u$, that augments the dimension of the model and a transformation to produce the new coefficient, $\delta_{2}^*$, given the auxiliary variable. The simplest thing to do is:
+
+$$ u \sim J(u) = N(0, \sigma^2) $$
+
+$$ \delta_{2}^* = u $$
+
+The acceptance ratio is then
+
+$$ q = \frac{p(y|\theta^f,M^f)p(\theta^f|M^f) }{p(y|\theta^r,M^r)p(\theta^r|M^r) J(u) } $$
+
+For those of you familiar with RJ, the lack of Jacobian here occurs because the transformation $\delta_{2}^*=u$ has Jacobian equal to 1.
+
+To go from the full to reduced model, we have
+
+$$ u^* = \delta_2 $$ 
+
+and acceptance ratio:
+
+$$ q = \frac{p(y|\theta^r,M^r)p(\theta^r|M^r)J(u^*) }{p(y|\theta^f,M^f)p(\theta^f|M^f)  } $$
+
+# RJ sampler setup code
+
+The setup code needs to determine the nodes involved in the full model and the reduced model, where the reduced model omits the variable under consideration.
+
+
+```{r, setup-rj, eval=FALSE}
+ setup = function( model, mvSaved, target, control ) {
+   # target = 'indic'
+   coefNode <- control$coef   # 'delta[2]'
+   scale    <- control$scale  # could be made adaptive
+   # with variable
+   calcNodes_full <- model$getDependencies(c(coefNode, target))
+   # without variable
+   calcNodes_reduced <- model$getDependencies(target)
+ }
+```
+
+# RJ sampler run code
+
+Depending on the current value of the variable selection indicator, we use the reversible jump calculations to propose either including or excluding the variable from the model.
+
+We fix $J(u)$ here as a distribution that doesn't change with the current state, so it will be critical to come up with a good value for the *scale* of $J(u)$ as that is simply the proposal distribution for the new coefficient in this simple RJ scheme.
+
+```{r, rj-run, eval = FALSE}
+run = function( ) {  # Reversible-jump updates:
+   currentIndicator <- model[[target]]   # get current z2
+   if(currentIndicator == 0) { ## propose adding z2 to model
+     currentLogProb <- model$getLogProb(calcNodes_reduced)
+     proposalCoef <- rnorm(1, 0, sd = scale)
+     model[[target]] <<- 1
+     model[[coefNode]] <<- proposalCoef
+     logProbForwardProposal <- 
+                dnorm(proposalCoef, 0, sd = scale, log = TRUE)
+     proposalLogProb <- model$calculate(calcNodes_full)
+     logAcceptProb <- proposalLogProb - 
+                        currentLogProb - 
+                        logProbForwardProposal
+   } else {                   ## propose removing z2
+     currentLogProb <- model$getLogProb(calcNodes_full)
+     currentCoef <- model[[coefNode]]      # get current beta2
+     logProbReverseProposal <- 
+                 dnorm(currentCoef, 0, sd = scale, log = TRUE)   
+     model[[target]] <<- 0      # put proposal values in model
+     model[[coefNode]] <<- 0
+     model$calculate(calcNodes_full) # calculate proposal log probabilities
+     logAcceptProb <- model$getLogProb(calcNodes_reduced) -
+                        currentLogProb + 
+                        logProbReverseProposal
+   }
+}   
+```
+
+# The full RJ sampler
+
+Putting it all together, here is the full code for our RJ variable selection sampler.
+
+```{r, full-rj}
+RJ_var_sel <- nimbleFunction(
+ contains = sampler_BASE,
+ setup = function( model, mvSaved, target, control ) {
+   # target = 'indic'
+   coefNode <- control$coef   # 'delta[2]'
+   scale    <- control$scale  # could be made adaptive)
+   # with variable
+   calcNodes_full <- model$getDependencies(c(coefNode, target))
+   # without variable (don't calculate prior for coefNode since not in model)
+   calcNodes_reduced <- model$getDependencies(target)
+ },
+run = function( ) {  # Reversible-jump updates:
+   currentIndicator <- model[[target]]   # get current z2
+   if(currentIndicator == 0) { ## propose adding z2 to model
+     currentLogProb <- model$getLogProb(calcNodes_reduced)
+     proposalCoef <- rnorm(1, 0, sd = scale)
+     model[[target]] <<- 1
+     model[[coefNode]] <<- proposalCoef
+     logProbForwardProposal <- 
+                dnorm(proposalCoef, 0, sd = scale, log = TRUE)
+     proposalLogProb <- model$calculate(calcNodes_full)
+     logAcceptProb <- proposalLogProb - 
+                        currentLogProb - 
+                        logProbForwardProposal
+   } else {                   ## propose removing z2
+     currentLogProb <- model$getLogProb(calcNodes_full)
+     currentCoef <- model[[coefNode]]      # get current beta2
+     logProbReverseProposal <- 
+                 dnorm(currentCoef, 0, sd = scale, log = TRUE)   
+     model[[target]] <<- 0      # put proposal values in model
+     model[[coefNode]] <<- 0
+     model$calculate(calcNodes_full) # calculate proposal log probabilities
+     logAcceptProb <- model$getLogProb(calcNodes_reduced) -
+                        currentLogProb + 
+                        logProbReverseProposal
+    }
+    accept <- decide(logAcceptProb)
+    if(accept) {
+      copy(from = model, to = mvSaved, row = 1, 
+         nodes = calcNodes_full, logProb = TRUE)
+    } else {
+      copy(from = mvSaved, to = model, row = 1, 
+         nodes = calcNodes_full, logProb = TRUE)
+    }
+ },
+ methods = list(reset = function() {
+ })
+) 
+
+```
+
+# Final modification: Turning off sampling when the covariate is not in the model
+
+Here we'll create a sampler that simply wraps around our usual slice sampler.
+Note that in setup code we can create instances of other nimbleFunctions and
+then use these in the run code.
+
+```{r, nonzero-sampler}
+slice_var_sel_wrapper <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        regular_slice_sampler <- sampler_slice(model, mvSaved, target = target, 
+                                         control = control$sliceControl)
+        indicatorNode <- control$indicator
+    },
+    run = function() {
+        if(model[[indicatorNode]] == 1) regular_slice_sampler$run()
+    },
+    methods = list(
+        reset = function() {regular_slice_sampler$reset()}
+    ))
+```
+
+```{r, scopefix, echo=FALSE, fig.cap='', fig.width=5, fig.height=5}
+# not clear why RW_reflect() not being put into global
+# if this isn't done, configureMCMC fails to find sampler_RW_reflect in knitr
+assign('slice_var_sel_wrapper', slice_var_sel_wrapper, .GlobalEnv)
+assign('RJ_var_sel', RJ_var_sel, .GlobalEnv)
+```
+
+# Running the MCMC
+
+Now let's run the MCMC. We'll need to manually assign our special samplers for the RJ aspect of things. 
+      
+```{r, aft-mcmc}
+nSub = 15
+constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
+                 c = cens_time, Z = cbind(logBUN, HGB), nSub = nSub)
+data = list(is_cens = as.numeric(alive), x = time)
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+inits = list(alpha = 1, delta = c(0, 0), conc = 1,
+             etaTilde = runif(nSub, constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit, indic = 1)
+model <- nimbleModel(codeAFTsel, constants = constants, data = data, inits = inits)
+cmodel = compileNimble(model)
+conf <- configureMCMC(model, thin = 10, monitors = c('alpha', 'delta', 'indic'))
+conf$removeSamplers(c('alpha', 'delta', 'etaTilde', 'indic'))
+conf$addSampler('alpha','slice')
+conf$addSampler('delta[1]','slice')
+for(node in model$expandNodeNames('etaTilde'))
+    conf$addSampler(node,'slice')
+
+## special changes for variable selection:
+conf$addSampler('delta[2]','slice_var_sel_wrapper', control = list(indicator = 'indic'))
+conf$addSampler('indic', 'RJ_var_sel', control = list(coef = 'delta[2]', scale = 0.5))
+
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = model)
+resultsAFT <- runMCMC(cmcmc, niter = 21000, nburnin = 100) ## burnin is post-thinning (to be fixed in next NIMBLE release)
+```
+
+Let's look at the MCMC behavior of the indicator and of the coefficient of interest.
+
+```{r, results, fig.width=8, fig.height=5, fig.cap=''}
+par(mfrow = c(1,2))
+ts.plot(resultsAFT[ , 'indic'], xlab = 'iteration', ylab = 'z2 indicator',
+                    main = 'z2 indicator')
+ts.plot(resultsAFT[ , 'delta[2]'], xlab = 'iterations', ylab = 'delta[2]',
+               main = 'hemoglobin coefficient')
+
+## posterior probability of inclusion    
+mean(resultsAFT[ , 'indic'])  
+```
+

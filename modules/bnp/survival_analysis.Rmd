@@ -1,0 +1,216 @@
+---
+title: "Bayesian nonparametrics example (2): Survival analysis"
+subtitle: "NIMBLE ENAR webinar module"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found - weird
+library(nimble)
+```
+
+# Introduction
+
+Here we'll consider a real example, doing a semiparametric accelerated failure time (AFT) survival analysis. We'll start with a standard random effects meta analysis and then robustify the analysis using Bayesian nonparametric methods.
+
+To use this code, you'll need to install NIMBLE from our Github repository:
+
+```{r, install-nimble, eval=FALSE}
+library(devtools)
+install_github('nimble-dev/nimble/packages/nimble', ref = 'BNP')
+```
+
+# Accelerated failure time model
+
+A parametric Weibull AFT model is $T \sim \mbox{Weibull}(\alpha, \lambda)$.
+
+$$ f(t) = \alpha \lambda t^{\alpha-1} \exp(-\lambda t^\alpha) $$
+
+with survival function
+
+$$ S(t) = \exp(-\lambda t^\alpha) $$
+
+We can introduce covariates into $\lambda$ as
+
+$$ \lambda = \mu \exp(z^\top \delta) $$
+
+Note that the survival function is
+
+$$ S(t) = \exp(-\mu \exp(z^\top \delta) t^\alpha) = \exp(-\mu (\exp(z^\top \delta/\alpha) t)^\alpha $$
+
+so the effect of the covariates is to scale time, hence 'accelerated failure time'. I.e., changing the covariate value can be seen as scaling the time that results in an equivalent probability of survival.
+
+(Think one dog-year equals seven human-years.)
+
+## Semiparametric AFT model
+
+To remove the parametric Weibull assumption, [one approach](https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf) is to use a mixture of Weibull distributions, mixing over $\mu$:
+
+$$ f(t) = \sum_k w_k \mbox{Weibull}(\alpha, \mu_k \exp(z^\top \delta)) $$
+
+And of course if we don't want to have to choose the number of components a Dirichlet process specification is natural.
+
+We can express this as:
+
+$$ T_i \sim \mbox{Weibull}(\alpha, \mu_i \exp(Z^\top \delta)) $$
+
+with IID $\mu_i$ from unknown distribution, $H(\cdot)$
+
+$$ \mu_i \sim H(\cdot) $$
+
+where that distribution has a Dirichlet process prior, $H(\cdot) \sim DP(\mbox{conc}, H_b(\cdot))$ with base measure $H_b(\cdot)$. 
+
+
+# Multiple myeloma analysis with the semiparametric AFT model
+
+We'll carry out an analysis of the effect of alkylating agents on survival time (in months) for patients with multiple myeloma (see this [reference](https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf) for details). The covariates are log blood urea nitrogen and hemoglobin.
+
+```{r, aft-setup}
+library(emplik, quietly = TRUE, warn.conflicts = FALSE)
+data(myeloma)
+
+n <- nrow(myeloma)
+time <-  myeloma[ , 1]    ## survival or censoring time
+vstatus <- myeloma[ , 2]  ##  0 = alive (i.e., censored)
+alive <- vstatus == 0
+cens_time <- rep(NA, n)
+cens_time[alive] <- time[alive]
+cens_time[!alive] <- Inf
+time[alive] <- NA
+## covariates:
+logBUN <- myeloma[ , 3]
+HGB <- myeloma[ , 4]
+logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+HGB <- (HGB - mean(HGB)) / sd(HGB)
+```
+
+# BUGS code for semiparametric AFT model
+
+Here's the BUGS code that implements the model specified earlier.
+
+```{r, aft-bugs}
+codeAFT <- nimbleCode({
+    for(i in 1:n) {
+        x[i] ~ dweib(alpha, lambda[i])
+        is_cens[i] ~ dinterval(x[i], c[i])  ## right-censoring
+        lambda[i] <- exp(eta[i] + Z[i,1]*delta[1] + Z[i,2]*delta[2])
+        eta[i] <- etaTilde[xi[i]]  ## mix over eta; mu = exp(eta)
+    }
+    xi[1:n] ~ dCRP(conc, size = n) ## CRP for mixture components
+    conc ~ dgamma(1, 1)
+    for(i in 1:nSub)    ## cap the number of clusters for faster computation
+        etaTilde[i] ~ dunif(b0, B0) ## base measure H_b
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p)
+        delta[j] ~ dflat()
+})
+```
+
+Note that $\eta_i$ is a reparameterization of $\mu_i$.
+
+# Running the MCMC
+
+Now let's run the MCMC. A couple comments:
+
+  - Using slice samplers for $\alpha$, $\delta$, and $\eta$ helps mixing (particularly for $\alpha$).
+  - At most a DP model will have $n$ clusters (equal to the number of observations) but in general, many fewer are used.
+      - We can reduce model building and MCMC time substantially by capping the number of clusters.
+      - Here we use 15.
+      - NIMBLE will warn us if the MCMC ever tries to use more than that (in which case the formal DP model is technically not actually being used).
+  - We'll discuss the censoring and implications for what are 'data' and 'parameters' in the next unit.
+      
+```{r, aft-mcmc, fig.cap='', fig.width=8, fig.height=5}
+nSub = 15
+constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
+                 c = cens_time, Z = cbind(logBUN, HGB), nSub = nSub)
+data = list(is_cens = as.numeric(alive), x = time)
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+inits = list(alpha = 1, delta = c(0, 0), conc = 1,
+             etaTilde = runif(nSub, constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+cmodel = compileNimble(model)
+conf <- configureMCMC(model, thin = 10, monitors = c('alpha', 'delta', 'xi'))
+conf$removeSamplers(c('alpha', 'delta', 'etaTilde'))
+conf$addSampler('alpha','slice')
+for(node in model$expandNodeNames('delta'))
+    conf$addSampler(node,'slice')
+for(node in model$expandNodeNames('etaTilde'))
+    conf$addSampler(node,'slice')
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = model)
+resultsAFT <- runMCMC(cmcmc, niter = 21000, nburnin = 100) ## burnin is post-thinning (this will be fixed in next NIMBLE release)
+
+xiCols <- grep('xi', colnames(resultsAFT))
+nComponents <- apply(resultsAFT[ , xiCols], 1, function(x) length(unique(x)))
+
+par(mfrow = c(1,2))
+ts.plot(resultsAFT[ , 'alpha'], xlab = 'iteration', ylab = expression(alpha),
+                    main = expression(alpha))
+ts.plot(nComponents, xlab = 'iterations', ylab = 'number of clusters',
+               main = 'number of clusters')
+```
+
+Note the poor mixing of $\alpha$ - we'd want to run this for longer and also look at mixing for other parameters. 
+
+# Interpreting the regression coefficients
+
+The model (here simply the parametric Weibull model) can be reparameterized in terms of $\beta = - \delta / \alpha$.
+
+The result is that the scaling of time does not depend on $\alpha$
+
+$$ S(t) = \exp(-\mu \exp(z^\top \delta) t^\alpha) = \exp(-\mu (\exp(z^\top \delta/\alpha) t)^\alpha) =  \exp(-\mu (\exp(-z^\top \beta) t)^\alpha)$$
+
+and the expected time to event is:
+
+$$ E(T) = \frac{1}{(\mu \exp(z^\top \delta))^{1/\alpha}} \Gamma(1+1/\alpha) = \frac{1}{\mu^{1/\alpha}} \exp(z^\top \beta) \Gamma(1+1/\alpha) $$
+
+so that positive $\beta$ means longer survival. 
+
+```{r, aft-regression, fig.cap='', fig.width=8, fig.height=5}
+beta <- -resultsAFT[ , grep('delta', colnames(resultsAFT))] / resultsAFT[ , 'alpha']
+par(mfrow = c(1,2))
+ts.plot(beta[ , 1], xlab = 'iteration', ylab = expression(beta[1]),
+                    main = expression(beta[1]))
+ts.plot(beta[ , 2], xlab = 'iteration', ylab = expression(beta[2]),
+                    main = expression(beta[2]))
+```
+
+# Stick-breaking representation
+
+The DP model can also be represented using a finite mixture approximation. NIMBLE allows this and recognizes a special conjugacy for the terms involved in the stick-breaking.
+
+```{r, aft-stick}
+codeAFTstick <- nimbleCode({
+    for(i in 1:n) {
+        x[i] ~ dweib(alpha, lambda[i])
+        is_cens[i] ~ dinterval(x[i], c[i])    ## right-censoring
+        lambda[i] <- exp(eta[i] + Z[i,1]*delta[1] + Z[i,2]*delta[2])
+        eta[i] <- etaTilde[xi[i]]
+        xi[i] ~ dcat(prob[1:nSub])            ## finite mixture
+    }
+    prob[1:nSub] <- stick_breaking(z[1:(nSub-1)])  ## stick-breaking form of CRP
+    for(i in 1:(nSub-1))
+        z[i] ~ dbeta(1, conc)
+
+    for(i in 1:nSub) 
+        etaTilde[i] ~ dunif(b0, B0)           ## base measure H_b
+    conc ~ dgamma(1, 1) 
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p)
+        delta[j] ~ dflat()
+})
+```
+
+# Exercises
+
+  - Explore MCMC mixing with and without slice sampling for the different forms of the model.
+  - Configure the MCMC for the stick-breaking representation of the model and verify that conjugacy is detected for $z$.
+
