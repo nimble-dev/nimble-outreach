@@ -84,8 +84,8 @@ RW_reflect <- nimbleFunction(
         targetComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         if(length(targetComponents) > 1)
                 stop("RW_reflect: cannot use univariate RW sampler on multivariate target, try RW_block sampler.")
-        rg <- getDistribution(dist)$range
-        if(rg[1] > -Inf || rg[2] < Inf)
+        rg <- getDistributionInfo(dist)$range
+        if(rg[[1]] > -Inf || rg[[2]] < Inf)
                   reflect <- TRUE else reflect <- FALSE
 
         calcNodes  <- model$getDependencies(target)
