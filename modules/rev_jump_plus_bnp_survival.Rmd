@@ -253,7 +253,7 @@ conf$addSampler('indic', 'RJ_var_sel', control = list(coef = 'delta[2]', scale =
 
 mcmc <- buildMCMC(conf)
 cmcmc <- compileNimble(mcmc, project = model)
-resultsAFT <- runMCMC(cmcmc, niter = 21000, nburnin = 100) ## burnin is post-thinning (to be fixed in next NIMBLE release)
+resultsAFT <- runMCMC(cmcmc, niter = 21000, nburnin = 1000) 
 ```
 
 Let's look at the MCMC behavior of the indicator and of the coefficient of interest.
