@@ -1,0 +1,95 @@
+---
+title: "Bayesian nonparametrics"
+subtitle: "BYU Summer Institute on Applied Statistics workshop"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found 
+library(nimble)
+```
+
+# Introduction to Bayesian nonparametrics (BNP)
+
+Bayesian nonparametrics just appeared as a beta feature in version 0.6-11 of NIMBLE, released last week. At the moment, we have two standard representations of Bayesian nonparametric mixture models based on Dirichlet processes:
+
+   - Chinese Restaurant Process distribution
+   - stick-breaking representation
+
+When NIMBLE's default MCMC configuration sees these in a model, it will assign specialized samplers to the relevant nodes in the model.
+
+Support for more involved BNP model structures and improved sampling efficiency are planned for future releases.
+
+# Bayesian nonparametrics
+
+When people talk about 'Bayesian nonparametrics' (BNP)  they often mean Dirichlet process and related nonparametric models for flexibly specifying distributions. 
+
+(Gaussian processes are also nonparametric Bayesian methods, and are feasible in NIMBLE based on using multivariate normal finite-dimensional representations and standard linear algebra manipulations.)
+
+Avoiding technical details, a Dirichlet process distribution is a (prior) distribution over *discrete* distributions that induces clustering. It is parameterized by a base measure (a base distribution), $G_0$, and a concentration parameter, $\alpha$. At one extreme, the distribution would cluster all observations into a single value, and at the other it would represent distinct draws from the base measure. 
+
+# Chinese restaurant process
+
+The DP has at its core a model for clustering, which is usually called a Chinese restaurant process (CRP).
+
+Here's the idea - we represent the probability of a new customer sitting at each table as follows:
+
+<center><img src="crp.png"></center>
+
+Under the CRP, the probability that the i'th customer sits at an unoccupied table is:
+
+$$ \frac{\alpha}{i-1+\alpha} $$
+
+and the probability the customer sits at table $k$ (where there are $n_k$ people already at the table) is:
+
+$$ \frac{n_k}{i-1+\alpha} $$
+
+To complete the DP distribution, the values associated with each table (i.e., the parameters for each cluster) are drawn from the base measure $G_0$. 
+
+# Dirichlet process mixture (DPM) models
+
+The discreteness of the DP/CRP is good for clustering but bad for representing continuous distributions (like what we would want for the meta analysis example we'll see next).
+
+Instead, we use the DP combined with a standard mixture modeling approach, such as a mixture of normal distributions. The CRP clusters observations or random effects to mixture components. I.e., the parameters of the mixture components, $\theta_k$, $k=1,\ldots$ cluster according to the CRP and are drawn from the unknown (discrete) distribution $G$.
+
+$$y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(\theta)d\theta,$$
+$$G \mid \alpha, G_0 \sim  DP(\alpha, G_0),$$
+
+where $h(\cdot \mid \theta)$ is a suitable kernel with parameter $\theta$,  and  $\alpha$  and $G_0$ are the concentration and  baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to the model above.
+
+# DPM in CRP form
+
+When the random measure $G$ is integrated out from the model, the DP mixture model can be written using  latent or membership variables, $z_i$,  following a Chinese Restaurant Process (CRP) distribution.  The model takes the form 
+
+$$y_i \mid \tilde{\theta}, z_i \overset{ind}{\sim} h(\cdot \mid \tilde{\theta}_{z_i}),$$
+$$z\mid \alpha \sim \mbox{CRP}(\alpha)$$
+$$\tilde{\theta}_j \overset{iid}{\sim}G_0,$$
+where $\mbox{CRP}(\alpha)$ denotes the CRP  distribution with concentration parameter $\alpha$.
+
+# DPM in stick-breaking form
+
+If a stick-breaking representation is  assumed for the random measure $G$, then the model takes the form
+
+$$y_i \mid {\theta}^{\star}, v \overset{ind}{\sim} \sum_{l=1}^{\infty}\left\{ v_l\prod_{m<l}(1-v_m)\right\} h(\cdot \mid {\theta}_l^{\star}),$$
+$$v_l \mid \alpha \overset{iid}{\sim} Beta(1, \alpha),$$
+$${\theta}_l^{\star} \overset{iid}{\sim}G_0.$$
+
+More general representations of the random measure can be specify by considering $v_l \mid \nu_l, \alpha_l \overset{ind}{\sim} Beta(\nu_l, \alpha_l)$. Finite dimensional approximations can be obtained by truncating the infinite sum to have $L$ components. 
+
+# Sampling algorithms
+
+For CRP-based models, NIMBLE employs the *collapsed* sampler.
+
+   - Basically for each element of the clustering variable, the sampler proposes to change the current cluster ID to one of the cluster IDs of the other elements or to create a new cluster.
+   - Standard (possibly conjugate) samplers are assigned to the parameters of the clusters.
+
+For stick-breaking-based modelss, NIMBLE employs the *blocked* Gibbs sampler
+
+   - The beta-distributed variables that determine the stick-breaking are sampled from their conditional distribution (there is a specific conjugacy that is available in this situation).
+   - Standard (possibly conjugate) samplers are assigned to the parameters of the clusters.
+   - NIMBLE's standard "conjugate" sampler is assigned to the categorical cluster membership variables.

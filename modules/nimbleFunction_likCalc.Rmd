@@ -1,0 +1,177 @@
+---
+title: "Programming with models: Writing nimbleFunctions with models"
+subtitle: "BYU Summer Institute on Applied Statistics workshop"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found
+library(nimble)
+read_chunk('chunks_litters_marginal.R')
+```
+
+# Introduction
+
+*nimbleFunctions* are at the heart of NIMBLE. They are the way that algorithms are implemented. They can also be used for
+
+ - user-defined BUGS distributions (already seen),
+ - user-defined BUGS functions (more-or-less seen)
+ - user-defined MCMC samplers (coming soon), and
+ - compiling parts of R (already seen), without reference to a model.
+
+But their main purpose is providing a way for developers to implement algorithms.
+
+# Components of a nimbleFunction
+
+NIMBLE uses the concept of *two-stage evaluation* from computer science to run a model-specific algorithm based on model-generic algorithm code. The first stage of evaluation specializes the algorithm to the model of interest via *setup* code. The second stage runs the algorithm via *run* code. 
+
+Thus, a nimbleFunction has two parts:
+
+ - setup code: used to tailor the algorithm to a particular model structure. Often this involves determining dependencies amongst nodes in the model and setting up storage using *modelValues*
+ - run code: the guts of the algorithm, written generically so it will apply to any (appropriate) model
+
+Setup code is written as a R function, using R code, usually including NIMBLE's special functions for querying the model structure (see the [module on querying model_structure](4.5_model_structure_slides.html). 
+
+Run code is written using the NIMBLE *domain-specific language* (DSL). While this is formally a language distinct from R, you can just think of it as a subset of R, enhanced with some functions for operating on the model (see the [module on operating a model](4.4_operating_model_slides.html). 
+
+# Some syntax for nimbleFunctions
+
+Here are some of the functions you may use in the run function of a nimbleFunction:
+
+ - *returnType*, e.g., ```returnType(double(1))``` for a vector of reals
+ - *length*, e.g., ```length(x)``` to determine the length of a run-time argument *x*
+ - *numeric*, *matrix* and *array* e.g., ```result <- numeric(n, init = 1.0)``` to create a vector of reals called *result* initialized with values of 1.0
+ - model member functions *calculate*, *simulate*, *getLogProb*, *calculateDiff* and *getParam* to manipulate the model
+ - direct access to nodes or variables in a model using typical R syntax, e.g., ```model[[myNode]] <- rnorm(1)```
+ - *values()* and *copy()* (or, equivalently, *nimCopy*) to copy values
+ - *print()* and *cat()*
+ - basic math, including vectorized math and some linear algebra
+ - random number generation functions, e.g., ```rnorm(1, 100, 5)``` 
+ - calling out to arbitrary R or C/C++ code with *nimbleRcall()* and *nimbleExternalCall()*
+ - *nimbleList* data structures.
+
+
+Chapter 10 of the NIMBLE User Manual describes the syntax for *run* code in detail, including lots of neat functionality such as using nested nimbleFunctions and having multiple run-time functions (i.e., class methods) as part of a nimbleFunction. We'll see more of that in future modules.
+
+nimbleFunctions use **pass-by-reference** not R style **pass-by-value**, so be careful about modifying an object and then using it elsewhere.
+  
+
+# A basic example: empirical Bayes / maximum marginal likelihood
+
+Let's consider how we would optimize the parameters in a model using a nimbleFunction. Basically, we'll just construct an objective function that we can then pass to R's *optim* function to do the actual numerical optimization. (NIMBLE also has an `optim()` that you can use within a nimbleFunction.)
+
+This amounts to setting things up to find the posterior mode of a model; this is generally a reasonable thing to do only for models with a small number of parameters and without hierarchical structure. That sounds restrictive, but if you can marginalize of latent process values, then we're doing empirical Bayes.
+
+# A nimbleFunction for the litters marginalized model
+
+```{r, litters-objective, eval}
+objective <- nimbleFunction(
+    setup = function(model) {
+          # ordinarily we would do stuff here, but in this case
+          # we only need make the nimbleFunction aware of the model
+          },
+    run = function(par = double(1)) {
+        returnType(double(0))
+        model[['a']] <<- exp(par[1:2])
+        model[['b']] <<- exp(par[3:4])
+        ans <- model$calculate()
+        return(ans)
+    }
+)
+```
+
+This is actually a nimbleFunction *generator* -- we can't run it yet -- we need to create a specialized instance of the nimbleFunction that is tailored for some model, in our case the marginalized litters model. 
+
+# Specializing the nimbleFunction - first set up the model of interest
+
+```{r, prep, echo=FALSE}
+# so attendees can run code below this without using code from other modules
+# if(!exists('littersMargModel') || !exists('cLittersMargModel')) source('chunks_litters_marginal.R')
+```                   
+
+First let's build the marginalized litters model again.
+
+```{r, dbetabin}
+```
+```{r, scopefix, echo=FALSE}
+# not clear why dbetabin() not being put into global
+# if this isn't done, registerDistributions fails to find dbetabin in knitr
+assign('dbetabin', dbetabin, .GlobalEnv)
+assign('rbetabin', rbetabin, .GlobalEnv)
+```
+```{r, littersMarg-code}
+```
+```{r, littersMarg-model}
+```
+
+# Specializing the nimbleFunction to the model
+
+```{r, litters-specialized}
+rObjective <- objective(littersMargModel)
+## cObjective <- compileNimble(rObjective, project = littersMargModel)  ## remember to compile model first
+cLittersMargModel <- compileNimble(littersMargModel)
+cObjective <- compileNimble(rObjective, project = littersMargModel)
+```
+
+Now let's try using it.
+
+```{r, litters-optimize}
+system.time(optR <- optim(log(rep(1,4)), rObjective$run, control = list(fnscale = -1)))
+system.time(optC <- optim(log(rep(1,4)), cObjective$run, control = list(fnscale = -1)))
+optR
+optC
+exp(optC$par)
+```
+
+# Writing generic functions
+
+Let's look back at our nimbleFunction objective function. What stops it from being usable on any model?
+
+```{r, nf-generic}
+objective <- nimbleFunction(
+    setup = function(model, target) {
+          ## we'll start putting stuff here soon, I promise!
+          },
+    run = function(par = double(1)) {
+        returnType(double(0))
+        values(model, target) <<- exp(par)
+        ans <- model$calculate()
+        return(ans)
+    }
+)
+```
+
+# Writing generic functions - querying model structure
+
+Calculating the density for all model nodes is not necessary for this optimization, as any nodes that do not depend on the target parameters do not play a role in the optimization.
+
+```{r, nf-generic2}
+objective <- nimbleFunction(
+    setup = function(model, target) {
+          calcNodes <- model$getDependencies(target)
+          },
+    run = function(par = double(1)) {
+        returnType(double(0))
+        values(model, target) <<- exp(par)
+        ans <- model$calculate(calcNodes)
+        return(ans)
+    }
+)
+```
+
+
+(Of course for maximum marginal likelihood we'd generally expect that the entire model probability density would be calculated.)
+
+```{r, litters-optimize2}
+rObjective <- objective(littersMargModel, c('a', 'b'))  ## or c('a[1]','a[2]','b[1]','b[2]')
+cObjective <- compileNimble(rObjective, project = littersMargModel)
+optC <- optim(log(rep(1,4)), cObjective$run, control = list(fnscale = -1))
+optC
+```
+

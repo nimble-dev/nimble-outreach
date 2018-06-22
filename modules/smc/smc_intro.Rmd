@@ -1,0 +1,76 @@
+---
+title: "Introduction to Sequential Monte Carlo (SMC) / particle filtering"
+subtitle: "BYU Summer Institute on Applied Statistics workshop"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+# Sequential Monte Carlo
+
+Sequential Monte Carlo is a family of algorithms for iteratively sampling from a posterior distribution generally in state-space style models:
+
+$$ y_t \sim g_t(y_t | x_t, \theta)$$
+$$ x_t \sim f_t(x_t | x_{t-1}, \theta) $$ 
+
+Some goals in analyzing such models include:
+
+ - filtering (online estimation): determining $p(x_T | y_{1:T}, \theta)$
+ - smoothing: determining the (conditional) posterior $p(x_{1:T} | y_{1:T}, \theta)$
+ - parameter estimation: determining $p(\theta | y_{1:T})$ 
+ - likelihood calculation: determining $p(y_{1:T} | \theta)$
+
+Parameter estimation is generally a hard problem in this context, with ongoing research.
+
+# Some SMC methods
+
+Some of the methods in the family of SMC and related algorithms include:
+
+ - bootstrap filter
+ - auxiliary particle filter
+ - Liu and West filter and iterated filtering 2
+ - particle MCMC
+ - ensemble Kalman filter
+
+This is just a partial list, focused on methods included in NIMBLE.
+
+# Particle filtering: basic ideas
+
+The basic idea is to approximate the filtering distribution using a sample. We start with an initial sample (not conditioned on the data) and then propagate the sample forward in time, reweighting each element of the sample based on how well it matches the model density at time t (i.e., the prior for $x_t$ and likelihood for $y_t$), and then sampling the new set of particles based on the weights. 
+
+This treats $\theta$ as known, so it does not appear in the notation.
+
+Here's pseudo-code for the bootstrap filter, where
+
+   - $q$ is a proposal distribution that propagates the sample forward in time
+   - $w_t$ and $\pi_t$ are (unnormalized) weights and (normalized) weights
+
+<center><img src="boot_algo.png"></center>
+
+
+
+# Particle filtering: basic ideas (2)
+
+Graphically, one might think of it this way:
+
+<center><img src="pf.png"></center>
+
+# Improving particle filtering
+
+Two key issues arise in these algorithms:
+
+ - How to find a good $q(\cdot)$ proposal function so that the propagated particles have high model density given the next observation.
+ - How to avoid particle degeneracy, where one or a few particles are the only 'good' particles and all the sample weight concentrates on those.
+
+A wide variety of methods have been proposed to address these issues. 
+
+# Particle MCMC
+
+Note that at each step, one can get a Monte Carlo estimate of $p(y_t|y_{1:t-1}, \theta)$, so one can multiply to estimate $p(y_{1:T}|\theta)$.
+
+Recall that for MCMC,
+
+   - High-dimensional latent process values in non-conjugate models often result in bad mixing.
+   - Ideally, we'd like to integrate over $x_{1:T}$ and do MCMC only on hyperparameters, $\theta$.
+   - SMC algorithms allow us to estimate the marginal likelihood so could be embedded within MCMC for the hyperparameters.

@@ -1,0 +1,125 @@
+---
+title: "Sequential Monte Carlo methods in NIMBLE"
+subtitle: "BYU Summer Institute on Applied Statistics workshop"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+```{r setup, include=FALSE} 
+library(methods) ## needed only when building documents outside of R
+library(nimble)
+```
+
+# Stochastic volatility example
+
+Here's a common SMC example, following Pitt and Shephard (1999). The idea is that financial time series often have time-varying variability that is of interest to financial folks.
+
+Let $r_t$ be the exchange rate at time $t$ and $y_t$ be 100 times the daily log return of the exchange rate, $y_t = 100 (\log(r_t) - \log(r_{t-1}))$. A standard stochastic volatility model is
+
+$$ y_t = \epsilon_t \beta \exp\left(\frac{x_t}{2}\right), $$
+$$ \epsilon_t \sim N(0,1)$$
+$$ x_t = \phi x_{t-1} + \nu_t$$
+$$ \nu_t \sim N(0, \sigma^2) $$
+
+Here $\beta$ is the constant volatility while $x_t$ is the latent evolving volatility. 
+
+For our basic SMC implementation we'll take $\beta$, $\sigma^2$, and $\phi$ to be known values, but we'll do inference on them via particle MCMC in the next module.
+
+# Stochastic volatility BUGS code
+
+```{r, sv-code}
+stochVolCode <- nimbleCode({
+  x[1] ~ dnorm(phi * x0, sd = sigma)
+  y[1] ~ dnorm(0, var = betaSquared * exp(x[1]))
+  for(t in 2:T){
+        ## time-evolving volatility
+        x[t] ~ dnorm(phi * x[t-1], sd = sigma)
+        ## observations
+        y[t] ~ dnorm(0, var = betaSquared * exp(x[t]))
+  }
+  x0 ~ dnorm(1, sd = sigma)
+  phi <- 2 * phiStar - 1
+  phiStar ~ dbeta(18, 1)
+  sigma ~ T(dt(mu = 0, sigma = 1, df = 1), 0, )
+  ## baseline volatility
+  betaSquared <- beta^2
+  beta ~ T(dt(mu = 0, sigma = 1, df = 1), 0, )
+})
+```
+
+# Stochastic volatility filtering
+
+Now let's create the model and apply and run a bootstrap filter.
+
+```{r, sv-model}
+library('stochvol')
+data('exrates')
+y <- 100 * logret(exrates$USD[exrates$date > '2012-02-01'])
+TT <- 44
+stochVolModel <- nimbleModel(code = stochVolCode,
+   constants = list(T = TT), data = list(y = y),
+   inits = list(beta = .5992, phi = .9702,
+   sigma = .178, x0 = 0))
+CstochVolModel <- compileNimble(stochVolModel)
+```
+
+```{r, sv-filter}
+svBootFilter <- buildBootstrapFilter(stochVolModel, nodes = 'x',
+                       control = list(saveAll = TRUE, thresh = 1.0))
+cSvBootFilter <- compileNimble(svBootFilter, project = stochVolModel)
+cSvBootFilter$run(10000)
+samples <- as.matrix(cSvBootFilter$mvEWSamples) ## equally-weighted samples from filtering distribution
+```
+
+# Stochastic volatility results
+
+Here's the estimated volatility based on the filtering distribution, so not the full posterior estimate. There are algorithms that produce the smoothing distribution, though the one implemented in NIMBLE for the bootstrap filter is a basic one. 
+
+```{r, sv-results, fig.width=10, fig.height=6, fig.cap=''}
+par(mfrow = c(1,2))
+ts.plot(y, main = 'observations')
+mn <- apply(samples, 2, mean)
+qs <- apply(samples, 2, quantile, c(.025, .975))
+ts.plot(mn, ylim = range(qs), main = 'estimated volatility')
+lines(1:TT, qs[1, ], lty = 2)
+lines(1:TT, qs[2, ], lty = 2)
+```
+
+
+# SMC algorithm implementation
+
+Our SMC algorithms are implemented using nimbleFunctions (of course!).
+
+Each time step has its own nimbleFunction, because we need fully model-generic calculations that can't assume any particular structure for a given time step (and at the moment NIMBLE can't easily store model dependencies for multiple nodes in a single data strucutre).
+
+We'll look directly at the code in [`filtering_bootstrap.R`](filtering_bootstrap.R).
+
+The overall filtering nimbleFunction simply iterates through each individual time step function and builds up the overall likelihood from the time step-specific pieces.
+
+
+# Lists of nimbleFunctions
+
+The bootstrap filter created a list of nimbleFunctions, one for each time step. Here's what the code in the overall bootstrap filter nimbleFunction setup code looks like:
+
+```{r, nimbleFunctionLists, eval=FALSE}
+    bootStepFunctions <- nimbleFunctionList(bootStepVirtual)
+    for(iNode in seq_along(nodes)){
+       bootStepFunctions[[iNode]] <- bootFStep(model, mvEWSamples, mvWSamples,
+                                              nodes, iNode, names, saveAll,
+                                              smoothing, resamplingMethod,
+                                              silent) 
+    }
+```
+
+The key steps are:
+
+   - define a 'virtual' nimbleFunction that is a *base class* (basically a skeleton function)
+   - define a *nimbleFunctionList* based on that virtual nimbleFunction
+   - create each individual nimbleFunction by calling a nimbleFunction generator that inherits from the virtual nimbleFunction
+
+Then one can call the run function or other run-time methods of the elements of the list of nimbleFunctions in the run code of the overall nimbleFunction.
+
+Similarly, an MCMC is composed of a list of individual sampler functions (of which we've seen many examples) specialized to nodes of a model.
+
