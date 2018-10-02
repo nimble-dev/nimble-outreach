@@ -1,0 +1,256 @@
+---
+title: "nimbleFunction programming example: Reversible jump"
+subtitle: "ENVR Asheville workshop short course"
+author: "NIMBLE Development Team"
+output:
+  html_document:
+    code_folding: show
+---
+
+
+```{r chunksetup, include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(methods)  # otherwise new() not being found
+library(nimble)
+```
+
+# Introduction
+
+Here we'll program another sampler using nimbleFunctions, this time applying reversible jump (RJ) MCMC for variable selection in the parametric Avandia model example. The nice thing about RJ for variable selection is that it is a fairly straightforward implementation of RJ.
+
+Let's see if the group information (i.e., $\theta$) is needed in the model; in other words how much evidence is there that there is a difference between the two groups. 
+
+
+# BUGS code for reversible jump version of parametric Avandia model
+
+Here's the BUGS code that implements the model specified earlier, modified slightly to allow for variable selection by adding an indicator that will "turn on" or "turn off" the hemoglobin coefficient.
+
+```{r, avandia-bugs}
+codeParamSel <- nimbleCode({
+    for(i in 1:nStudies) {
+        y[i] ~ dbin(size = m[i], prob = q[i]) # avandia MIs
+        x[i] ~ dbin(size = n[i], prob = p[i]) # control MIs
+        q[i] <- expit(theta*indic + gamma[i]) # Avandia log-odds
+        p[i] <- expit(gamma[i])               # control log-odds
+        gamma[i] ~ dnorm(mu, sd = tau)        # study effects
+    }
+    theta ~ dflat()        # effect of Avandia
+    # random effects hyperparameters
+    mu ~ dflat()
+    tau ~ dunif(0, 100)
+    indic ~ dbern(0.5)             ## turns theta on and off
+})
+```
+
+# Overall strategy for variable selection via RJ
+
+We won't go into all the details, but by looking at the rules for how to set up a valid RJ sampler, one can see that in the simple variable selection case, they simplify to straightforward calculations.
+
+To go from the reduced model, $M^r$, to full model, $M^f$, we need to propose an auxiliary variable, $u$, that augments the dimension of the model and a transformation to produce the new coefficient, $\delta_{2}^*$, given the auxiliary variable. The simplest thing to do is:
+
+$$ u \sim J(u) = N(0, \sigma^2) $$
+
+$$ \theta* = u $$
+
+The acceptance ratio is then
+
+$$ q = \frac{p(y|\theta^f,M^f)p(\theta^f|M^f) }{p(y|\theta^r,M^r)p(\theta^r|M^r) J(u) } $$
+
+For those of you familiar with RJ, the lack of Jacobian here occurs because the transformation $\delta_{2}^*=u$ has Jacobian equal to 1.
+
+To go from the full to reduced model, we have
+
+$$ u^* = \theta $$ 
+
+and acceptance ratio:
+
+$$ q = \frac{p(y|\theta^r,M^r)p(\theta^r|M^r)J(u^*) }{p(y|\theta^f,M^f)p(\theta^f|M^f)  } $$
+
+# RJ sampler setup code
+
+The RJ sampler will operate on the indicator of whether questionable variable is in the model or not, since that indicator is what changes the model dimension.
+
+The setup code needs to determine the nodes involved in the full model and the reduced model, where the reduced model omits the variable under consideration.
+
+
+```{r, setup-rj, eval=FALSE}
+ setup = function( model, mvSaved, target, control ) {
+   # target = 'indic'
+   coefNode <- control$coef   # e.g., 'theta'
+   scale    <- control$scale  # could be made adaptive
+   # with variable
+   calcNodes_full <- model$getDependencies(c(coefNode, target))
+   # without variable
+   calcNodes_reduced <- model$getDependencies(target)
+ }
+```
+
+# RJ sampler run code
+
+Depending on the current value of the variable selection indicator, we use the reversible jump calculations to propose either including or excluding the variable from the model.
+
+We fix $J(u)$ here as a distribution that doesn't change with the current state, so it will be critical to come up with a good value for the *scale* of $J(u)$ as that is simply the proposal distribution for the new coefficient in this simple RJ scheme.
+
+```{r, rj-run, eval = FALSE}
+run = function( ) {  # Reversible-jump updates:
+   currentIndicator <- model[[target]]   
+   if(currentIndicator == 0) { ## propose adding theta to model
+     currentLogProb <- model$getLogProb(calcNodes_reduced)
+     proposalCoef <- rnorm(1, 0, sd = scale)
+     model[[target]] <<- 1      # put proposal values in model
+     model[[coefNode]] <<- proposalCoef
+     logProbForwardProposal <- 
+                dnorm(proposalCoef, 0, sd = scale, log = TRUE)
+     proposalLogProb <- model$calculate(calcNodes_full)
+     logAcceptProb <- proposalLogProb - 
+                        currentLogProb - 
+                        logProbForwardProposal
+   } else {                   ## propose removing z2
+     currentLogProb <- model$getLogProb(calcNodes_full)
+     currentCoef <- model[[coefNode]]      # get current theta
+     logProbReverseProposal <- 
+                 dnorm(currentCoef, 0, sd = scale, log = TRUE)   
+     model[[target]] <<- 0      # put proposal values in model
+     model[[coefNode]] <<- 0
+     model$calculate(calcNodes_full) # calculate proposal log probabilities
+     logAcceptProb <- model$getLogProb(calcNodes_reduced) -
+                        currentLogProb + 
+                        logProbReverseProposal
+   }
+   ## additional book-keeping code to go here
+}   
+```
+
+# The full RJ sampler
+
+Putting it all together, here is the full code for our RJ variable selection sampler.
+
+```{r, full-rj}
+RJ_var_sel <- nimbleFunction(
+ contains = sampler_BASE,
+ setup = function( model, mvSaved, target, control ) {
+   # target = 'indic'
+   coefNode <- control$coef   
+   scale    <- control$scale  # could be made adaptive
+   # with variable
+   calcNodes_full <- model$getDependencies(c(coefNode, target))
+   # without variable (don't calculate prior for coefNode since not in model)
+   calcNodes_reduced <- model$getDependencies(target)
+ },
+run = function( ) {  # Reversible-jump updates:
+   currentIndicator <- model[[target]]   
+   if(currentIndicator == 0) { ## propose adding theta to model
+     currentLogProb <- model$getLogProb(calcNodes_reduced)
+     proposalCoef <- rnorm(1, 0, sd = scale)
+     model[[target]] <<- 1
+     model[[coefNode]] <<- proposalCoef
+     logProbForwardProposal <- 
+                dnorm(proposalCoef, 0, sd = scale, log = TRUE)
+     proposalLogProb <- model$calculate(calcNodes_full)
+     logAcceptProb <- proposalLogProb - 
+                        currentLogProb - 
+                        logProbForwardProposal
+   } else {                   ## propose removing theta
+     currentLogProb <- model$getLogProb(calcNodes_full)
+     currentCoef <- model[[coefNode]]      
+     logProbReverseProposal <- 
+                 dnorm(currentCoef, 0, sd = scale, log = TRUE)   
+     model[[target]] <<- 0      
+     model[[coefNode]] <<- 0
+     model$calculate(calcNodes_full) # calculate proposal log probabilities
+     logAcceptProb <- model$getLogProb(calcNodes_reduced) -
+                        currentLogProb + 
+                        logProbReverseProposal
+    }
+    accept <- decide(logAcceptProb)
+    if(accept) {
+      copy(from = model, to = mvSaved, row = 1, 
+         nodes = calcNodes_full, logProb = TRUE)
+    } else {
+      copy(from = mvSaved, to = model, row = 1, 
+         nodes = calcNodes_full, logProb = TRUE)
+    }
+ },
+ methods = list(reset = function() {
+ })
+) 
+
+```
+
+# Final modification: Turning off sampling when the covariate is not in the model
+
+Here we'll create a sampler that simply wraps around our usual slice sampler.
+Note that in setup code we can create instances of other nimbleFunctions and
+then use these in the run code.
+
+```{r, nonzero-sampler}
+slice_var_sel_wrapper <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        regular_slice_sampler <- sampler_slice(model, mvSaved, target = target, 
+                                         control = control$sliceControl)
+        indicatorNode <- control$indicator
+    },
+    run = function() {
+        if(model[[indicatorNode]] == 1) regular_slice_sampler$run()
+    },
+    methods = list(
+        reset = function() {regular_slice_sampler$reset()}
+    ))
+```
+
+```{r, scopefix, echo=FALSE, fig.cap='', fig.width=5, fig.height=5}
+# not clear why RW_reflect() not being put into global
+# if this isn't done, configureMCMC fails to find sampler_RW_reflect in knitr
+assign('slice_var_sel_wrapper', slice_var_sel_wrapper, .GlobalEnv)
+assign('RJ_var_sel', RJ_var_sel, .GlobalEnv)
+```
+
+# Running the MCMC
+
+Now let's run the MCMC. We'll need to manually assign our special samplers for the RJ aspect of things. 
+      
+```{r, avandia-mcmc}
+dat <- read.csv('avandia.csv')
+dat <- dat[-49, ]
+
+x <- dat$controlMI
+n <- dat$nControl
+y <- dat$avandiaMI
+m <- dat$nAvandia
+
+nStudies <- nrow(dat)
+data <- list(x = x, y = y)
+constants = list(n = n, m = m, nStudies = nStudies)
+
+inits = list(theta = 0, mu = 0, tau = 1, gamma = rnorm(nStudies), indic = 1)
+
+modelParam <- nimbleModel(code = codeParamSel, data = data, inits = inits,
+                      constants = constants)
+cModelParam = compileNimble(modelParam)
+
+conf <- configureMCMC(model, thin = 10, monitors = c('theta', 'indic'))
+conf$removeSamplers(c('theta', 'indic'))
+## special changes for variable selection:
+conf$addSampler('indic', 'RJ_var_sel', control = list(coef = 'theta', scale = 0.5))
+conf$addSampler('theta', 'slice_var_sel_wrapper', control = list(indicator = 'indic'))
+
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = model)
+samples <- runMCMC(cmcmc, niter = 3000, nburnin = 1000)
+```
+
+Let's look at the MCMC behavior of the indicator and of the coefficient of interest.
+
+```{r, results, fig.width=8, fig.height=5, fig.cap=''}
+par(mfrow = c(1,2))
+ts.plot(samples[ , 'indic'], xlab = 'iteration', ylab = 'z2 indicator',
+                    main = 'theta indicator')
+ts.plot(samples[ , 'theta'], xlab = 'iterations', ylab = 'delta[2]',
+               main = 'effect of Avandia')
+
+## posterior probability of inclusion    
+mean(samples[ , 'indic'])  
+```
+
