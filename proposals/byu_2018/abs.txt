@@ -1,0 +1,41 @@
+Flexible programming of MCMC and other methods for hierarchical and Bayesian
+statistical models using NIMBLE
+
+This workshop provides a hands-on introduction to using, programming,
+and sharing Bayesian and hierarchical modeling algorithms using
+NIMBLE. In addition to learning the NIMBLE system, users will
+develop hands-on experience with various computational methods.
+NIMBLE is an R-based system that allows one to fit models
+specified using BUGS/JAGS syntax but with much more flexibility in defining the statistical
+model and the algorithm to be used on the model. Users operate from
+within R, but NIMBLE generates C++ code for models and algorithms for
+fast computation. I will open with an overview of creating a
+hierarchical model and fitting the model using a basic MCMC, similarly
+to how one can use WinBUGS, JAGS, and Stan. I will then discuss how NIMBLE
+allows the user to modify the MCMC - changing samplers and specifying
+blocking of parameters. Next I will show how to extend the BUGS
+syntax with user-defined distributions and functions that
+provide flexibility in specifying a statistical model of
+interest. With this background we can then explore the NIMBLE
+programming system, which allows one to write new algorithms not
+already provided by NIMBLE, including new MCMC samplers, using a
+subset of the R language. I will then provide examples of non-MCMC
+algorithms that have been programmed in NIMBLE and how algorithms can
+be combined together, using the example of a particle filter embedded
+within an MCMC. We will see new functionality in NIMBLE that allows
+one to fit Bayesian nonparametric models and spatial models.  I will
+close with a discussion of how NIMBLE enables sharing of new methods
+and reproducibility of research.  The workshop will include a number
+of breakout periods for participants to use and program MCMC and other
+methods, either on example problems or problems provided by
+participants. In addition, participants will see NIMBLE's flexibility
+in action in several real problems.
+
+1) overview and motivation for NIMBLE and programming with models
+2) basic model building and MCMC plus flexible MCMC specification
+3) user-defined distributions and functions
+4) basic nimbleFunction programming
+5) algorithm examples, algorithm composability
+6) advanced features: modules, call out to R, C++
+7) efficiency  (vectorization, marginalization) and various real examples
+8) BNP and spatial models
